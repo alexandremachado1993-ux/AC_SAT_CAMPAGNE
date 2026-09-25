@@ -1,0 +1,47 @@
+# Configuration Netlify — AC SAT Campagne
+#
+# Pourquoi ce fichier est indispensable :
+# le fichier d'accueil du projet s'appelle "Index.html" avec un I MAJUSCULE.
+# Netlify sert les fichiers depuis Linux, où la casse compte, et cherche
+# "index.html" en minuscules à la racine. Sans la règle ci-dessous, l'adresse
+# du site renverrait une erreur 404 alors que toutes les autres pages
+# fonctionneraient — panne difficile à diagnostiquer.
+
+[build]
+  # Aucune compilation : le projet est du HTML/CSS/JS servi tel quel.
+  publish = "."
+  command = ""
+
+# L'adresse racine sert la page d'accueil.
+[[redirects]]
+  from = "/"
+  to = "/Index.html"
+  status = 200
+  force = true
+
+# En-têtes de sécurité standard.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(self)"
+
+# Les fichiers Leaflet ne changent jamais : on autorise une mise en cache longue.
+[[headers]]
+  for = "/Vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Le code de l'application, lui, ne doit pas rester en cache :
+# c'est ce qui fait qu'une mise à jour ne se voit pas.
+[[headers]]
+  for = "/Js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/CSS/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

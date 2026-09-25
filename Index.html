@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>À visiter — AC SAT Campagne</title>
+    <meta name="theme-color" content="#dc2626">
+    <link rel="icon" type="image/png" href="Images/icone-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="Images/icone-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Campagnes">
+    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="CSS/campagne.css">
+</head>
+<body>
+
+<header id="entete" class="entete"></header>
+<div id="bandeau-connexion" class="bandeau-connexion" hidden></div>
+
+<div class="app-conteneur">
+    <main id="contenu-page" class="app-contenu"></main>
+</div>
+
+<nav id="nav-basse" class="nav-basse"></nav>
+
+<script src="Js/Donnees.js"></script>
+<script src="Vendor/supabase/supabase.min.js"></script>
+<script src="Js/Synchro.js"></script>
+<script src="Js/AppLayout.js"></script>
+<script src="Js/Formulaires.js"></script>
+<script>
+    Donnees.init();
+    AppLayout.init("tableau");
+    Synchro.demarrer();
+</script>
+<script src="Js/TableauBord.js"></script>
+</body>
+</html>

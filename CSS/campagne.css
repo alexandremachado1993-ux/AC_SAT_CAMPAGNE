@@ -1,0 +1,780 @@
+/* =============================================================
+   campagne.css — Composants propres à AC SAT Campagne
+
+   Chargé APRÈS style.css (copie intacte du style maison d'AC SAT Field) :
+   ce fichier n'ajoute que des classes nouvelles et ne redéfinit aucune
+   règle existante, à l'exception de la présentation des fenêtres
+   (.voile, .feuille, .feuille--bas, .feuille-titre — bloc « Fenêtres »).
+   ============================================================= */
+
+/* ---------- En-tête de page ---------- */
+
+.entete-page {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.titre-page { font-size: 1.4rem; font-weight: 700; }
+
+/* ---------- Boutons sans habillage ---------- */
+
+/* Pas de « font: inherit » ici : chargé après style.css, il écraserait
+   la taille de police de .onglet-fiche et de .texte-lien (même
+   spécificité, la règle la plus tardive gagne). La balise button hérite
+   déjà de la police via style.css. */
+.bouton-texte,
+.onglet-bouton {
+    background: none;
+    border: none;
+}
+
+.bouton-texte { padding: 0; cursor: pointer; }
+
+.bouton--danger { color: var(--statut-alert); border-color: color-mix(in oklch, var(--statut-alert) 40%, transparent); }
+.bouton--danger:hover { background: color-mix(in oklch, var(--statut-alert) 8%, transparent); }
+
+.bouton--large { width: 100%; margin-top: 12px; height: 44px; }
+
+/* ---------- Cartes KPI cliquables (tableau « À visiter ») ---------- */
+
+.metrique-bouton {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.metrique-bouton--actif { box-shadow: var(--ombre-elevee); }
+
+/* ---------- Pastille de statut (retard, à jour, rôle…) ---------- */
+
+.pastille-statut {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ---------- Tableau « À visiter » ---------- */
+
+.grille-a-visiter {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 1100px) {
+    .grille-a-visiter { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+
+.carte-a-visiter-entete {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.carte-a-visiter-nom { font-size: 1rem; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carte-a-visiter-nom:hover { color: var(--primaire); }
+.carte-a-visiter-ville { font-size: 0.8rem; flex-shrink: 0; }
+.carte-a-visiter-contact { font-size: 0.8rem; margin-top: 4px; }
+
+.ligne-echeance {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0 0;
+    margin-top: 10px;
+    border-top: 1px solid var(--bordure);
+}
+
+.ligne-echeance-corps { flex: 1; min-width: 0; }
+.ligne-echeance-nom { font-size: 0.88rem; font-weight: 700; }
+.ligne-echeance-texte { font-size: 0.75rem; margin-top: 2px; }
+
+.ligne-echeance-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+    .ligne-echeance { flex-wrap: wrap; }
+    .ligne-echeance-corps { flex-basis: 100%; order: 2; }
+    .ligne-echeance-actions { order: 3; width: 100%; }
+    .ligne-echeance-actions .bouton { flex: 1; }
+}
+
+.bloc-sans-ligne {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    border-left: 4px solid var(--statut-warn);
+}
+
+.bloc-hors-campagne { margin-top: 16px; }
+.bloc-hors-campagne summary { cursor: pointer; font-size: 0.9rem; }
+
+.ligne-hors-campagne {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 8px 0;
+    border-top: 1px solid var(--bordure);
+    font-size: 0.85rem;
+}
+
+/* ---------- Page Clients ---------- */
+
+.grille-clients-campagne {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    margin-top: 12px;
+}
+
+.carte-client-campagne {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.carte-client-campagne:hover { transform: translateY(-2px); box-shadow: var(--ombre-elevee); }
+
+.carte-client-campagne-entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.carte-client-campagne-nom { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carte-client-campagne-ligne { font-size: 0.78rem; }
+
+.carte-client-campagne-pied {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--bordure);
+    font-size: 0.75rem;
+}
+
+.carte-client-campagne-pied .texte-attenue { margin-left: auto; }
+
+/* ---------- Fiche client ---------- */
+
+.fiche-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.grille-lignes {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.carte-ligne-entete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.carte-ligne-info { font-size: 0.78rem; margin-top: 3px; }
+
+.carte-ligne-liens {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.82rem;
+}
+
+.carte-ligne-notes {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: var(--rayon-petit);
+    background: var(--secondaire);
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+}
+
+.carte-ligne-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.ligne-historique {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+}
+
+.ligne-historique + .ligne-historique { border-top: 1px solid var(--bordure); }
+.ligne-historique-date { font-weight: 700; flex-shrink: 0; min-width: 84px; }
+.ligne-historique-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.ligne-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+.ligne-info + .ligne-info { border-top: 1px solid var(--bordure); }
+.ligne-info > :first-child { text-align: left; flex-shrink: 0; }
+
+/* ---------- Formulaires ---------- */
+
+.grille-2-colonnes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.grille-2-colonnes > div { min-width: 0; }
+
+/* style.css donne width:100% à tous les input : on l'annule pour les cases. */
+.champ-case {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--texte);
+    cursor: pointer;
+}
+
+.champ-case input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    flex-shrink: 0;
+    accent-color: var(--primaire);
+}
+
+.bloc-formulaire {
+    margin-top: 14px;
+    padding: 4px 12px 12px;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon-moyen);
+    background: var(--secondaire);
+}
+
+.bloc-formulaire-titre { font-size: 0.82rem; font-weight: 700; margin-top: 8px; }
+
+.aide-champ {
+    font-size: 0.75rem;
+    color: var(--attenue-texte);
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.message-erreur {
+    color: var(--statut-alert);
+    font-size: 0.8rem;
+    min-height: 1em;
+    margin-top: 10px;
+}
+
+/* ---------- Fenêtres (formulaires, choix d'export, aperçu d'import) ----------
+   Seule redéfinition du style maison : la feuille du bas, prévue pour
+   le téléphone, restait collée en bas de l'écran sur ordinateur.
+   - Ordinateur : fenêtre centrée, coins arrondis, défilement interne.
+   - Téléphone  : feuille du bas conservée, avec poignée et glissement.
+   - Titre figé en haut pendant le défilement d'un long formulaire. */
+
+.voile {
+    backdrop-filter: blur(2px);
+    animation: fenetre-fondu 0.18s ease-out;
+}
+
+/* top = -(padding de la fenêtre) : le navigateur fige un élément « sticky »
+   au bord intérieur du padding de la fenêtre, pas à son bord extérieur.
+   Avec top: 0, le titre était repoussé de 16 à 20 px vers le bas et
+   recouvrait la première ligne du contenu (constaté le 24/09). */
+.feuille-titre {
+    position: sticky;
+    top: -16px;
+    z-index: 1;
+    margin-top: -16px;
+    padding-top: 16px;
+    background: var(--carte);
+}
+
+.feuille--bas { animation: fenetre-glisse 0.22s ease-out; }
+
+/* Poignée : indique sur téléphone que la feuille se ferme vers le bas. */
+.feuille--bas::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: -6px auto 10px;
+    border-radius: 999px;
+    background: var(--bordure);
+}
+
+@media (min-width: 768px) {
+    .feuille--bas {
+        top: 50%;
+        bottom: auto;
+        left: 50%;
+        right: auto;
+        width: min(640px, calc(100vw - 48px));
+        max-height: 85vh;
+        padding: 20px 24px 24px;
+        border-radius: var(--rayon-xl);
+        border: 1px solid var(--bordure);
+        transform: translate(-50%, -50%);
+        animation: fenetre-apparait 0.18s ease-out;
+    }
+
+    .feuille--bas::before { display: none; }
+
+    .feuille--bas .feuille-titre {
+        top: -20px;
+        margin-top: -20px;
+        padding-top: 20px;
+    }
+}
+
+@keyframes fenetre-fondu { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fenetre-glisse { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fenetre-apparait {
+    from { transform: translate(-50%, -48%) scale(0.98); opacity: 0; }
+    to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .voile, .feuille--bas { animation: none; }
+}
+
+/* ---------- Actions de page (Clients, Planning) ---------- */
+
+.actions-page {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+/* Bouton + petit lien « modèle » en dessous, comme sur AC SAT Field. */
+.bouton-avec-lien {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+}
+
+.lien-modele {
+    font-size: 0.68rem;
+    color: var(--attenue-texte);
+    text-decoration: underline;
+}
+
+.liste-import {
+    margin: 6px 0 0 18px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+/* ---------- Planning : filtres et options ---------- */
+
+.pl-filtres { margin-top: 12px; }
+.pl-filtres summary { cursor: pointer; font-size: 0.9rem; }
+
+.pl-filtres-grille {
+    display: grid;
+    gap: 0 12px;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+.pl-filtres-pied {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.pl-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    margin: 12px 0 8px;
+}
+
+.pl-annee {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+}
+
+.pl-annee strong { min-width: 44px; text-align: center; }
+
+/* ---------- Planning : grille annuelle ---------- */
+
+.pl-defilement {
+    overflow-x: auto;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon-grand);
+    background: var(--carte);
+    box-shadow: var(--ombre-carte);
+}
+
+.pl-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    font-size: 0.75rem;
+}
+
+.pl-table th,
+.pl-table td { border-bottom: 1px solid var(--bordure); }
+
+.pl-entete-rangee,
+.pl-libelle {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--carte);
+    text-align: left;
+    min-width: 170px;
+    max-width: 220px;
+    padding: 6px 10px;
+    border-right: 1px solid var(--bordure);
+}
+
+.pl-entete-mois,
+.pl-entete-col,
+.pl-entete-total {
+    padding: 6px 2px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--attenue-texte);
+    text-align: center;
+    background: var(--secondaire);
+    white-space: nowrap;
+}
+
+.pl-entete-mois { border-left: 1px solid var(--bordure); }
+.pl-entete-col--aujourdhui { background: var(--primaire); color: var(--primaire-texte); }
+
+.pl-nom-client {
+    display: block;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pl-nom-client:hover { color: var(--primaire); }
+.pl-sous-libelle { display: block; font-size: 0.66rem; font-weight: 400; color: var(--attenue-texte); }
+.pl-nom-ligne { display: block; padding-left: 10px; font-weight: 500; color: var(--attenue-texte); }
+.pl-rangee--ligne .pl-libelle { background: var(--carte); }
+.pl-rangee--client + .pl-rangee--ligne > * { border-top: 1px dashed var(--bordure); }
+
+.pl-cellule {
+    height: 34px;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    border-left: 1px solid color-mix(in oklch, var(--bordure) 60%, transparent);
+}
+
+.pl-table--mois .pl-cellule { min-width: 46px; }
+.pl-table--semaines .pl-cellule { min-width: 26px; }
+
+.pl-cellule--campagne { background: color-mix(in oklch, var(--succes) 11%, transparent); }
+.pl-cellule--aujourdhui { box-shadow: inset 2px 0 0 var(--primaire), inset -2px 0 0 var(--primaire); }
+.pl-cellule--cliquable { cursor: pointer; }
+.pl-cellule--cliquable:hover { background: color-mix(in oklch, var(--primaire) 10%, transparent); }
+
+.pl-point {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    border-radius: 999px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #fff;
+    vertical-align: middle;
+}
+
+.pl-point + .pl-point { margin-left: 2px; }
+.pl-point--campagne { background: var(--statut-ok); }
+.pl-point--maintenance { background: #0ea5e9; }
+
+.pl-echeance {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--statut-warn);
+    vertical-align: middle;
+}
+
+.pl-retard {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: var(--statut-alert);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+
+.pl-total {
+    padding: 0 6px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.72rem;
+    background: var(--secondaire);
+    min-width: 44px;
+}
+
+.pl-table tfoot .pl-libelle,
+.pl-table tfoot .pl-total { font-weight: 700; background: var(--secondaire); }
+
+.pl-legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin-top: 8px;
+    font-size: 0.72rem;
+    color: var(--attenue-texte);
+}
+
+.pl-legende > span { display: inline-flex; align-items: center; gap: 5px; }
+
+.pl-exemple-campagne {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--bordure);
+    background: color-mix(in oklch, var(--succes) 11%, transparent);
+}
+
+/* ---------- Planning : tableau de synthèse ---------- */
+
+.tableau-synthese {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.tableau-synthese th {
+    text-align: left;
+    padding: 8px 10px;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--attenue-texte);
+    background: var(--secondaire);
+    white-space: nowrap;
+}
+
+.tableau-synthese td {
+    padding: 8px 10px;
+    border-top: 1px solid var(--bordure);
+    white-space: nowrap;
+}
+
+.tableau-synthese .nombre { text-align: right; }
+
+/* ---------- Indicateur de synchronisation ---------- */
+
+.indicateur-synchro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: -4px 12px 8px;
+    padding: 6px 10px;
+    border-radius: var(--rayon-moyen);
+    font-size: 0.72rem;
+    color: var(--attenue-texte);
+}
+
+.indicateur-synchro:hover { background: var(--secondaire); }
+
+.indicateur-synchro-point {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--attenue-texte);
+}
+
+.indicateur-synchro-icone { position: relative; }
+
+.indicateur-synchro-icone .indicateur-synchro-point {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    border: 2px solid var(--carte);
+    box-sizing: content-box;
+}
+
+[data-statut="ok"] .indicateur-synchro-point { background: var(--statut-ok); }
+[data-statut="en-cours"] .indicateur-synchro-point { background: var(--statut-warn); animation: synchro-pulse 1s ease-in-out infinite; }
+[data-statut="hors-ligne"] .indicateur-synchro-point { background: var(--statut-warn); }
+[data-statut="erreur"] .indicateur-synchro-point,
+[data-statut="indisponible"] .indicateur-synchro-point { background: var(--statut-alert); }
+
+@keyframes synchro-pulse { 50% { opacity: 0.3; } }
+
+@media (prefers-reduced-motion: reduce) {
+    [data-statut="en-cours"] .indicateur-synchro-point { animation: none; }
+}
+
+/* ---------- Rendez-vous ---------- */
+
+.pastille-rdv {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #7c3aed;
+    background: #7c3aed1a;
+}
+
+.bloc-rdv-titre {
+    padding: 10px 14px 0;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.ligne-rdv {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    font-size: 0.85rem;
+}
+
+.ligne-rdv + .ligne-rdv { border-top: 1px solid var(--bordure); }
+
+.ligne-rdv-date {
+    display: flex;
+    flex-direction: column;
+    min-width: 92px;
+    padding-left: 10px;
+    border-left: 3px solid #7c3aed;
+    flex-shrink: 0;
+}
+
+.ligne-rdv-date span { font-size: 0.75rem; color: var(--attenue-texte); }
+.ligne-rdv--depasse .ligne-rdv-date { border-left-color: var(--statut-alert); }
+.ligne-rdv-corps { flex: 1; min-width: 0; font-size: 0.8rem; }
+.ligne-rdv-client { font-weight: 700; font-size: 0.88rem; }
+.ligne-rdv-client:hover { color: var(--primaire); }
+.ligne-rdv-alerte { color: var(--statut-alert); font-weight: 700; font-size: 0.75rem; margin-top: 2px; }
+.ligne-rdv-notes { margin-top: 2px; white-space: pre-wrap; }
+.ligne-rdv-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+@media (max-width: 520px) {
+    .ligne-rdv { flex-wrap: wrap; }
+    .ligne-rdv-actions { width: 100%; justify-content: flex-end; }
+}
+
+.liste-cases .champ-case { margin-top: 6px; }
+
+.pl-rdv {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 12px;
+    height: 12px;
+    padding: 0 2px;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+
+/* ---------- Outillage des lignes ---------- */
+
+.ligne-outil {
+    display: grid;
+    grid-template-columns: 80px 1fr 1fr;
+    gap: 0 10px;
+    align-items: end;
+}
+
+.ligne-outil-libelle { font-size: 0.8rem; font-weight: 700; padding-bottom: 12px; }
+
+@media (max-width: 520px) {
+    .ligne-outil { grid-template-columns: 1fr 1fr; margin-top: 8px; }
+    .ligne-outil-libelle { grid-column: 1 / -1; padding-bottom: 0; }
+}
+
+.carte-ligne-outillage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+    margin-top: 6px;
+    font-size: 0.78rem;
+}
+
+/* ---------- Documents ---------- */
+
+.grille-documents {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    margin-top: 12px;
+}
+
+.carte-document-entete { display: flex; align-items: center; gap: 12px; }
+.carte-document-icone { font-size: 1.6rem; flex-shrink: 0; }
+.carte-document-titre { font-weight: 700; }
+.carte-document-description { font-size: 0.82rem; margin: 10px 0 0; line-height: 1.45; }
+.carte-document-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.pastille-langue {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.bouton--contour .pastille-langue { background: var(--secondaire); }

@@ -1,0 +1,38 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "rewrite": "/Index.html"
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/Index.html",
+    "exclude": [
+      "/Js/*",
+      "/CSS/*",
+      "/Images/*",
+      "/Vendor/*",
+      "/Modeles/*",
+      "/Documents/*",
+      "/sw.js",
+      "/manifest.webmanifest",
+      "/*.html",
+      "/*.{png,jpg,jpeg,gif,svg,ico,webp}"
+    ]
+  },
+  "responseOverrides": {
+    "404": {
+      "rewrite": "/Index.html"
+    }
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(self)"
+  },
+  "mimeTypes": {
+    ".json": "application/json",
+    ".webmanifest": "application/manifest+json"
+  }
+}

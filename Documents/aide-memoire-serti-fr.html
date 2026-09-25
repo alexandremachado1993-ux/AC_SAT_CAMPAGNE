@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aide-mémoire réglage du double serti — AC SAT Campagne</title>
+<meta name="theme-color" content="#D40C1A">
+<link rel="icon" type="image/png" href="../Images/icone-192.png">
+<style>
+/* Document de référence imprimable : 2 pages A4 paysage (1123 × 794 px),
+   aux couleurs et au logo de l'application (style.css : fond, texte,
+   primaire, bordure). À l'écran, les pages sont réduites à la largeur
+   disponible (pincer pour zoomer) ; à l'impression, taille réelle, une
+   page par feuille. Généré depuis le document de référence : ne pas
+   modifier à la main, régénérer. */
+@page { size: A4 landscape; margin: 0; }
+:root { --k: 1; }
+body { margin: 0; background: #F5F0F0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; color: #1A0E0D; }
+.barre { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px; padding: 8px 14px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); background: #FFFFFF; border-bottom: 1px solid #E8E3E3; }
+.barre img { width: 36px; height: 36px; object-fit: contain; border-radius: 8px; flex-shrink: 0; }
+.barre .titre { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.barre .titre strong { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barre .titre span { font-size: 12px; color: #665B59; }
+.barre a, .barre button { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 10px; padding: 0 14px; height: 40px; cursor: pointer; display: inline-flex; align-items: center; box-sizing: border-box; flex-shrink: 0; }
+.barre a { color: #1A0E0D; background: #FFFFFF; border: 1px solid #E8E3E3; }
+.barre button { color: #FFFFFF; background: #D40C1A; border: 1px solid #D40C1A; }
+.feuilles { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.cadre { width: calc(1123px * var(--k)); height: calc(794px * var(--k)); overflow: hidden; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06); background: #FDFBFB; }
+.page { width: 1123px; height: 794px; transform: scale(var(--k)); transform-origin: top left; }
+@media (max-width: 560px) { .barre .titre span { display: none; } }
+@media print {
+  body { background: none; }
+  .barre { display: none; }
+  .feuilles { padding: 0; gap: 0; display: block; }
+  .cadre { width: 1123px; height: 794px; box-shadow: none; border-radius: 0; break-after: page; }
+  .cadre:last-child { break-after: auto; }
+  .page { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="barre">
+<a href="../Documents.html">← Documents</a>
+<img src="../Images/logo.png" alt="Logo AC SAT">
+<div class="titre"><strong>Aide-mémoire réglage du double serti</strong><span>AC SAT · 2 pages A4 paysage</span></div>
+<button type="button" onclick="window.print()">Imprimer / PDF</button>
+</div>
+<div class="feuilles" aria-label="Pages du document">
+<div class="cadre"><div class="page"><div style="width: 1123px; height: 794px; box-sizing: border-box; padding: 36px 44px; display: flex; flex-direction: column; gap: 14px; background: #FDFBFB; color: #1A0E0D; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; border-radius: 4px">
+
+<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; border-bottom: 3px solid #D40C1A; padding-bottom: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-weight: 700; font-size: 36px; line-height: 1">1 · La tête de sertissage et ce que l'on mesure</div>
+<div style="font-size: 14px; color: #665B59">Organes réglables A à F · mesures du serti 1 à 5 · les corrections sont en page 2</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0"><img src="../Images/logo.png" alt="Logo AC SAT" style="width: 46px; height: 46px; object-fit: contain; border-radius: 10px"><div style="display: flex; flex-direction: column; line-height: 1.15"><span style="font-weight: 700; font-size: 17px; color: #1A0E0D">AC SAT</span><span style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #665B59">Aide-mémoire</span></div></div>
+</div>
+
+<div style="display: flex; gap: 20px; flex-grow: 1; min-height: 0">
+
+<div style="width: 612px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #FFFFFF; border: 1px solid #E0D6D6; border-radius: 12px; padding: 6px">
+<svg viewBox="0 0 600 470" width="600" height="470" role="img" aria-label="Coupe schématique d'une tête de sertissage">
+<defs>
+<marker id="fl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9Z" fill="#1C1C1A"></path></marker>
+</defs>
+<rect x="282" y="8" width="36" height="42" rx="4" fill="#A8A29E" stroke="#1C1C1A" stroke-width="1.5"></rect>
+<path d="M226 50H374V108L358 138H242L226 108Z" fill="#D6D3D1" stroke="#1C1C1A" stroke-width="1.5"></path>
+<text x="300" y="86" text-anchor="middle" font-size="15" font-weight="700" fill="#1C1C1A" font-family="Segoe UI, Tahoma, sans-serif">Mandrin</text>
+<path d="M222 400V142M378 400V142" fill="none" stroke="#44403C" stroke-width="4"></path>
+<path d="M222 400H378" fill="none" stroke="#44403C" stroke-width="4"></path>
+<text x="300" y="275" text-anchor="middle" font-size="14" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">Boîte (corps)</text>
+<path d="M210 138Q210 100 222 98Q234 98 234 112L243 141H357L366 112Q366 98 378 98Q390 100 390 138" fill="none" stroke="#AB5900" stroke-width="4"></path>
+<rect x="200" y="96" width="24" height="46" rx="6" fill="#FDBA74" stroke="#AB5900" stroke-width="1.5"></rect>
+<rect x="376" y="96" width="24" height="46" rx="6" fill="#FDBA74" stroke="#AB5900" stroke-width="1.5"></rect>
+<circle cx="120" cy="118" r="62" fill="#E7E5E4" stroke="#1C1C1A" stroke-width="1.5"></circle>
+<path d="M181 100Q166 118 181 136" fill="#FDFBFB" stroke="#1C1C1A" stroke-width="1.5"></path>
+<circle cx="120" cy="118" r="9" fill="#A8A29E" stroke="#1C1C1A" stroke-width="1.2"></circle>
+<circle cx="480" cy="118" r="62" fill="#E7E5E4" stroke="#1C1C1A" stroke-width="1.5"></circle>
+<path d="M419 104Q413 118 419 132" fill="#FDFBFB" stroke="#1C1C1A" stroke-width="1.5"></path>
+<circle cx="480" cy="118" r="9" fill="#A8A29E" stroke="#1C1C1A" stroke-width="1.2"></circle>
+<line x1="84" y1="196" x2="156" y2="196" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#fl)" marker-end="url(#fl)"></line>
+<text x="120" y="216" text-anchor="middle" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">réglage : serrage</text>
+<text x="120" y="236" text-anchor="middle" font-size="15" font-weight="700" fill="#1C1C1A" font-family="Segoe UI, Tahoma, sans-serif">Molette 1re passe</text>
+<text x="120" y="254" text-anchor="middle" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">gorge profonde : roule</text>
+<line x1="444" y1="196" x2="516" y2="196" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#fl)" marker-end="url(#fl)"></line>
+<text x="480" y="216" text-anchor="middle" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">réglage : serrage</text>
+<text x="480" y="236" text-anchor="middle" font-size="15" font-weight="700" fill="#1C1C1A" font-family="Segoe UI, Tahoma, sans-serif">Molette 2e passe</text>
+<text x="480" y="254" text-anchor="middle" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">gorge plate : écrase</text>
+<rect x="196" y="404" width="208" height="22" rx="4" fill="#D6D3D1" stroke="#1C1C1A" stroke-width="1.5"></rect>
+<text x="300" y="419" text-anchor="middle" font-size="13" font-weight="700" fill="#1C1C1A" font-family="Segoe UI, Tahoma, sans-serif">Plateau</text>
+<path d="M300 426l-12 6 24 6-24 6 24 6-12 6" fill="none" stroke="#1C1C1A" stroke-width="1.5"></path>
+<line x1="260" y1="466" x2="260" y2="432" stroke="#1C1C1A" stroke-width="1.5" marker-end="url(#fl)"></line>
+<text x="250" y="456" text-anchor="end" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">pression (tarage)</text>
+<text x="322" y="452" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">ressort</text>
+<line x1="540" y1="141" x2="540" y2="402" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#fl)" marker-end="url(#fl)"></line>
+<path d="M392 141H548M408 404H548" fill="none" stroke="#78716C" stroke-width="1" stroke-dasharray="4 3"></path>
+<text x="532" y="266" text-anchor="end" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">hauteur</text>
+<text x="532" y="283" text-anchor="end" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">plateau / mandrin</text>
+<path d="M168 300L204 144" fill="none" stroke="#AB5900" stroke-width="1"></path>
+<path d="M432 300L396 144" fill="none" stroke="#AB5900" stroke-width="1"></path>
+<text x="120" y="324" text-anchor="middle" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">serti = bordage du corps</text>
+<text x="120" y="341" text-anchor="middle" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">+ ourlet du fond</text>
+<circle cx="258" cy="80" r="13" fill="#D40C1A"></circle><text x="258" y="85" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">A</text>
+<circle cx="120" cy="118" r="13" fill="#D40C1A"></circle><text x="120" y="123" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">B</text>
+<circle cx="480" cy="118" r="13" fill="#D40C1A"></circle><text x="480" y="123" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">C</text>
+<circle cx="180" cy="415" r="13" fill="#D40C1A"></circle><text x="180" y="420" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">D</text>
+<circle cx="168" cy="300" r="13" fill="#44403C"></circle><text x="168" y="305" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">E</text>
+<circle cx="432" cy="300" r="13" fill="#AB5900"></circle><text x="432" y="305" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">F</text>
+</svg>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 14px; font-size: 13px; line-height: 1.3">
+<div><strong>A · Mandrin</strong><br>hauteur des molettes / lèvre ; usure</div>
+<div><strong>B · Molette 1re passe</strong><br>serrage ; forme le crochet de fond</div>
+<div><strong>C · Molette 2e passe</strong><br>serrage ; épaisseur, ondulation</div>
+<div><strong>D · Plateau + ressort</strong><br>pression, hauteur ; crochet de corps</div>
+<div><strong>E · Bordage du corps</strong><br>largeur, état (fourniture corps)</div>
+<div><strong>F · Ourlet du fond</strong><br>longueur, état (fourniture fonds)</div>
+</div>
+</div>
+
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<div style="background: #FFFFFF; border: 1px solid #E0D6D6; border-radius: 12px; padding: 6px">
+<svg viewBox="0 0 400 330" width="100%" role="img" aria-label="Coupe d'un double serti avec les cotes mesurées">
+<defs>
+<marker id="f2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1L9 5L1 9Z" fill="#1C1C1A"></path></marker>
+</defs>
+<path d="M120 300V70Q120 50 150 50Q180 50 180 70V220Q180 232 168 232H162Q150 232 150 220V110" fill="none" stroke="#AB5900" stroke-width="5" stroke-linecap="round"></path>
+<path d="M135 320V72Q135 64 143 64H157Q165 64 165 72V175" fill="none" stroke="#44403C" stroke-width="5" stroke-linecap="round"></path>
+<path d="M120 30H180" fill="none" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#f2)" marker-end="url(#f2)"></path>
+<path d="M120 46V34M180 46V34" fill="none" stroke="#78716C" stroke-width="1" stroke-dasharray="3 3"></path>
+<circle cx="200" cy="30" r="10" fill="#D40C1A"></circle><text x="200" y="34.5" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">5</text>
+<path d="M168 64H222M168 175H222M183 110H247M183 232H247M183 50H297" fill="none" stroke="#78716C" stroke-width="1" stroke-dasharray="3 3"></path>
+<path d="M270 110H272M270 175H272" fill="none" stroke="#78716C" stroke-width="1"></path>
+<path d="M215 64V175" fill="none" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#f2)" marker-end="url(#f2)"></path>
+<path d="M240 110V232" fill="none" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#f2)" marker-end="url(#f2)"></path>
+<path d="M265 110V175" fill="none" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#f2)" marker-end="url(#f2)"></path>
+<path d="M290 50V232" fill="none" stroke="#1C1C1A" stroke-width="1.5" marker-start="url(#f2)" marker-end="url(#f2)"></path>
+<circle cx="215" cy="192" r="10" fill="#D40C1A"></circle><text x="215" y="196.5" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">1</text>
+<circle cx="240" cy="250" r="10" fill="#D40C1A"></circle><text x="240" y="254.5" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">2</text>
+<circle cx="265" cy="192" r="10" fill="#D40C1A"></circle><text x="265" y="196.5" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">3</text>
+<circle cx="290" cy="250" r="10" fill="#D40C1A"></circle><text x="290" y="254.5" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF" font-family="Segoe UI, Tahoma, sans-serif">4</text>
+<path d="M28 290H52" fill="none" stroke="#AB5900" stroke-width="5"></path>
+<text x="58" y="294" font-size="13" fill="#1C1C1A" font-family="Segoe UI, Tahoma, sans-serif">Fond</text>
+<path d="M28 312H52" fill="none" stroke="#44403C" stroke-width="5"></path>
+<text x="58" y="316" font-size="13" fill="#1C1C1A" font-family="Segoe UI, Tahoma, sans-serif">Corps</text>
+<text x="330" y="140" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">extérieur</text>
+<text x="18" y="140" font-size="13" fill="#665B59" font-family="Segoe UI, Tahoma, sans-serif">intérieur</text>
+</svg>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E0D6D6; border-radius: 12px; padding: 10px 14px; display: flex; flex-direction: column; gap: 5px; font-size: 13px; line-height: 1.35">
+<div><strong>1 · Crochet de corps</strong> : bord du corps replié vers le bas</div>
+<div><strong>2 · Crochet de fond</strong> : ourlet du fond replié vers le haut</div>
+<div><strong>3 · Croisure</strong> : recouvrement des deux crochets (en mm ou en %)</div>
+<div><strong>4 · Hauteur serti</strong></div>
+<div><strong>5 · Épaisseur serti</strong></div>
+<div style="color: #665B59">Calage du crochet de corps, ondulation et équilibre des crochets se lisent à l'ouverture du serti ou se calculent à partir de ces cotes.</div>
+</div>
+</div>
+</div>
+</div></div></div>
+<div class="cadre"><div class="page"><div style="width: 1123px; height: 794px; box-sizing: border-box; padding: 28px 40px; display: flex; flex-direction: column; gap: 10px; background: #FDFBFB; color: #1A0E0D; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">
+
+<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; border-bottom: 3px solid #D40C1A; padding-bottom: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-weight: 700; font-size: 32px; line-height: 1">2 · Une valeur est hors tolérance : comment la ramener</div>
+<div style="font-size: 14px; color: #665B59">Lettres A à F : organes de la page 1 · les flèches ↑ ↓ indiquent l'effet attendu sur les autres cotes</div>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0"><img src="../Images/logo.png" alt="Logo AC SAT" style="width: 46px; height: 46px; object-fit: contain; border-radius: 10px"><div style="display: flex; flex-direction: column; line-height: 1.15"><span style="font-weight: 700; font-size: 17px; color: #1A0E0D">AC SAT</span><span style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #665B59">Aide-mémoire</span></div></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; font-size: 13px; line-height: 1.35">
+<div style="background: #FCEAE7; color: #1A0E0D; border: 1px solid #F3CFCA; border-radius: 10px; padding: 6px 10px"><strong>1. Vérifier</strong> : un seul point hors cote ? Remesurer une 2e boîte de la même tête.</div>
+<div style="background: #FCEAE7; color: #1A0E0D; border: 1px solid #F3CFCA; border-radius: 10px; padding: 6px 10px"><strong>2. Localiser</strong> : une tête = réglage de cette tête ; toutes = réglage commun ou fournitures.</div>
+<div style="background: #FCEAE7; color: #1A0E0D; border: 1px solid #F3CFCA; border-radius: 10px; padding: 6px 10px"><strong>3. Ordre</strong> : crochets (B, D), puis hauteur, puis épaisseur et ondulation (C).</div>
+<div style="background: #FCEAE7; color: #1A0E0D; border: 1px solid #F3CFCA; border-radius: 10px; padding: 6px 10px"><strong>4. Petits pas</strong> : un réglage à la fois, selon la notice machine, puis nouveau relevé.</div>
+</div>
+
+<div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column; border: 1px solid #E0D6D6; border-radius: 12px; overflow: hidden; background: #FFFFFF">
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); background: #D40C1A; color: #FFFFFF; font-weight: 700; font-size: 16px">
+<div style="padding: 7px 10px">Valeur</div>
+<div style="padding: 7px 10px; border-left: 1px solid rgba(255,255,255,0.35)">Trop basse : que faire</div>
+<div style="padding: 7px 10px; border-left: 1px solid rgba(255,255,255,0.35)">Trop haute : que faire</div>
+<div style="padding: 7px 10px; border-left: 1px solid rgba(255,255,255,0.35)">Effet sur les autres cotes</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; border-bottom: 1px solid #E8E3E3; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Épaisseur</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Desserrer C</strong> d'un petit pas. Si C est bien réglée : hauteur de C par rapport à la lèvre de A.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Resserrer C</strong>. Sans effet : molette ou roulement usé, à remplacer. Contrôler B (trop lâche).</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">C desserrée : ondulation ↑. C serrée : ondulation ↓, hauteur ↑ légèrement.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; border-bottom: 1px solid #E8E3E3; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Hauteur serti</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Augmenter la pression D</strong>. Sinon desserrer légèrement B ; contrôler que C n'est pas trop lâche.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Diminuer la pression D</strong>. Contrôler C (trop serrée) et la hauteur des molettes / lèvre de A.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">Pression D ↑ : crochet de corps ↑. Pression D ↓ : crochet de corps ↓.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; border-bottom: 1px solid #E8E3E3; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Crochet de corps</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3">Un seul point : remesurer (bordage E local). Tout le tour : <strong>augmenter la pression D</strong> ou corriger la hauteur plateau / mandrin ; contrôler le ressort.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Diminuer la pression D</strong>. Contrôler la largeur de bordage E (lot de corps).</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">Corps ↑ : croisure ↑, calage ↑. Revérifier l'équilibre des crochets.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; border-bottom: 1px solid #E8E3E3; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Crochet de fond</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Resserrer B</strong>. Profil usé : remplacer la molette. Contrôler l'ourlet F (lot de fonds).</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Desserrer B</strong>. Contrôler la longueur d'ourlet F (lot de fonds).</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">B serrée : fond ↑, corps ↓ légèrement. Revérifier l'équilibre.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; border-bottom: 1px solid #E8E3E3; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Croisure / %</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3">Ne se règle pas directement : <strong>allonger le crochet trop court</strong> (corps : D ; fond : B), puis réduire la hauteur si elle est grande.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #665B59">Rien à corriger tant que le maxi est respecté.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">Revérifier calage et équilibre après chaque correction de crochet.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; border-bottom: 1px solid #E8E3E3; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Calage crochet de corps</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Allonger le crochet de corps</strong> (pression D) ou réduire la hauteur serti (C moins serrée).</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #665B59">Rien à corriger tant que le maxi est respecté.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">Croisure ↑ avec le crochet de corps.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; border-bottom: 1px solid #E8E3E3; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Ondulation</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #665B59">Pas un défaut : moins il y en a, mieux c'est.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3"><strong>Resserrer C</strong> ; usée : remplacer. Contrôler que B n'est pas trop lâche, et l'état de A.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">C serrée : épaisseur ↓, rester au-dessus du mini.</div>
+</div>
+
+<div style="display: grid; grid-template-columns: 128px minmax(0, 1.25fr) minmax(0, 1.25fr) minmax(0, 1fr); font-size: 12.5px; line-height: 1.33; flex-grow: 1">
+<div style="padding: 5px 10px; font-weight: 700; background: #F5F0F0">Équilibre crochets</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #665B59">Pas un défaut : crochets équilibrés.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3">Corps &gt; fond : <strong>baisser D</strong> ou <strong>resserrer B</strong>. Fond &gt; corps : <strong>augmenter D</strong> ou <strong>desserrer B</strong>. Un seul point : bordage E.</div>
+<div style="padding: 5px 10px; border-left: 1px solid #E8E3E3; color: #44403C">Revérifier les deux crochets et la croisure.</div>
+</div>
+</div>
+
+<div style="font-size: 12px; color: #665B59">Principes généraux du double serti. Le sens et la valeur exacte de chaque réglage dépendent de la sertisseuse : la notice machine et le guide des défauts Eviosys restent la référence.</div>
+</div></div></div>
+</div>
+<script>
+function ajuster() {
+    var k = Math.min(1, (document.documentElement.clientWidth - 32) / 1123);
+    document.documentElement.style.setProperty("--k", String(Math.max(k, 0.2)));
+}
+ajuster();
+window.addEventListener("resize", ajuster);
+</script>
+</body>
+</html>

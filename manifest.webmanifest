@@ -1,0 +1,16 @@
+{
+    "name": "AC SAT Campagne",
+    "short_name": "Campagnes",
+    "description": "Suivi des visites de campagne (sertissage)",
+    "lang": "fr",
+    "start_url": "Index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#ffffff",
+    "theme_color": "#dc2626",
+    "icons": [
+        { "src": "Images/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "Images/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    ]
+}
