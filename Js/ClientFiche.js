@@ -10,6 +10,7 @@
     const conteneur = document.getElementById("contenu-page");
     const clientId = new URLSearchParams(window.location.search).get("id");
     let onglet = "lignes";
+    let filtreHistorique = "tous";       // « tous » ou la clé d'un statut (effectuee, reportee, non-effectuee, annulee)
 
     const STATUTS = {
         retard: { libelle: "En retard", couleur: "#dc2626" },
@@ -40,12 +41,20 @@
                 const t = [l[o.cle + "Fournisseur"], l[o.cle + "Ref"]].filter(Boolean).join(" ");
                 return t ? '<span class="outil"><span class="texte-attenue">' + o.libelle + ' :</span> ' + esc(t) + '</span>' : "";
             }).filter(Boolean);
+            const statut = Donnees.statutLigne(l);
+            const active = statut === "active";
             let etatHtml;
-            if (!l.suiviCampagne) etatHtml = '<span class="pastille-statut" style="background:var(--secondaire);color:var(--attenue-texte);">Non suivie</span>';
-            else if (!e) etatHtml = '<span class="pastille-statut" style="background:#0ea5e91a;color:#0ea5e9;">Hors campagne</span>';
-            else etatHtml = '<span class="pastille-statut" style="background:' + STATUTS[e.statut].couleur + '1a;color:' + STATUTS[e.statut].couleur + ';">' + STATUTS[e.statut].libelle + '</span>';
+            if (statut === "inactive") etatHtml = '<span class="pastille-statut" style="background:var(--secondaire);color:var(--attenue-texte);">Inactive</span>';
+            else if (statut === "concurrent") etatHtml = '<span class="pastille-statut pastille-couleur" style="' + Donnees.styleCouleur("#be123c") + '">Autre fournisseur' + (l.fournisseurActuel ? " : " + esc(l.fournisseurActuel) : "") + '</span>';
+            else if (!e) etatHtml = '<span class="pastille-statut pastille-couleur" style="' + Donnees.styleCouleur("#0ea5e9") + '">Hors campagne</span>';
+            else etatHtml = '<span class="pastille-statut pastille-couleur" style="' + Donnees.styleCouleur(STATUTS[e.statut].couleur) + '">' + STATUTS[e.statut].libelle + '</span>';
 
-            return '<div class="carte carte-ligne">' +
+            /* Bascule rapide du statut, sans ouvrir le formulaire. */
+            const bascule = '<div class="bascule-statut" role="group" aria-label="Statut de la ligne">' + Donnees.STATUTS_LIGNE.map(st =>
+                '<button type="button" class="bascule-statut-bouton' + (st.cle === statut ? " actif" : "") + '" data-statut-ligne="' + esc(l.id) + '|' + st.cle + '"' +
+                (st.cle === statut ? ' aria-pressed="true"' : ' aria-pressed="false"') + '>' + esc(st.libelle) + '</button>').join("") + '</div>';
+
+            return '<div class="carte carte-ligne' + (active ? "" : " carte-ligne--inactive") + '">' +
                 '<div class="carte-ligne-entete"><strong>' + esc(l.nom) + '</strong>' + etatHtml + '</div>' +
                 (machine.trim() ? '<div class="texte-attenue carte-ligne-info">⚙️ ' + esc(machine) + '</div>' : "") +
                 '<div class="texte-attenue carte-ligne-info">📦 ' + esc([l.formatHabituel, l.produitHabituel].filter(Boolean).join(" · ") || "Format / produit non renseignés") +
@@ -54,9 +63,10 @@
                 '<div class="texte-attenue carte-ligne-info">🕑 ' + (derniere ? "Dernière visite le " + Formulaires.dateFr(derniere.date) : "Jamais visitée") +
                 (e && e.echeance ? ' · prochaine le ' + Formulaires.dateFr(e.echeance) : "") + '</div>' +
                 (l.notes ? '<div class="carte-ligne-notes">' + esc(l.notes) + '</div>' : "") +
+                bascule +
                 '<div class="carte-ligne-actions">' +
-                '<button type="button" class="bouton bouton--petit" data-visite="' + esc(l.id) + '">✅ Visite faite</button>' +
-                '<button type="button" class="bouton bouton--petit bouton--contour" data-planifier="' + esc(l.id) + '">📅 Planifier</button>' +
+                (active ? '<button type="button" class="bouton bouton--petit" data-visite="' + esc(l.id) + '">✅ Visite faite</button>' +
+                    '<button type="button" class="bouton bouton--petit bouton--contour" data-planifier="' + esc(l.id) + '">📅 Planifier</button>' : "") +
                 '<button type="button" class="bouton bouton--petit bouton--contour" data-modifier-ligne="' + esc(l.id) + '">Modifier</button>' +
                 '<button type="button" class="bouton bouton--petit bouton--fantome" data-supprimer-ligne="' + esc(l.id) + '">Supprimer</button>' +
                 '</div></div>';
@@ -92,24 +102,38 @@
     /* ---------- Onglet Historique ---------- */
 
     function ongletHistorique(client) {
-        const visites = Donnees.visitesDuClient(client.id);
+        const toutes = Donnees.historiqueDuClient(client.id);
+        const compte = (cle) => toutes.filter(v => Donnees.statutVisite(v) === cle).length;
+        /* Une puce par statut présent (la puce du filtre actif reste, même à zéro, pour pouvoir en sortir). */
+        const puces = [["tous", "Toutes", toutes.length]].concat(Donnees.STATUTS_VISITE.map(st => [st.cle, st.icone + " " + st.libelle + "s", compte(st.cle)]))
+            .filter(p => p[0] === "tous" || p[2] > 0 || p[0] === filtreHistorique);
+        const visites = filtreHistorique === "tous" ? toutes : toutes.filter(v => Donnees.statutVisite(v) === filtreHistorique);
         return '<div class="section-entete" style="margin-top:12px;"><h2 class="section-titre">🕑 Historique des visites</h2>' +
             '<button type="button" class="bouton bouton--petit" data-nouvelle-visite>+ Enregistrer une visite</button></div>' +
+            (puces.length > 2 ? '<div class="puces-filtre" role="group" aria-label="Filtrer par statut" style="margin-bottom:10px;">' + puces.map(p =>
+                '<button type="button" class="puce-filtre puce--defaut' + (p[0] === filtreHistorique ? " actif" : "") + '" data-filtre-historique="' + p[0] + '" aria-pressed="' + (p[0] === filtreHistorique) + '">' +
+                esc(p[1]) + ' <span class="puce-compteur">' + p[2] + '</span></button>').join("") + '</div>' : "") +
             (visites.length === 0
-                ? '<div class="etat-vide">Aucune visite enregistrée.</div>'
+                ? '<div class="etat-vide">' + (toutes.length === 0 ? "Aucune visite enregistrée." : "Aucune visite avec ce statut.") + '</div>'
                 : '<div class="carte" style="padding:0;">' + visites.map(v => {
-                    const l = Donnees.getLigne(v.ligneId);
-                    return '<div class="ligne-historique">' +
+                    const l = v.ligneId ? Donnees.getLigne(v.ligneId) : null;
+                    const complements = Formulaires.texteComplements(v);
+                    const statut = Donnees.statutVisite(v);
+                    return '<div class="ligne-historique' + (statut === "effectuee" ? "" : " ligne-historique--" + statut) + '">' +
                         '<div class="ligne-historique-date">' + Formulaires.dateFr(v.date) + '</div>' +
                         '<div class="ligne-historique-corps">' +
-                        '<div><strong>' + esc(l ? l.nom : "Ligne supprimée") + '</strong> ' +
-                        '<span class="pastille-statut" style="' + (v.type === "campagne"
-                            ? "background:#16a34a1a;color:#16a34a;" : "background:#0ea5e91a;color:#0ea5e9;") + '">' +
-                        (v.type === "campagne" ? "Campagne" : "Maintenance / hiver") + '</span></div>' +
+                        '<div><strong>' + esc(l ? l.nom : (v.ligneId ? "Ligne supprimée" : "Visite générale")) + '</strong> ' +
+                        Formulaires.pastilleType(v.type) + ' ' + Formulaires.pastilleStatut(v) + '</div>' +
+                        (statut === "reportee" && v.reporteLe ? '<div class="texte-attenue">🔁 Reportée au <strong>' + Formulaires.dateFr(v.reporteLe) + '</strong></div>' : "") +
+                        (v.motif ? '<div class="texte-attenue">Motif : ' + esc(v.motif) + '</div>' : "") +
                         ((v.format || v.produit) ? '<div class="texte-attenue">📦 ' + esc([v.format, v.produit].filter(Boolean).join(" · ")) + '</div>' : "") +
+                        (complements.length ? '<div class="texte-attenue historique-complements">' + complements.map(esc).join("<br>") + '</div>' : "") +
                         (v.remarques ? '<div class="carte-ligne-notes">' + esc(v.remarques) + '</div>' : "") +
                         '</div>' +
+                        '<div class="apercu-actions">' +
+                        '<button type="button" class="bouton bouton--petit bouton--contour" data-modifier-visite="' + esc(v.id) + '" aria-label="Modifier la visite">✏️</button>' +
                         '<button type="button" class="bouton bouton--petit bouton--fantome" data-supprimer-visite="' + esc(v.id) + '" aria-label="Supprimer la visite">🗑</button>' +
+                        '</div>' +
                         '</div>';
                 }).join("") + '</div>');
     }
@@ -151,14 +175,15 @@
         const enCampagne = Donnees.estEnCampagne(client, Donnees.aujourdhuiIso());
         const nb = {
             lignes: Donnees.lignesDuClient(client.id).length,
+            lignesActives: Donnees.lignesActivesDuClient(client.id).length,
             contacts: Donnees.contactsDuClient(client.id).length,
-            historique: Donnees.visitesDuClient(client.id).length
+            historique: Donnees.historiqueDuClient(client.id).length
         };
         const ONGLETS = [
-            { id: "lignes", libelle: "🏭 Lignes", n: nb.lignes },
-            { id: "contacts", libelle: "👤 Contacts", n: nb.contacts },
-            { id: "historique", libelle: "🕑 Historique", n: nb.historique },
-            { id: "infos", libelle: "ℹ️ Infos", n: null }
+            { id: "lignes", icone: "🏭", libelle: "Lignes", n: nb.lignes },
+            { id: "contacts", icone: "👤", libelle: "Contacts", n: nb.contacts },
+            { id: "historique", icone: "🕑", libelle: "Historique", n: nb.historique },
+            { id: "infos", icone: "ℹ️", libelle: "Infos", n: null }
         ];
 
         const rdvs = Donnees.rdvDuClient(client.id);
@@ -168,21 +193,24 @@
             '<a href="Clients.html" class="fiche-retour">← Clients</a>' +
             '<div class="fiche-entete">' +
             '<div class="fiche-entete-haut">' +
-            '<div style="min-width:0;flex:1;">' +
+            '<div style="min-width:0;flex:1 1 280px;">' +
             '<h1 class="fiche-titre">' + esc(client.nom) + '</h1>' +
             '<div class="fiche-adresse">📍 ' + esc([client.adresse, [client.codePostal, client.ville].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "—") + '</div>' +
             '<div class="fiche-badges">' +
             (client.actif === false
-                ? '<span class="badge-statut" style="background:var(--attenue-texte);">Inactif</span>'
+                ? '<span class="badge-statut badge-statut--inactif">Inactif</span>'
                 : enCampagne ? '<span class="badge-statut badge-statut--ok">En campagne</span>'
-                    : '<span class="badge-statut" style="background:#0ea5e9;">Hors campagne</span>') +
+                    : '<span class="badge-statut badge-statut--campagne-off">Hors campagne</span>') +
             '<span class="pastille-statut" style="background:var(--secondaire);color:var(--texte);">📆 ' +
             esc(Donnees.MOIS[client.debutCampagne - 1] + " → " + Donnees.MOIS[client.finCampagne - 1]) + ' · tous les ' + client.cadenceJours + ' j</span>' +
             (client.typeProduction ? '<span class="pastille-statut" style="background:var(--secondaire);color:var(--texte);">' + esc(client.typeProduction) + '</span>' : "") +
+            (Formulaires.membresEquipe().length ? '<span class="pastille-statut" style="background:var(--secondaire);color:var(--texte);">👷 ' +
+                esc(client.technicien ? Formulaires.nomTechnicien(client.technicien) : "Non attribué") + '</span>' : "") +
             '</div></div>' +
             '<div class="fiche-actions">' +
             (client.telephone ? '<a href="tel:' + esc(client.telephone.replace(/\s/g, "")) + '" class="bouton bouton--petit bouton--contour">📞 Appeler</a>' : "") +
             '<button type="button" class="bouton bouton--petit bouton--contour" data-modifier-client>✏️ Modifier</button>' +
+            '<button type="button" class="bouton bouton--petit bouton--contour bouton--danger" data-supprimer-client aria-label="Supprimer ce client">🗑 Supprimer</button>' +
             (client.actif !== false ? '<button type="button" class="bouton bouton--petit bouton--contour" data-planifier-client>📅 Planifier</button>' : "") +
             (nb.lignes > 0 ? '<button type="button" class="bouton bouton--petit" data-nouvelle-visite>✅ Visite</button>' : "") +
             '</div>' +
@@ -194,7 +222,7 @@
                 : "") +
             '<div class="onglets-fiche" style="margin-top:12px;">' +
             ONGLETS.map(o => '<button type="button" class="onglet-fiche onglet-bouton' + (o.id === onglet ? " actif" : "") + '" data-onglet="' + o.id + '">' +
-                o.libelle + (o.n !== null ? ' <span class="onglet-fiche-compteur">' + o.n + '</span>' : "") + '</button>').join("") +
+                '<span class="onglet-icone" aria-hidden="true">' + o.icone + '</span>' + o.libelle + (o.n !== null ? ' <span class="onglet-fiche-compteur">' + o.n + '</span>' : "") + '</button>').join("") +
             '</div>' +
             contenu;
 
@@ -213,6 +241,19 @@
         sur("[data-visite]", el => Formulaires.visite({ ligneId: el.getAttribute("data-visite") }));
 
         sur("[data-ajouter-ligne]", () => Formulaires.ligne(client.id));
+        sur("[data-statut-ligne]", el => {
+            const [id, statut] = el.getAttribute("data-statut-ligne").split("|");
+            const l = Donnees.getLigne(id);
+            if (!l || Donnees.statutLigne(l) === statut) return;
+            if (statut === "concurrent") {
+                /* Même formulaire que « Modifier », avec le choix déjà fait,
+                   pour pouvoir noter le fournisseur actuel. */
+                Formulaires.ligne(client.id, Object.assign({}, l, { statut: "concurrent" }));
+                return;
+            }
+            Donnees.definirStatutLigne(id, statut);
+            AppLayout.toast(statut === "active" ? "Ligne réactivée ✓ — elle revient dans les rappels" : "Ligne inactive ✓ — retirée des rappels et des visites");
+        });
         sur("[data-modifier-ligne]", el => Formulaires.ligne(client.id, Donnees.getLigne(el.getAttribute("data-modifier-ligne"))));
         sur("[data-supprimer-ligne]", el => {
             const l = Donnees.getLigne(el.getAttribute("data-supprimer-ligne"));
@@ -232,17 +273,19 @@
             if (confirmer("Supprimer ce contact ?")) { Donnees.supprimerContact(el.getAttribute("data-supprimer-contact")); AppLayout.toast("Contact supprimé"); }
         });
 
+        sur("[data-filtre-historique]", el => { filtreHistorique = el.getAttribute("data-filtre-historique"); rendre(); });
+        sur("[data-modifier-visite]", el => {
+            const v = Donnees.getVisite(el.getAttribute("data-modifier-visite"));
+            if (v) Formulaires.visite({ visite: v });
+        });
         sur("[data-supprimer-visite]", el => {
             if (confirmer("Supprimer cette visite de l'historique ?")) { Donnees.supprimerVisite(el.getAttribute("data-supprimer-visite")); AppLayout.toast("Visite supprimée"); }
         });
 
-        sur("[data-supprimer-client]", () => {
-            const n = Donnees.lignesDuClient(client.id).length + Donnees.contactsDuClient(client.id).length + Donnees.visitesDuClient(client.id).length;
-            if (confirmer("Supprimer définitivement « " + client.nom + " »" + (n ? " avec ses lignes, contacts et visites" : "") + " ?")) {
-                Donnees.supprimerClient(client.id);
-                window.location.href = "Clients.html";
-            }
-        });
+        sur("[data-supprimer-client]", () => Formulaires.supprimerClients([client.id], { apres: (copie) => {
+            Formulaires.memoriserAnnulation(copie);
+            window.location.href = "Clients.html";
+        } }));
     }
 
     Donnees.ecouter(rendre);

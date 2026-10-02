@@ -1,0 +1,42 @@
+# --- Systèmes d'exploitation ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Éditeurs ---
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+
+# --- Archives et sauvegardes ---
+# Le dépôt remplace les ZIP : ne pas les versionner.
+*.zip
+*.bak
+*.old
+*~
+
+# --- Journaux ---
+*.log
+npm-debug.log*
+
+# --- Dépendances (aucune aujourd'hui : Leaflet est embarqué dans Vendor/) ---
+node_modules/
+dist/
+build/
+
+# --- À NE JAMAIS ENVOYER ---
+# Secrets, clés d'API, chaînes de connexion. L'application partant en ligne,
+# tout ce qui est dans le dépôt est potentiellement lisible.
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+local.settings.json
+
+# --- Données réelles ---
+# Les exports CSV de clients contiennent des données d'entreprise :
+# ils n'ont pas leur place dans le dépôt.
+clients-export*.csv
+*_reel.csv

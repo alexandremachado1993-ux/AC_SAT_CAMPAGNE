@@ -45,3 +45,10 @@
   for = "/CSS/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# Vidéo d'ouverture : ne change presque jamais (renommer le fichier pour la remplacer).
+[[headers]]
+  for = "/Media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Accept-Ranges = "bytes"

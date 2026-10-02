@@ -1,11 +1,3 @@
-/* =============================================================
-   campagne.css — Composants propres à AC SAT Campagne
-
-   Chargé APRÈS style.css (copie intacte du style maison d'AC SAT Field) :
-   ce fichier n'ajoute que des classes nouvelles et ne redéfinit aucune
-   règle existante, à l'exception de la présentation des fenêtres
-   (.voile, .feuille, .feuille--bas, .feuille-titre — bloc « Fenêtres »).
-   ============================================================= */
 
 /* ---------- En-tête de page ---------- */
 
@@ -18,8 +10,6 @@
 }
 
 .titre-page { font-size: 1.4rem; font-weight: 700; }
-
-/* ---------- Boutons sans habillage ---------- */
 
 /* Pas de « font: inherit » ici : chargé après style.css, il écraserait
    la taille de police de .onglet-fiche et de .texte-lien (même
@@ -58,8 +48,10 @@
     border-radius: 999px;
     font-size: 0.7rem;
     font-weight: 700;
-    white-space: nowrap;
-    flex-shrink: 0;
+    white-space: normal;          /* texte long (« Autre fournisseur : … ») : passe à la ligne au lieu de dépasser */
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    flex-shrink: 1;
 }
 
 /* ---------- Tableau « À visiter » ---------- */
@@ -67,7 +59,7 @@
 .grille-a-visiter {
     display: grid;
     gap: 12px;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);   /* 1fr seul = largeur minimale du contenu : un nom long élargissait toute la page */
 }
 
 @media (min-width: 1100px) {
@@ -76,12 +68,13 @@
 
 .carte-a-visiter-entete {
     display: flex;
+    flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
-    gap: 8px;
+    gap: 2px 8px;
 }
 
-.carte-a-visiter-nom { font-size: 1rem; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carte-a-visiter-nom { font-size: 1rem; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
 .carte-a-visiter-nom:hover { color: var(--primaire); }
 .carte-a-visiter-ville { font-size: 0.8rem; flex-shrink: 0; }
 .carte-a-visiter-contact { font-size: 0.8rem; margin-top: 4px; }
@@ -247,7 +240,7 @@
 
 .grille-2-colonnes {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 12px;
 }
 
@@ -264,7 +257,8 @@
     cursor: pointer;
 }
 
-.champ-case input[type="checkbox"] {
+.champ-case input[type="checkbox"],
+.champ-case input[type="radio"] {
     width: 18px;
     height: 18px;
     padding: 0;
@@ -342,6 +336,7 @@
         right: auto;
         width: min(640px, calc(100vw - 48px));
         max-height: 85vh;
+        max-height: 85dvh;
         padding: 20px 24px 24px;
         border-radius: var(--rayon-xl);
         border: 1px solid var(--bordure);
@@ -401,7 +396,6 @@
 /* ---------- Planning : filtres et options ---------- */
 
 .pl-filtres { margin-top: 12px; }
-.pl-filtres summary { cursor: pointer; font-size: 0.9rem; }
 
 .pl-filtres-grille {
     display: grid;
@@ -417,23 +411,6 @@
     gap: 8px;
     margin-top: 12px;
 }
-
-.pl-options {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px;
-    margin: 12px 0 8px;
-}
-
-.pl-annee {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 38px;
-}
-
-.pl-annee strong { min-width: 44px; text-align: center; }
 
 /* ---------- Planning : grille annuelle ---------- */
 
@@ -468,7 +445,6 @@
     border-right: 1px solid var(--bordure);
 }
 
-.pl-entete-mois,
 .pl-entete-col,
 .pl-entete-total {
     padding: 6px 2px;
@@ -480,7 +456,6 @@
     white-space: nowrap;
 }
 
-.pl-entete-mois { border-left: 1px solid var(--bordure); }
 .pl-entete-col--aujourdhui { background: var(--primaire); color: var(--primaire-texte); }
 
 .pl-nom-client {
@@ -494,8 +469,6 @@
 .pl-nom-client:hover { color: var(--primaire); }
 .pl-sous-libelle { display: block; font-size: 0.66rem; font-weight: 400; color: var(--attenue-texte); }
 .pl-nom-ligne { display: block; padding-left: 10px; font-weight: 500; color: var(--attenue-texte); }
-.pl-rangee--ligne .pl-libelle { background: var(--carte); }
-.pl-rangee--client + .pl-rangee--ligne > * { border-top: 1px dashed var(--bordure); }
 
 .pl-cellule {
     height: 34px;
@@ -505,8 +478,7 @@
     border-left: 1px solid color-mix(in oklch, var(--bordure) 60%, transparent);
 }
 
-.pl-table--mois .pl-cellule { min-width: 46px; }
-.pl-table--semaines .pl-cellule { min-width: 26px; }
+.pl-table .pl-cellule { min-width: 46px; }
 
 .pl-cellule--campagne { background: color-mix(in oklch, var(--succes) 11%, transparent); }
 .pl-cellule--aujourdhui { box-shadow: inset 2px 0 0 var(--primaire), inset -2px 0 0 var(--primaire); }
@@ -528,8 +500,9 @@
 }
 
 .pl-point + .pl-point { margin-left: 2px; }
-.pl-point--campagne { background: var(--statut-ok); }
-.pl-point--maintenance { background: #0ea5e9; }
+.pl-point--campagne { background: #15803d; }   /* foncé : le nombre de visites s'écrit en blanc dessus (5:1) */
+.pl-point--maintenance { background: #0369a1; }
+.pl-point--autre { background: #4b5563; }
 
 .pl-echeance {
     display: inline-block;
@@ -566,53 +539,6 @@
 
 .pl-table tfoot .pl-libelle,
 .pl-table tfoot .pl-total { font-weight: 700; background: var(--secondaire); }
-
-.pl-legende {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    margin-top: 8px;
-    font-size: 0.72rem;
-    color: var(--attenue-texte);
-}
-
-.pl-legende > span { display: inline-flex; align-items: center; gap: 5px; }
-
-.pl-exemple-campagne {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid var(--bordure);
-    background: color-mix(in oklch, var(--succes) 11%, transparent);
-}
-
-/* ---------- Planning : tableau de synthèse ---------- */
-
-.tableau-synthese {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.8rem;
-}
-
-.tableau-synthese th {
-    text-align: left;
-    padding: 8px 10px;
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--attenue-texte);
-    background: var(--secondaire);
-    white-space: nowrap;
-}
-
-.tableau-synthese td {
-    padding: 8px 10px;
-    border-top: 1px solid var(--bordure);
-    white-space: nowrap;
-}
-
-.tableau-synthese .nombre { text-align: right; }
 
 /* ---------- Indicateur de synchronisation ---------- */
 
@@ -733,7 +659,7 @@
 
 .ligne-outil {
     display: grid;
-    grid-template-columns: 80px 1fr 1fr;
+    grid-template-columns: 80px minmax(0, 1fr) minmax(0, 1fr);
     gap: 0 10px;
     align-items: end;
 }
@@ -741,7 +667,7 @@
 .ligne-outil-libelle { font-size: 0.8rem; font-weight: 700; padding-bottom: 12px; }
 
 @media (max-width: 520px) {
-    .ligne-outil { grid-template-columns: 1fr 1fr; margin-top: 8px; }
+    .ligne-outil { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-top: 8px; }
     .ligne-outil-libelle { grid-column: 1 / -1; padding-bottom: 0; }
 }
 
@@ -778,3 +704,876 @@
 }
 
 .bouton--contour .pastille-langue { background: var(--secondaire); }
+
+/* ---------- Types de visite : références et détails ---------- */
+
+.bloc-references summary { cursor: pointer; list-style-position: inside; }
+.bloc-references[open] summary { margin-bottom: 4px; }
+.historique-complements { font-size: 0.78rem; line-height: 1.45; }
+
+/* ---------- Planning d'interventions (maquette validée) ---------- */
+
+.pl-annee {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 40px;
+    padding: 0 4px;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon-moyen);
+    background: var(--carte);
+}
+
+.pl-annee strong { min-width: 56px; text-align: center; }
+
+.pl-annee button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--rayon-petit);
+    background: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--texte);
+}
+
+.pl-annee button:hover { background: var(--secondaire); }
+
+.pl-bouton-filtres.actif { background: var(--secondaire); }
+.actions-page .bouton svg { flex-shrink: 0; }
+
+.pl-recherche { position: relative; }
+.pl-recherche input { padding-right: 34px; }
+.pl-recherche svg { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--attenue-texte); pointer-events: none; }
+
+.pl-reinitialiser {
+    border: none;
+    background: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--texte);
+    cursor: pointer;
+    padding: 6px 4px;
+}
+
+.pl-reinitialiser:disabled { color: var(--attenue-texte); cursor: default; }
+
+@media (min-width: 1100px) {
+    .pl-filtres-grille { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+.tl-carte { margin-top: 16px; padding: 0; overflow: hidden; }
+
+.tl-outils {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--bordure);
+}
+
+.tl-legende {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: var(--attenue-texte);
+}
+
+.tl-legende > span { display: inline-flex; align-items: center; gap: 6px; }
+
+.tl-legende-pastille {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.tl-legende-pastille--carre { border-radius: 2px; }
+.tl-legende-campagne { background: color-mix(in oklch, var(--succes) 14%, transparent); border-color: var(--bordure); }
+
+.tl-defilement { overflow-x: auto; padding: 8px 12px 12px; }
+
+.tl-grille { min-width: 900px; display: flex; flex-direction: column; gap: 8px; }
+
+.tl-rangee {
+    display: grid;
+    grid-template-columns: 190px 112px minmax(520px, 1fr) 28px;
+    align-items: stretch;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon-grand);
+    background: var(--carte);
+    min-height: 84px;
+}
+
+.tl-entete {
+    min-height: 0;
+    border: none;
+    background: none;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--attenue-texte);
+}
+
+.tl-entete-titre { padding: 0 14px; font-weight: 700; color: var(--texte); font-size: 0.9rem; }
+
+.tl-mois { display: grid; align-items: center; padding: 0 12px; }
+.tl-mois span { text-align: center; }
+
+.tl-mois-courant {
+    justify-self: center;
+    padding: 3px 10px;
+    border-radius: var(--rayon-petit);
+    background: var(--primaire);
+    color: var(--primaire-texte);
+    font-weight: 700;
+}
+
+.tl-client {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 10px 14px;
+    min-width: 0;
+}
+
+.tl-client-nom { font-weight: 700; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+a.tl-client-nom:hover { color: var(--primaire); }
+.tl-client-lieu { font-size: 0.72rem; color: var(--attenue-texte); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-client-lignes { font-size: 0.72rem; color: var(--attenue-texte); }
+.tl-client--ligne .tl-client-nom { font-weight: 600; font-size: 0.85rem; }
+
+.tl-etat {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px 10px;
+    border-right: 1px solid var(--bordure);
+}
+
+.tl-badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1.5px solid;
+}
+
+.tl-badge--plein { background: var(--statut-ok); border-color: var(--statut-ok); color: #FFFFFF; }
+.tl-badge--ok { border-color: var(--statut-ok); color: var(--statut-ok); background: var(--carte); }
+.tl-badge--alerte { border-color: var(--statut-alert); color: var(--statut-alert); background: var(--carte); }
+.tl-badge--neutre { border-color: var(--bordure); color: var(--attenue-texte); }
+
+.tl-derniere { font-size: 0.68rem; line-height: 1.3; color: var(--attenue-texte); }
+.tl-derniere strong { color: var(--texte); font-weight: 600; }
+
+.tl-piste { position: relative; margin: 0 12px; }
+
+.tl-bande {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: color-mix(in oklch, var(--succes) 10%, transparent);
+}
+
+.tl-base, .tl-segment {
+    position: absolute;
+    top: 50%;
+    height: 2px;
+    transform: translateY(-50%);
+}
+
+.tl-base { left: 0; right: 0; background: var(--bordure); }
+.tl-segment { height: 3px; }
+
+.tl-aujourdhui {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 2px dashed var(--primaire);
+    transform: translateX(-1px);
+}
+
+.tl-point {
+    position: absolute;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 50%;
+    border: 3px solid;
+    background: var(--carte);
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+    cursor: pointer;
+    z-index: 1;
+}
+
+button.tl-point:hover { transform: translate(-50%, -50%) scale(1.25); }
+.tl-point:not(.tl-point--vide) { box-shadow: 0 0 0 2px var(--carte); }
+span.tl-point { cursor: default; }
+
+.tl-alerte {
+    position: absolute;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--statut-alert);
+    color: #FFFFFF;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 0 2px var(--carte);
+    z-index: 2;
+}
+
+.tl-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--attenue-texte);
+}
+
+.tl-chevron:hover { color: var(--primaire); }
+
+.tl-chiffres {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.tl-chiffres-principaux {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 0;
+}
+
+.tl-chiffre {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 18px;
+}
+
+.tl-chiffre + .tl-chiffre { border-left: 1px solid var(--bordure); }
+.tl-chiffre-libelle { font-size: 0.78rem; color: var(--attenue-texte); }
+.tl-chiffre-valeur { font-size: 1.5rem; font-weight: 700; }
+.tl-chiffre-valeur em { font-style: normal; font-size: 0.95rem; font-weight: 600; margin-left: 6px; }
+
+.tl-periode { display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.tl-periode strong { font-size: 0.9rem; }
+
+@media (max-width: 767px) {
+    .tl-chiffres { grid-template-columns: minmax(0, 1fr); }
+    .tl-chiffres-principaux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tl-chiffre:nth-child(3) { border-left: none; }
+    .tl-chiffre:nth-child(n+3) { border-top: 1px solid var(--bordure); }
+    .tl-legende { margin-left: 0; }
+}
+
+/* ---------- Statut des lignes (active / inactive / autre fournisseur) ---------- */
+
+.choix-statut {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.choix-statut-option { margin: 0; cursor: pointer; position: relative; }
+
+/* La case réelle est masquée : elle doit rester dans son conteneur, sinon
+   style.css lui donne la largeur de la page (input { width: 100% }) et la
+   page défile horizontalement. */
+.choix-statut-option input {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.choix-statut-option span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon-moyen);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--attenue-texte);
+    background: var(--carte);
+    text-align: center;
+}
+
+.choix-statut-option input:checked + span { border-color: var(--primaire); color: var(--primaire); background: var(--accent); }
+.choix-statut-option input:focus-visible + span { outline: 2px solid var(--primaire); outline-offset: 2px; }
+
+.bascule-statut {
+    display: inline-flex;
+    margin-top: 10px;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon-moyen);
+    overflow: hidden;
+}
+
+.bascule-statut-bouton {
+    padding: 5px 10px;
+    border: none;
+    background: var(--carte);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--attenue-texte);
+    cursor: pointer;
+}
+
+.bascule-statut-bouton + .bascule-statut-bouton { border-left: 1px solid var(--bordure); }
+.bascule-statut-bouton.actif { background: var(--primaire); color: var(--primaire-texte); }
+
+.carte-ligne--inactive { background: var(--secondaire); }
+.carte-ligne--inactive .carte-ligne-entete strong { color: var(--attenue-texte); }
+
+/* ---------- Équipe ---------- */
+
+.code-equipe {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 1.05rem;
+    letter-spacing: 0.12em;
+    color: var(--primaire);
+}
+
+/* Rendez-vous cliquables (tableau, fiche client, planning) */
+.ligne-rdv[data-rdv-ouvrir] { cursor: pointer; transition: background 0.12s ease; }
+.ligne-rdv[data-rdv-ouvrir]:hover { background: var(--secondaire); }
+.ligne-rdv[data-rdv-ouvrir]:focus-visible { outline: 2px solid var(--primaire); outline-offset: -2px; }
+.ligne-rdv-corps .pastille-statut { vertical-align: middle; }
+button.pastille-rdv { border: none; cursor: pointer; font: inherit; font-size: 0.72rem; font-weight: 700; }
+button.pastille-rdv:hover { filter: brightness(0.95); }
+
+/* ---------- Tableau « À visiter » : cartes cliquables et fiche rapide ---------- */
+
+.carte-a-visiter[data-apercu-client] { cursor: pointer; transition: box-shadow 0.12s ease, transform 0.12s ease; }
+.carte-a-visiter[data-apercu-client]:hover { box-shadow: var(--ombre-elevee); transform: translateY(-1px); }
+.carte-a-visiter[data-apercu-client]:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+
+.apercu-entete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.85rem; }
+.apercu-contact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; font-size: 0.85rem; }
+.apercu-section { margin: 16px 0 6px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.apercu-ligne { display: flex; align-items: center; gap: 10px; padding: 10px 14px; font-size: 0.85rem; }
+.apercu-ligne + .apercu-ligne { border-top: 1px solid var(--bordure); }
+.apercu-petit { font-size: 0.75rem; margin-top: 3px; }
+.apercu-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+@media (max-width: 520px) {
+    .apercu-ligne { flex-wrap: wrap; }
+    .apercu-ligne .apercu-actions { width: 100%; justify-content: flex-end; }   /* seulement la fiche rapide : ailleurs (historique, clôture) la même classe ne doit pas prendre toute la ligne */
+}
+
+/* ---------- Gestion automatique : bandeau, tournée proposée, clôture ---------- */
+
+.bandeau-a-faire {
+    margin-top: 16px;
+    padding: 10px 14px;
+    border-radius: var(--rayon-moyen);
+    background: var(--accent);
+    border: 1px solid color-mix(in oklch, var(--primaire) 25%, transparent);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.tournee-jour { margin-top: 10px; }
+.tournee-jour-titre { font-size: 0.8rem; font-weight: 700; color: var(--attenue-texte); margin: 0 0 6px 2px; }
+
+.ligne-rdv--propose { background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in oklch, var(--secondaire) 70%, transparent) 10px 20px); }
+.ligne-rdv--propose .ligne-rdv-date { border-left-style: dashed; }
+.pastille-propose { background: var(--secondaire); color: var(--attenue-texte); border: 1px dashed var(--bordure); }
+
+.ligne-cloture { display: flex; align-items: center; gap: 12px; padding: 12px 14px; font-size: 0.85rem; flex-wrap: wrap; }
+.ligne-cloture + .ligne-cloture { border-top: 1px solid var(--bordure); }
+
+.choix-jours { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 4px; }
+.choix-jours .choix-statut-option span { height: 36px; font-size: 0.78rem; }
+
+/* ---------- Encart « tournée proposée » (accueil) et filtre technicien ---------- */
+
+.encart-tournee {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 16px;
+    border-left: 4px solid #7c3aed;
+    transition: box-shadow 0.12s ease;
+}
+
+.encart-tournee:hover { box-shadow: var(--ombre-elevee); }
+.encart-tournee-icone { font-size: 1.6rem; }
+
+.filtre-technicien { width: auto; min-width: 180px; height: 36px; margin-left: auto; }
+
+/* Barre du bas : 6 onglets + « + » sur téléphone */
+@media (max-width: 380px) {
+    .nav-basse-lien { font-size: 0.6rem; }
+}
+
+/* Barre du bas : chaque colonne peut rétrécir, le libellé est tronqué au besoin
+   (le calcul du nombre de colonnes est fait par AppLayout). */
+.nav-basse-grille > * { min-width: 0; }
+.nav-basse-lien { font-size: 0.68rem; padding-left: 0; padding-right: 0; }
+.nav-basse-lien > span:not(.nav-basse-icone):not(.badge-nombre) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.badge-nombre { font-size: 0.68rem; }
+.entete-logo-sous-titre { font-size: 0.7rem; }
+
+/* ---------- Planning : frise lisible sans défilement horizontal ----------
+   Sous 1200 px la ligne d'un client passe sur deux niveaux : identité et état
+   au-dessus, frise de l'année sur toute la largeur en dessous. */
+@media (max-width: 1199px) {
+    .tl-defilement { overflow-x: visible; padding: 8px 8px 12px; }
+    .tl-grille { min-width: 0; }
+    .tl-rangee {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "identite etat" "piste piste";
+        min-height: 0;
+    }
+    
+    .tl-rangee > .tl-client { grid-area: identite; padding-bottom: 6px; }
+    .tl-rangee > .tl-etat {
+        grid-area: etat;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px 0 0;
+        border-right: none;
+    }
+    .tl-rangee > .tl-piste { grid-area: piste; height: 60px; margin: 0 15px 10px; }
+    .tl-chevron { display: none; }
+
+    .tl-entete { display: block; }
+    .tl-entete > .tl-entete-titre, .tl-entete > div:nth-child(2), .tl-entete > div:nth-child(4) { display: none; }
+    .tl-mois { padding: 0 15px; }
+    .tl-mois span { font-size: 0; }
+    .tl-mois span::after { content: attr(data-court); font-size: 0.72rem; }
+    .tl-mois-courant { padding: 2px 4px; }
+
+    .tl-chiffres { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 767px) {
+    .tl-legende { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; width: 100%; margin-left: 0; }
+    .tl-outils { gap: 10px 16px; }
+}
+
+/* ---------- Page Clients ---------- */
+.carte-client-campagne-entete { align-items: flex-start; }
+.carte-client-campagne-nom { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.carte-client-campagne-entete .badge-statut { white-space: nowrap; flex-shrink: 0; }
+
+@media (max-width: 767px) {
+    .puces-filtre { flex-wrap: wrap; overflow-x: visible; }
+    .filtre-technicien { width: 100%; margin-left: 0; }
+}
+
+/* ---------- Fiche client ---------- */
+.fiche-titre { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+
+@media (max-width: 520px) {
+    .onglets-fiche { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); overflow: visible; }
+    .onglet-fiche { justify-content: center; flex-wrap: wrap; padding: 8px 2px; gap: 2px; font-size: 0.74rem; }
+    .onglet-icone { display: none; }
+}
+
+/* ---------- Texte : jamais sous 11 px ---------- */
+.metrique-libelle, .tl-derniere, .lien-modele, .onglet-fiche-compteur, .pastille-langue, .badge-nombre, .entete-logo-sous-titre { font-size: 0.72rem; }
+.nav-basse-lien { font-size: 0.72rem; }
+
+/* ---------- Contrastes (WCAG AA, 4,5:1) ----------
+   Chaque couleur a deux variantes : --c (vive, thème sombre, pastilles,
+   marqueurs) et --ct (assombrie, texte sur fond clair). */
+.pastille-couleur { background: color-mix(in srgb, var(--c) 10%, transparent); color: var(--ct); }
+.texte-couleur { color: var(--ct); }
+html.dark .pastille-couleur, html.dark .texte-couleur { color: var(--cl, var(--c)); }
+
+.badge-statut--ok { background: #15803d; }
+.badge-statut--campagne-off { background: #0369a1; }
+.tl-badge--plein { background: #15803d; border-color: #15803d; }
+.tl-badge--ok { color: #15803d; border-color: #15803d; }
+html.dark .tl-badge--ok { color: var(--statut-ok); border-color: var(--statut-ok); }
+.onglet-fiche-compteur { color: var(--accent-texte); }
+html.dark .onglet-fiche-compteur { color: var(--texte-rouge); }
+.pastille-langue { background: rgba(0, 0, 0, 0.22); color: #fff; }
+.bouton--contour .pastille-langue { background: var(--secondaire); color: var(--texte); }
+
+/* ---------- Cibles tactiles : au moins ~36-40 px sur écran tactile ---------- */
+@media (pointer: coarse), (max-width: 767px) {
+    .feuille-bouton-fermer { width: 40px; height: 40px; }
+    .champ-case { min-height: 40px; }
+    .ligne-rdv-client { display: inline-flex; align-items: center; min-height: 36px; }
+    button.pastille-rdv { min-height: 36px; padding: 6px 12px; }
+    .texte-lien[href^="tel:"] { display: inline-flex; align-items: center; min-height: 36px; padding: 0 4px; }
+    .bloc-hors-campagne summary { padding: 10px 0; }
+    .lien-modele { display: inline-block; padding: 8px 12px; }
+    .fiche-retour { display: inline-flex; align-items: center; min-height: 40px; }
+    .onglet-fiche { min-height: 40px; }
+    .bascule-statut-bouton { min-height: 36px; padding: 0 12px; }
+    .pl-reinitialiser { min-height: 40px; }
+    .bouton--petit { min-height: 36px; }
+    .ligne-hors-campagne a.texte-lien { display: inline-flex; align-items: center; min-height: 36px; }
+    .lien-modele { min-height: 36px; }
+}
+
+/* ---------- Listes déroulantes avec saisie libre ---------- */
+.champ-libre { margin-top: 6px; }
+
+/* ---------- Thème sombre : rouge de la marque lisible ----------
+   Le rouge vif de la charte est trop sombre pour du texte sur fond sombre
+   (3,8:1) ; une variante claire est utilisée pour le texte. */
+html.dark {
+    --texte-rouge: oklch(0.82 0.12 25);
+}
+html.dark .rail-lateral-lien.actif,
+html.dark .nav-basse-lien.actif,
+html.dark .entete-avatar,
+html.dark .texte-lien,
+html.dark .tl-badge--alerte,
+html.dark .pl-reinitialiser:not(:disabled),
+html.dark .choix-statut-option input:checked + span { color: var(--texte-rouge); }
+html.dark .tl-badge--alerte { border-color: var(--texte-rouge); }
+/* Puces actives : le fond garde sa couleur, le texte passe en foncé (texte blanc
+   sur le rouge #F9423D ou le gris clair du thème sombre : moins de 4,5:1). */
+html.dark .puce-filtre.actif, html.dark .puce-filtre.actif .puce-compteur { color: var(--primaire-texte); }
+html.dark .puce-filtre.actif .puce-compteur { background: rgba(255, 255, 255, 0.24); }
+html.dark .badge-statut--inactif { background: #57534e; }
+.badge-statut--inactif { background: var(--attenue-texte); }
+
+/* Les cartes Clair / Sombre de Réglages sont des <button> : sans couleur
+   de texte explicite le navigateur les écrit en noir, illisible en thème sombre. */
+.carte-apparence { color: var(--texte); }
+
+/* Indique au navigateur le thème en cours : icône du calendrier des champs
+   date, listes déroulantes natives, barres de défilement et saisie
+   automatique passent en sombre avec l'application. */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+/* ============================================================
+   Thème sombre — palette Samsung (One UI), accent rouge conservé
+   Mesurée sur les réglages du mode Sombre d'un téléphone Samsung :
+   fond noir pur (écran AMOLED : pixels éteints), cartes gris neutre,
+   texte blanc, gris secondaire, séparateurs discrets. Seul le rouge
+   #F9423D de la marque remplace le bleu de Samsung. Les variables
+   ci-dessous priment sur celles de style.css (html.dark > .dark).
+   Le thème clair n'est pas modifié.
+   ============================================================ */
+html.dark {
+    --fond: #000000;
+    --carte: #171719;
+    --carte-texte: #ffffff;
+    --texte: #ffffff;
+    --secondaire: #262629;
+    --attenue-texte: #aeadb2;
+    --bordure: #303032;
+    --accent: #3b1e1f;            /* rouge #F9423D à 16 % sur la carte */
+    --accent-texte: #ffffff;
+    --primaire: #f9423d;          /* accent de la marque */
+    --primaire-texte: #1a1213;    /* texte sur le rouge : 5,2:1 */
+    --fond-barre: #0d0d0e;
+}
+html.dark body { background: var(--fond); }
+html.dark .entete, html.dark .rail-lateral, html.dark .nav-basse { background: var(--fond-barre); }
+
+/* ---------- Suppression de clients : sélection, confirmation ---------- */
+.bouton--danger-plein { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.bouton--danger-plein:hover:not(:disabled) { background: #991b1b; }
+.bouton--danger-plein:disabled { opacity: 0.45; cursor: not-allowed; }
+html.dark .bouton--danger-plein { background: #dc2626; border-color: #dc2626; }
+html.dark .bouton--danger-plein:hover:not(:disabled) { background: #ef4444; }
+
+.zone-danger { margin-top: 22px; padding-top: 14px; border-top: 1px dashed var(--bordure); }
+.zone-danger-titre { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--attenue-texte); margin-bottom: 8px; }
+
+.bouton[data-mode-selection].actif { background: var(--accent); border-color: var(--primaire); }
+
+.carte--selectionnable { position: relative; padding-left: 52px; cursor: pointer; user-select: none; }
+.carte--selectionnable:focus-visible { outline: 2px solid var(--primaire); outline-offset: 2px; }
+.carte--choisie { border-color: var(--primaire); box-shadow: 0 0 0 2px var(--primaire); }
+.case-selection {
+    position: absolute; left: 14px; top: 16px; width: 26px; height: 26px; border-radius: 8px;
+    border: 2px solid var(--attenue-texte); display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: var(--primaire-texte); background: var(--carte);
+}
+.carte--choisie .case-selection { background: var(--primaire); border-color: var(--primaire); }
+
+.barre-selection {
+    position: sticky; bottom: 12px; z-index: 20; margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    padding: 10px 12px; border-radius: var(--rayon-grand); background: var(--carte); border: 1px solid var(--bordure); box-shadow: var(--ombre-elevee);
+}
+.barre-selection-texte { flex: 1 1 140px; font-weight: 700; font-size: 0.85rem; }
+@media (max-width: 767px) { .barre-selection { bottom: calc(76px + env(safe-area-inset-bottom)); } }
+
+/* iOS gonfle le texte en paysage sans cette ligne. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* Pas de délai ni de zoom au double-toucher sur les commandes ; retour visuel
+   à l'appui à la place du rectangle gris du navigateur. */
+a, button, summary, select, label, [role="button"], [role="checkbox"] { touch-action: manipulation; }
+body { -webkit-tap-highlight-color: transparent; }
+.bouton:active, .puce-filtre:active, .nav-basse-lien:active, .feuille-action-item:active,
+.bascule-vue-bouton:active, .onglet-fiche:active, .carte-a-visiter:active { opacity: 0.8; }
+
+/* Safari sur iPhone zoome la page dès qu'on touche un champ dont la police fait
+   moins de 16 px, et ne dézoome pas : on impose 16 px sur écran tactile. */
+@media (pointer: coarse), (max-width: 767px) {
+    input, select, textarea { font-size: 16px; }
+}
+
+/* Fenêtres : le défilement d'une fenêtre ne fait pas défiler la page derrière. */
+.feuille { overscroll-behavior: contain; }
+
+/* Encoche / coins arrondis en paysage : rien sous l'encoche, la barre latérale
+   et le contenu s'écartent de la largeur exacte de la zone masquée. */
+.entete-barre {
+    padding-left: calc(16px + env(safe-area-inset-left, 0px));
+    padding-right: calc(16px + env(safe-area-inset-right, 0px));
+}
+.app-contenu {
+    padding-left: calc(24px + env(safe-area-inset-left, 0px));
+    padding-right: calc(24px + env(safe-area-inset-right, 0px));
+}
+.nav-basse-grille { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+@media (min-width: 768px) {
+    .rail-lateral {
+        width: calc(220px + env(safe-area-inset-left, 0px));
+        padding-left: calc(12px + env(safe-area-inset-left, 0px));
+        overflow-y: auto;            /* écran bas (paysage) : tous les onglets restent accessibles */
+    }
+    .zone-avec-barre > .app-conteneur { margin-left: calc(220px + env(safe-area-inset-left, 0px)); }
+    .app-contenu { padding-left: 24px; }   /* le décalage est déjà porté par la marge ci-dessus */
+}
+
+/* Paysage sur téléphone (écran bas) : bandeau et barre du bas plus compacts. */
+@media (max-height: 500px) and (orientation: landscape) {
+    .entete-barre { height: 48px; }
+    .nav-basse-lien { padding-top: 4px; padding-bottom: 4px; }
+    .app-contenu { padding-top: 12px; }
+    .feuille--bas { max-height: 92dvh; }
+}
+
+/* ---------- Petits écrans (iPhone SE 320 px, Galaxy Fold fermé 344 px) ---------- */
+@media (max-width: 380px) {
+    .choix-jours { grid-template-columns: repeat(4, minmax(0, 1fr)); }   /* 7 jours sur 2 rangées : cases assez larges pour le doigt */
+    .app-contenu { padding-left: calc(16px + env(safe-area-inset-left, 0px)); padding-right: calc(16px + env(safe-area-inset-right, 0px)); }
+}
+
+/* Titres déroulants des formulaires (« Références ») : cible tactile suffisante. */
+@media (pointer: coarse), (max-width: 767px) {
+    summary.bloc-formulaire-titre { display: flex; align-items: center; min-height: 40px; }
+}
+
+/* Lignes « libellé / valeur » (Réglages › Tes données, fenêtres) : sur une colonne étroite,
+   la valeur passe à la ligne au lieu de dépasser. */
+.ligne-info { flex-wrap: wrap; column-gap: 12px; }
+.ligne-info > * { min-width: 0; overflow-wrap: anywhere; }
+
+/* Texte agrandi (réglage d'accessibilité : « Très grand » = 150 à 200 %) : le bandeau du haut
+   passe sur deux lignes plutôt que de sortir de l'écran. */
+.entete-barre { height: auto; min-height: 56px; flex-wrap: wrap; row-gap: 4px; padding-top: 6px; padding-bottom: 6px; }
+.entete-logo { min-width: 0; flex: 1 1 auto; }
+.entete-logo-texte { min-width: 0; overflow-wrap: anywhere; }
+.entete-actions { flex: 0 0 auto; }
+
+/* Rangées de boutons et noms de clients : à la ligne plutôt que hors de l'écran. */
+.apercu-actions, .ligne-rdv-actions, .carte-ligne-actions { flex-wrap: wrap; }
+.ligne-cloture .apercu-actions { justify-content: flex-start; }
+.ligne-rdv-client { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.ligne-rdv-corps { min-width: 0; }
+
+/* Sélecteur de statut d'une ligne et choix du thème : s'adaptent à la largeur disponible. */
+.bascule-statut { display: flex; flex-wrap: wrap; max-width: 100%; }
+.bascule-statut-bouton { flex: 1 1 auto; white-space: normal; }
+.carte-apparence { min-width: 0; }
+@media (max-width: 380px) { .grille-apparence { grid-template-columns: minmax(0, 1fr); } }
+
+/* Rouge d'alerte lisible sur fond sombre (bouton « Supprimer », avertissements). */
+.texte-danger { color: var(--statut-alert); }
+html.dark .texte-danger, html.dark .bouton--danger { color: var(--texte-rouge); }
+
+/* ============================================================
+   Animation d'ouverture (Js/Splash.js) — vidéo plein écran
+   Le fond #f9f8fb est la couleur exacte des bords de la vidéo :
+   aucune jonction visible. Toute la page reste masquée derrière
+   tant que la classe « splash-actif » est sur <html>.
+   ============================================================ */
+html.splash-actif { background: #f9f8fb; }
+html.splash-actif body > *:not(#splash) { visibility: hidden; }
+
+.splash {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f8fb;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 0.35s ease;
+}
+.splash--sortie { opacity: 0; pointer-events: none; }
+
+.splash-cadre { position: relative; display: flex; }
+/* Bords fondus : le moindre écart de teinte entre la vidéo et le fond disparaît. */
+.splash-cadre::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 24px 18px #f9f8fb; pointer-events: none; }
+/* Largeur limitée par la hauteur (image 1,25 fois plus large que haute) : en paysage, le cadre épouse exactement l'image. */
+.splash-video { display: block; width: min(100vw, 780px, 125vh); width: min(100vw, 780px, 125dvh); height: auto; object-fit: contain; background: #f9f8fb; }
+
+.splash-passer {
+    position: absolute;
+    right: calc(16px + env(safe-area-inset-right));
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    min-height: 40px;
+    padding: 0 18px;
+    border: 1px solid #d9d6dd;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #4a4548;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.splash-passer:focus-visible { outline: 2px solid #d40c1a; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .splash { transition: none; } }
+
+/* Journal de l'animation d'ouverture (Réglages). */
+.liste-journal { list-style: none; margin: 6px 0 0; padding: 0; font-size: 0.82rem; }
+.liste-journal li { padding: 6px 0; border-top: 1px solid var(--bordure); overflow-wrap: anywhere; }
+.liste-journal li:first-child { border-top: none; }
+
+/* ---------- Planifier depuis le Planning ---------- */
+.tl-piste--planifiable { cursor: pointer; }
+.tl-repere {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-left: 2px dashed var(--primaire);
+    pointer-events: none;
+    z-index: 3;
+}
+.tl-repere::after {
+    content: attr(data-date);
+    position: absolute;
+    top: 2px;
+    left: 6px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--primaire);
+    color: var(--primaire-texte);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.tl-repere--gauche::after { left: auto; right: 6px; }
+.tl-repere[hidden] { display: none; }
+
+.pl-cellule--planifiable { cursor: pointer; }
+.pl-cellule--planifiable:hover { background: var(--secondaire); }
+.pl-cellule--planifiable:hover::after { content: "+"; font-weight: 700; color: var(--attenue-texte); }
+
+/* Bandeau d'information dans un formulaire (ex. date à venir dans « Enregistrer une visite »). */
+.bandeau-info {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--bordure);
+    border-left: 4px solid #7c3aed;       /* violet = rendez-vous planifié, partout dans l'application */
+    border-radius: var(--rayon-moyen);
+    background: var(--secondaire);
+    color: var(--texte);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+.bandeau-info[hidden] { display: none; }
+
+/* Historique : visites qui n'ont pas eu lieu (reportée, non effectuée, annulée) un ton en dessous. */
+.ligne-historique--reportee { box-shadow: inset 3px 0 0 #d97706; }
+.ligne-historique--non-effectuee { box-shadow: inset 3px 0 0 #dc2626; }
+.ligne-historique--annulee { box-shadow: inset 3px 0 0 #6b7280; }
+.ligne-historique--non-effectuee .ligne-historique-corps > strong, .ligne-historique--annulee .ligne-historique-corps > strong { opacity: 0.75; }
+.choix-statut--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* Historique sur petit écran : date et boutons sur la première ligne, le contenu en dessous pleine largeur. */
+@media (max-width: 480px) {
+    .ligne-historique { flex-wrap: wrap; row-gap: 8px; }
+    .ligne-historique-date { order: 1; }
+    .ligne-historique .apercu-actions { order: 2; margin-left: auto; }
+    .ligne-historique-corps { order: 3; flex: 1 1 100%; }
+}
+
+/* Rouge d'alerte lisible sur fond sombre : alerte « Date passée : visite faite ? » des rendez-vous. */
+html.dark .ligne-rdv-alerte { color: var(--texte-rouge); }
+
+
+/* >>> GENERE-DEBUT : couleurs de secours (anciens navigateurs) — ne pas modifier à la main */
+/* Sans oklch() (Chrome < 111, Safari < 15.4, Samsung Internet < 22) : variables et couleurs directes en rgb. */
+@supports not (color: oklch(0.5 0.1 27)) {
+  :root { --fond: rgb(253,251,251); --texte: rgb(26,14,13); --carte: rgb(255,255,255); --carte-texte: rgb(26,14,13); --primaire: rgb(212,12,26); --primaire-texte: rgb(253,251,251); --secondaire: rgb(245,240,240); --attenue-texte: rgb(102,91,89); --accent: rgb(252,234,231); --accent-texte: rgb(127,0,0); --succes: rgb(38,158,95); --alerte: rgb(231,140,8); --bordure: rgb(232,227,227); }
+  html.dark { --succes: rgb(71,184,119); --alerte: rgb(242,149,32); --texte-rouge: rgb(255,165,157); }
+  .voile { background: rgba(0,0,0,0.4); }
+}
+/* Sans color-mix() (Chrome < 111, Safari < 16.2) : mélanges de couleurs calculés à l'avance. */
+@supports not (color: color-mix(in srgb, red 50%, blue)) {
+  .rail-lateral-lien.actif { background: rgba(212,12,26,0.1); }
+  html.dark .rail-lateral-lien.actif { background: rgba(249,66,61,0.1); }
+  .entete { background: rgba(255,255,255,0.95); }
+  html.dark .entete { background: rgba(23,23,25,0.95); }
+  .entete-avatar { background: rgba(212,12,26,0.1); }
+  html.dark .entete-avatar { background: rgba(249,66,61,0.1); }
+  .feuille-action-icone { background: rgba(212,12,26,0.1); }
+  html.dark .feuille-action-icone { background: rgba(249,66,61,0.1); }
+  .puce-compteur { background: rgba(128,128,128,0.16); }
+  .onglet-fiche-compteur { background: rgba(212,12,26,0.12); }
+  html.dark .onglet-fiche-compteur { background: rgba(249,66,61,0.12); }
+  .carte-apparence--actif { background: rgb(252,236,237); }
+  html.dark .carte-apparence--actif { background: rgb(41,26,28); }
+  .bouton--danger { border-color: rgba(220,38,38,0.4); }
+  .bouton--danger:hover { background: rgba(220,38,38,0.08); }
+  .pl-cellule { border-left: 1px solid rgba(232,227,227,0.6); }
+  html.dark .pl-cellule { border-left: 1px solid rgba(48,48,50,0.6); }
+  .pl-cellule--campagne { background: rgba(38,158,95,0.11); }
+  html.dark .pl-cellule--campagne { background: rgba(71,184,119,0.11); }
+  .pl-cellule--cliquable:hover { background: rgba(212,12,26,0.1); }
+  html.dark .pl-cellule--cliquable:hover { background: rgba(249,66,61,0.1); }
+  .tl-legende-campagne { background: rgba(38,158,95,0.14); }
+  html.dark .tl-legende-campagne { background: rgba(71,184,119,0.14); }
+  .tl-bande { background: rgba(38,158,95,0.1); }
+  html.dark .tl-bande { background: rgba(71,184,119,0.1); }
+  .bandeau-a-faire { border: 1px solid rgba(212,12,26,0.25); }
+  html.dark .bandeau-a-faire { border: 1px solid rgba(249,66,61,0.25); }
+  .ligne-rdv--propose { background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(245,240,240,0.7) 10px 20px); }
+  html.dark .ligne-rdv--propose { background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(38,38,41,0.7) 10px 20px); }
+  .pastille-couleur { background: rgba(128,128,128,0.1); }
+}
+/* <<< GENERE-FIN */

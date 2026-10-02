@@ -29,7 +29,7 @@ const EchangesExcel = (() => {
             ["Téléphone standard", "telephone", 18], ["Email général", "email", 28],
             ["Type de production", "typeProduction", 22], ["Début campagne (mois) *", "debutCampagne", 16],
             ["Fin campagne (mois) *", "finCampagne", 16], ["Cadence visites (jours) *", "cadenceJours", 14],
-            ["Actif", "actif", 10], ["Notes", "notes", 40]
+            ["Actif", "actif", 10], ["Technicien", "technicien", 22], ["Notes", "notes", 40]
         ],
         Contacts: [
             ["Client *", "client", 32], ["Rôle *", "role", 26], ["Prénom", "prenom", 16], ["Nom *", "nom", 18],
@@ -45,6 +45,7 @@ const EchangesExcel = (() => {
             ["Molette 2 - fournisseur", "molette2Fournisseur", 16], ["Molette 2 - référence", "molette2Ref", 16],
             ["Mandrin - fournisseur", "mandrinFournisseur", 16], ["Mandrin - référence", "mandrinRef", 16],
             ["Suivi en campagne *", "suiviCampagne", 12],
+            ["Statut", "statut", 16], ["Fournisseur actuel", "fournisseurActuel", 20],
             ["Notes", "notes", 36]
         ]
     };
@@ -101,6 +102,38 @@ const EchangesExcel = (() => {
         return undefined;
     }
 
+    /* Statut de ligne lu dans le fichier. Vide : on garde « Suivi en
+       campagne » (anciens modèles). Texte inconnu : ignoré, avec avertissement. */
+    let avertirStatut = null;
+    function statutLu(v, n) {
+        const t = norm(v);
+        if (!t) return undefined;
+        if (["active", "actif", "oui"].indexOf(t) !== -1) return "active";
+        if (["inactive", "inactif", "non"].indexOf(t) !== -1) return "inactive";
+        if (t.indexOf("autre") === 0 || t.indexOf("concurren") === 0) return "concurrent";
+        if (avertirStatut) avertirStatut("Lignes, ligne " + n + " : statut « " + v + " » inconnu — statut inchangé.");
+        return undefined;
+    }
+
+    /* Technicien lu dans le fichier : nom tel qu'affiché dans l'équipe
+       (Réglages › Équipe), « moi », ou « Non attribué ». Hors équipe, ou nom
+       inconnu : ignoré, avec avertissement. */
+    function technicienLu(v, n, plan) {
+        const t = norm(v);
+        if (!t) return undefined;
+        const membres = Formulaires.membresEquipe();
+        if (!membres.length) {
+            plan.avertissements.push("Clients, ligne " + n + " : technicien « " + v + " » ignoré (pas d'équipe sur ce compte).");
+            return undefined;
+        }
+        if (t === "non attribue" || t === "aucun") return "";
+        if (t === "moi") return (membres.find(m => m.moi) || {}).id;
+        const m = membres.find(x => norm(x.nom) === t);
+        if (m) return m.id;
+        plan.avertissements.push("Clients, ligne " + n + " : technicien « " + v + " » inconnu dans l'équipe — attribution inchangée.");
+        return undefined;
+    }
+
     /* ---------- Analyse (aucune écriture) ---------- */
 
     function indexerEntetes(entete, nomFeuille) {
@@ -121,6 +154,7 @@ const EchangesExcel = (() => {
 
     function analyser(classeur) {
         const plan = { clients: [], contacts: [], lignes: [], erreurs: [], avertissements: [], exemples: 0 };
+        avertirStatut = (m) => plan.avertissements.push(m);
         const feuilleClients = trouverFeuille(classeur, "Clients");
         if (!feuilleClients) {
             plan.erreurs.push("Onglet « Clients » introuvable : ce fichier n'est pas le modèle d'import.");
@@ -176,7 +210,8 @@ const EchangesExcel = (() => {
                 codePostal: codePostal(cel("codePostal"), pays), ville: texte(cel("ville")), pays,
                 region: texte(cel("region")), telephone: telephone(cel("telephone")), email: texte(cel("email")),
                 typeProduction: texte(cel("typeProduction")), debutCampagne: debut.valeur, finCampagne: fin.valeur,
-                cadenceJours: isNaN(cadence) ? undefined : cadence, actif: ouiNon(cel("actif")), notes: texte(cel("notes"))
+                cadenceJours: isNaN(cadence) ? undefined : cadence, actif: ouiNon(cel("actif")), notes: texte(cel("notes")),
+                technicien: technicienLu(cel("technicien"), n, plan)
             };
             plan.clients.push({ ligne: n, source, maj: !!Donnees.trouverClientParNom(nom) });
         });
@@ -209,7 +244,8 @@ const EchangesExcel = (() => {
                     molette1Fournisseur: texte(cel("molette1Fournisseur")), molette1Ref: texte(cel("molette1Ref")),
                     molette2Fournisseur: texte(cel("molette2Fournisseur")), molette2Ref: texte(cel("molette2Ref")),
                     mandrinFournisseur: texte(cel("mandrinFournisseur")), mandrinRef: texte(cel("mandrinRef")),
-                    suiviCampagne: ouiNon(cel("suiviCampagne")), notes: texte(cel("notes"))
+                    suiviCampagne: ouiNon(cel("suiviCampagne")), notes: texte(cel("notes")),
+                    statut: statutLu(cel("statut"), n), fournisseurActuel: texte(cel("fournisseurActuel"))
                 }
             });
         });
@@ -267,6 +303,8 @@ const EchangesExcel = (() => {
         const bouton = document.querySelector("[data-confirmer-import]");
         if (bouton) bouton.addEventListener("click", () => {
             const b = Donnees.appliquerImport(plan);
+            /* Envoi immédiat : l'équipe reçoit les modifications sans attendre. */
+            if (b.ok && typeof Synchro !== "undefined") Synchro.synchroniser();
             AppLayout.fermerFeuille();
             AppLayout.toast(b.ok
                 ? "Import terminé ✓ — " + b.clientsCrees + " créé(s), " + b.clientsMaj + " mis à jour · " +
@@ -281,7 +319,9 @@ const EchangesExcel = (() => {
         const clients = Donnees.listerClients();
         const oui = (b) => b === false ? "Non" : "Oui";
         const clientsL = clients.map(c => [c.nom, c.groupe, c.adresse, c.codePostal, c.ville, c.pays, c.telephone, c.email,
-            c.typeProduction, Donnees.MOIS[c.debutCampagne - 1], Donnees.MOIS[c.finCampagne - 1], c.cadenceJours, oui(c.actif), c.notes]);
+            c.typeProduction, Donnees.MOIS[c.debutCampagne - 1], Donnees.MOIS[c.finCampagne - 1], c.cadenceJours, oui(c.actif),
+            Formulaires.membresEquipe().length ? (c.technicien ? Formulaires.nomTechnicien(c.technicien).replace(/ \(moi\)$/, "") : "Non attribué") : "",
+            c.notes]);
         const contactsL = [], lignesL = [];
         clients.forEach(c => {
             Donnees.contactsDuClient(c.id).forEach(k => contactsL.push([c.nom, k.role, k.prenom, k.nom, k.telephoneFixe,
@@ -289,7 +329,8 @@ const EchangesExcel = (() => {
             Donnees.lignesDuClient(c.id).forEach(l => lignesL.push([c.nom, l.nom, l.marque, l.modele, l.numeroSerie,
                 l.formatHabituel, l.produitHabituel, l.cadenceLigne === undefined || l.cadenceLigne === "" ? null : Number(l.cadenceLigne) || l.cadenceLigne,
                 l.molette1Fournisseur, l.molette1Ref, l.molette2Fournisseur, l.molette2Ref, l.mandrinFournisseur, l.mandrinRef,
-                oui(l.suiviCampagne), l.notes]));
+                Donnees.estLigneActive(l) ? "Oui" : "Non",
+                Donnees.STATUTS_LIGNE.find(st => st.cle === Donnees.statutLigne(l)).libelle, l.fournisseurActuel, l.notes]));
         });
         const col = (nom) => COLONNES[nom].map(c => ({ titre: c[0], largeur: c[2] }));
         return [

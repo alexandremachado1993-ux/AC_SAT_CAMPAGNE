@@ -11,8 +11,9 @@
    aux couleurs et au logo de l'application (style.css : fond, texte,
    primaire, bordure). À l'écran, les pages sont réduites à la largeur
    disponible (pincer pour zoomer) ; à l'impression, taille réelle, une
-   page par feuille. Généré depuis le document de référence : ne pas
-   modifier à la main, régénérer. */
+   page par feuille. Généré depuis le document de référence (les pages
+   A4 elles-mêmes) ; la barre du haut et les règles d'affichage écran peuvent
+   être modifiées ici. */
 @page { size: A4 landscape; margin: 0; }
 :root { --k: 1; }
 body { margin: 0; background: #F5F0F0; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; color: #1A0E0D; }
@@ -28,7 +29,17 @@ body { margin: 0; background: #F5F0F0; font-family: "Segoe UI", Tahoma, Geneva, 
 .cadre { width: calc(1123px * var(--k)); height: calc(794px * var(--k)); overflow: hidden; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 12px rgba(0,0,0,.06); background: #FDFBFB; }
 .page { width: 1123px; height: 794px; transform: scale(var(--k)); transform-origin: top left; }
 @media (max-width: 560px) { .barre .titre span { display: none; } }
+.conseil-mobile { display: none; margin: 10px 16px 0; padding: 8px 12px; border-radius: 10px; background: #FCEAE7; border: 1px solid #F3CFCA; font-size: 13px; line-height: 1.4; }
+@media (max-width: 700px) and (orientation: portrait) { .conseil-mobile { display: block; } }
+@media (max-width: 560px) {
+  .barre { flex-wrap: wrap; row-gap: 6px; }
+  .barre .titre { order: 3; flex: 0 0 100%; }
+  .barre .titre strong { white-space: normal; }
+  .barre button { margin-left: auto; }
+  .barre a, .barre button { height: 40px; padding: 0 12px; }
+}
 @media print {
+  .conseil-mobile { display: none; }
   body { background: none; }
   .barre { display: none; }
   .feuilles { padding: 0; gap: 0; display: block; }
@@ -45,6 +56,7 @@ body { margin: 0; background: #F5F0F0; font-family: "Segoe UI", Tahoma, Geneva, 
 <div class="titre"><strong>Aide-mémoire réglage du double serti</strong><span>AC SAT · 2 pages A4 paysage</span></div>
 <button type="button" onclick="window.print()">Imprimer / PDF</button>
 </div>
+<p class="conseil-mobile">📱 Document A4 : pince pour zoomer, ou passe ton téléphone en paysage.</p>
 <div class="feuilles" aria-label="Pages du document">
 <div class="cadre"><div class="page"><div style="width: 1123px; height: 794px; box-sizing: border-box; padding: 36px 44px; display: flex; flex-direction: column; gap: 14px; background: #FDFBFB; color: #1A0E0D; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; border-radius: 4px">
 

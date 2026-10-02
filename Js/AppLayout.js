@@ -17,17 +17,23 @@ const AppLayout = (() => {
     /* Version livrée : la même valeur figure dans version.txt à la racine.
        Après une mise en ligne, ouvrir <site>/version.txt permet de vérifier
        que c'est bien cette version qui est en ligne. */
-    const VERSION = "2026.09.25-a";
+    const VERSION = "2026.10.02-a";
 
     /* Barre latérale ET navigation mobile se construisent depuis cette liste. */
     const ELEMENTS_NAV = [
         { page: "tableau", href: "Index.html", icone: "📋", libelle: "À visiter" },
         { page: "planning", href: "Planning.html", icone: "📅", libelle: "Planning" },
+        { page: "tournee", href: "Tournee.html", icone: "🤖", libelle: "Tournée" },
         { page: "clients", href: "Clients.html", icone: "👥", libelle: "Clients" },
         { page: "documents", href: "Documents.html", icone: "📄", libelle: "Documents", court: "Docs" },
         { page: "reglages", href: "Reglages.html", icone: "⚙️", libelle: "Réglages" }
     ];
-    const NB_AVANT_FAB = 2;   // navigation mobile : liens à gauche du bouton « + »
+    /* Navigation mobile : 2 liens, le bouton « + » au centre, 2 liens.
+       Réglages et Documents n'y figurent pas : ils sont dans l'en-tête
+       (⚙️ et menu du profil). 4 liens + « + » = 5 colonnes de 72 px sur un
+       écran de 360 px, avec des libellés lisibles. */
+    const NB_AVANT_FAB = 2;
+    const PAGES_HORS_BARRE_MOBILE = ["reglages", "documents"];
 
     let elVoile, elFeuille;
 
@@ -159,6 +165,7 @@ const AppLayout = (() => {
                 '<div><div class="menu-avatar-nom">' + escapeHtml(profil.nom) + '</div>' +
                 '<div class="menu-avatar-role">Technicien SAT</div></div>' +
                 '</div>' +
+                '<a href="Documents.html" class="menu-avatar-item">📄 Documents</a>' +
                 '<a href="Reglages.html" class="menu-avatar-item">⚙️ Réglages &amp; sauvegarde</a>' +
                 '<button type="button" class="menu-avatar-item" data-bascule-theme>' +
                 (profil.theme === "dark" ? "☀️ Thème clair" : "🌙 Thème sombre") + '</button>';
@@ -238,7 +245,8 @@ const AppLayout = (() => {
         grille.className = "nav-basse-grille";
         /* Le CSS d'origine prévoit 7 colonnes (6 liens + « + ») : on adapte
            au nombre réel de liens pour ne pas laisser de cases vides. */
-        grille.style.gridTemplateColumns = "repeat(" + (ELEMENTS_NAV.length + 1) + ", 1fr)";
+        const liens = ELEMENTS_NAV.filter(item => PAGES_HORS_BARRE_MOBILE.indexOf(item.page) === -1);
+        grille.style.gridTemplateColumns = "repeat(" + (liens.length + 1) + ", minmax(0, 1fr))";
 
         function creerLien(item) {
             const lien = document.createElement("a");
@@ -251,7 +259,7 @@ const AppLayout = (() => {
             return lien;
         }
 
-        ELEMENTS_NAV.slice(0, NB_AVANT_FAB).forEach(item => grille.appendChild(creerLien(item)));
+        liens.slice(0, NB_AVANT_FAB).forEach(item => grille.appendChild(creerLien(item)));
 
         const centre = document.createElement("div");
         centre.className = "fab-conteneur";
@@ -264,7 +272,7 @@ const AppLayout = (() => {
         centre.appendChild(fab);
         grille.appendChild(centre);
 
-        ELEMENTS_NAV.slice(NB_AVANT_FAB).forEach(item => grille.appendChild(creerLien(item)));
+        liens.slice(NB_AVANT_FAB).forEach(item => grille.appendChild(creerLien(item)));
         conteneur.appendChild(grille);
     }
 
@@ -294,7 +302,8 @@ const AppLayout = (() => {
     /* ---------- Indicateur de synchronisation ---------- */
 
     const LIBELLES_SYNCHRO = {
-        "deconnecte": "Synchro désactivée",
+        "verification": "Connexion…",
+        "deconnecte": "Synchro désactivée — se connecter",
         "en-cours": "Synchronisation…",
         "ok": "Synchronisé",
         "hors-ligne": "Hors ligne",
@@ -340,6 +349,30 @@ const AppLayout = (() => {
         setTimeout(() => el.remove(), 3500);
     }
 
+    /* Message avec un bouton d'action (ex. « Annuler » après une suppression). */
+    function toastAction(message, libelle, action, dureeMs) {
+        const el = document.createElement("div");
+        el.setAttribute("role", "status");
+        el.style.cssText =
+            "position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));" +
+            "transform:translateX(-50%);background:var(--texte);color:var(--fond);" +
+            "padding:6px 8px 6px 16px;border-radius:999px;font-size:0.85rem;font-weight:600;" +
+            "box-shadow:var(--ombre-elevee);z-index:1100;max-width:92vw;display:flex;align-items:center;gap:10px;";
+        const texte = document.createElement("span");
+        texte.textContent = message;
+        const bouton = document.createElement("button");
+        bouton.type = "button";
+        bouton.textContent = libelle;
+        bouton.style.cssText = "border:none;border-radius:999px;padding:0 14px;min-height:36px;font:inherit;font-weight:700;" +
+            "background:var(--primaire);color:var(--primaire-texte);cursor:pointer;";
+        bouton.addEventListener("click", () => { el.remove(); action(); });
+        el.appendChild(texte);
+        el.appendChild(bouton);
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), dureeMs || 10000);
+        return el;
+    }
+
     /* ---------- Point d'entrée ---------- */
 
     function init(pageActuelle) {
@@ -370,5 +403,5 @@ const AppLayout = (() => {
         enregistrerServiceWorker();
     }
 
-    return { init, ouvrirFeuille, fermerFeuille, toast, escapeHtml, VERSION };
+    return { init, ouvrirFeuille, fermerFeuille, toast, toastAction, escapeHtml, VERSION };
 })();
