@@ -1,0 +1,13 @@
+import { serveur, navigateur, graine, EQUIPE, PORT } from "./audit-lib.mjs";
+import fs from "node:fs";
+const s = await serveur(); const b = await navigateur();
+const p = await b.newPage();
+await p.setBypassServiceWorker(true);
+await p.evaluateOnNewDocument((eq) => { localStorage.setItem("acsc_equipe", JSON.stringify(eq)); }, EQUIPE);
+const errs = []; p.on("pageerror", e => errs.push(e.message));
+await p.goto(`http://localhost:${PORT}/Index.html`, { waitUntil: "load" });
+const info = await p.evaluate(`(${graine.toString()})()`);
+const data = await p.evaluate(() => localStorage.getItem("acsc_donnees_v1"));
+fs.writeFileSync("./sortie/donnees.json", JSON.stringify({ data, info }));
+console.log("données:", data.length, "octets", JSON.stringify(info).slice(0, 120), "erreurs:", errs);
+await b.close(); s.close();
