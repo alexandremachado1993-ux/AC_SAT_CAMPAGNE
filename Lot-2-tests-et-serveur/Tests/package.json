@@ -1,7 +1,0 @@
-{
-  "name": "ac-sat-campagne-tests",
-  "private": true,
-  "description": "Tests automatiques d'AC SAT Campagne (jsdom, sans navigateur)",
-  "scripts": { "test": "node test.js" },
-  "devDependencies": { "jsdom": "^24.1.0" }
-}

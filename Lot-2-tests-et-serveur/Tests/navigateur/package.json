@@ -1,7 +1,0 @@
-{
-  "name": "ac-sat-campagne-audit-navigateur",
-  "private": true,
-  "type": "module",
-  "description": "Audit des écrans dans un vrai Chromium (débordements, contrastes, cibles tactiles)",
-  "dependencies": { "@sparticuz/chromium": "131.0.1", "puppeteer-core": "23.11.1" }
-}
