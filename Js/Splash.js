@@ -65,7 +65,7 @@
             const j = JSON.parse(localStorage.getItem(CLE_JOURNAL) || "[]");
             j.unshift({ t: new Date().toISOString(), c: code, x: detail || "" });
             localStorage.setItem(CLE_JOURNAL, JSON.stringify(j.slice(0, 8)));
-        } catch (e) { /* journal facultatif */ }
+        } catch (e) { Erreurs.consigner("Splash : journal facultatif", e); }
     }
     function journal() {
         try { const j = JSON.parse(localStorage.getItem(CLE_JOURNAL) || "[]"); return Array.isArray(j) ? j : []; } catch (e) { return []; }
@@ -78,7 +78,7 @@
             if (!dec || s.getItem("acsc_splash_note")) return;
             s.setItem("acsc_splash_note", "1");
             if (dec !== "joue") noter(dec);
-        } catch (e) { /* facultatif */ }
+        } catch (e) { Erreurs.consigner("Splash : facultatif", e); }
     }
 
     /* Barre d'état du téléphone : claire pendant la vidéo (sinon une bande rouge court au-dessus du fond clair). */
@@ -100,7 +100,7 @@
         racine.classList.remove("splash-actif");           // l'application devient visible sous la vidéo…
         barre(null);
         if (!cadre) return;
-        if (video) { try { video.pause(); } catch (e) { /* déjà arrêtée */ } }
+        if (video) { try { video.pause(); } catch (e) { Erreurs.consigner("Splash : déjà arrêtée", e); } }
         cadre.classList.add("splash--sortie");             // …qui s'efface en fondu
         minuteries.push(setTimeout(() => {
             if (cadre && cadre.parentNode) cadre.parentNode.removeChild(cadre);

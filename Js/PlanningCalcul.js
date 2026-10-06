@@ -165,5 +165,5 @@ const PlanningCalcul = (() => {
         return { delta, sens: delta > 0 ? "hausse" : delta < 0 ? "baisse" : "stable" };
     }
 
-    return { GRANULARITES, CATEGORIES, MOIS, MOIS_COURTS, parse, fmt, ajouter, ecart, dans, bornes, decaler, numeroSemaine, libelle, jours, grilleMois, repartition, analyser, serieMensuelle, evolution };
+    return { GRANULARITES, CATEGORIES, MOIS, parse, fmt, ecart, bornes, decaler, numeroSemaine, libelle, jours, grilleMois, repartition, analyser, serieMensuelle, evolution };
 })();

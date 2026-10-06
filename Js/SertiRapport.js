@@ -255,7 +255,7 @@ const SertiRapport = (() => {
         document.querySelector('[data-sr="xlsx"]').addEventListener("click", () => {
             const d = rafraichir(); if (!d || !d.resume.controles) return;
             Excel.telechargerXlsx(nomFichier(d), feuillesExcel(d));
-            AppLayout.fermerFeuille(); AppLayout.toast("Rapport Excel téléchargé ✓");
+            AppLayout.fermerFeuille(); AppLayout.toastSucces("Rapport Excel téléchargé ✓");
         });
         document.querySelector('[data-sr="apercu"]').addEventListener("click", () => {
             const d = rafraichir(); if (!d || !d.resume.controles) return;
@@ -264,5 +264,5 @@ const SertiRapport = (() => {
         rafraichir();
     }
 
-    return { construire, feuillesExcel, html, nomFichier, ouvrir, montrerApercu, fermerApercu };
+    return { construire, feuillesExcel, html, nomFichier, ouvrir, fermerApercu };
 })();

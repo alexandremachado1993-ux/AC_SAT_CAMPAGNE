@@ -253,7 +253,7 @@
                 return;
             }
             Donnees.definirStatutLigne(id, statut);
-            AppLayout.toast(statut === "active" ? "Ligne réactivée ✓ — elle revient dans les rappels" : "Ligne inactive ✓ — retirée des rappels et des visites");
+            AppLayout.toastSucces(statut === "active" ? "Ligne réactivée ✓ — elle revient dans les rappels" : "Ligne inactive ✓ — retirée des rappels et des visites");
         });
         sur("[data-modifier-ligne]", el => Formulaires.ligne(client.id, Donnees.getLigne(el.getAttribute("data-modifier-ligne"))));
         sur("[data-supprimer-ligne]", el => {

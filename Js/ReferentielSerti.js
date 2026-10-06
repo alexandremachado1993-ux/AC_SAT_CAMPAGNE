@@ -122,13 +122,11 @@ const ReferentielSerti = (() => {
         return { type: "tol", nom: v[0], tol: v[1], unite: "mm" };
     }
 
-    function reference(colonneId) { const c = colonne(colonneId); return c ? { epBoite: c.valeurs.epBoite, epFond: c.valeurs.epFond } : null; }
-
     /* Les deux noms côte à côte : « 1/2M · ø83 ». */
     function libelleFormat(nom, colonneId) {
         const dia = colonneId ? colonneId.split(" ")[0] : "";
         return [nom, dia].filter(Boolean).filter((x, i, t) => t.indexOf(x) === i).join(" · ");
     }
 
-    return { REFERENCE, PARAMETRES, COLONNES, FORMATS, AJOUTS, ALIAS_HAUTEUR, colonne, formatConnu, colonnesDuFormat, formatsDeLaColonne, parametre, regle, reference, libelleFormat };
+    return { REFERENCE, PARAMETRES, COLONNES, FORMATS, AJOUTS, ALIAS_HAUTEUR, colonne, formatConnu, colonnesDuFormat, formatsDeLaColonne, parametre, regle, libelleFormat };
 })();

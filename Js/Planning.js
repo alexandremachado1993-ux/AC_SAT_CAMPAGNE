@@ -567,13 +567,13 @@
         document.querySelector('[data-cr="xlsx"]').addEventListener("click", () => {
             Excel.telechargerXlsx(base + ".xlsx", d.feuilles);
             AppLayout.fermerFeuille();
-            AppLayout.toast("Compte rendu Excel téléchargé ✓");
+            AppLayout.toastSucces("Compte rendu Excel téléchargé ✓");
         });
         document.querySelector('[data-cr="csv"]').addEventListener("click", () => {
             /* En CSV, la date est laissée au format JJ/MM/AAAA, lisible par Excel FR. */
             Excel.telechargerCsv(base + ".csv", COLONNES_VISITES, d.visites.map(l => [Formulaires.dateFr(l[0])].concat(l.slice(1))));
             AppLayout.fermerFeuille();
-            AppLayout.toast("Compte rendu CSV téléchargé ✓");
+            AppLayout.toastSucces("Compte rendu CSV téléchargé ✓");
         });
     }
 
@@ -702,7 +702,7 @@
 
         return '<div class="carte pl-filtres"' + (etat.filtresOuverts ? "" : " hidden") + '>' +
             '<div class="pl-filtres-grille">' +
-            '<div><label for="pf-recherche">Recherche</label><div class="pl-recherche"><input type="search" id="pf-recherche" placeholder="Nom, ville, groupe…" value="' + esc(f.recherche) + '">' +
+            '<div><label for="pf-recherche">Recherche</label><div class="pl-recherche"><input type="search" id="pf-recherche" autocomplete="off" enterkeyhint="search" placeholder="Nom, ville, groupe…" value="' + esc(f.recherche) + '">' +
             '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div></div>' +
             (epure ? "" : '<div><label for="pf-client">Client</label><select id="pf-client">' +
             options(tous.map(c => ({ valeur: c.id, texte: c.nom })), f.client, "Tous les clients") + '</select></div>') +

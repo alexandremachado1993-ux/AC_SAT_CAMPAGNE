@@ -119,6 +119,7 @@ const Excel = (() => {
 
     function echapper(valeur) {
         return String(valeur)
+            // eslint-disable-next-line no-control-regex -- volontaire : ces caractères de contrôle sont interdits dans un document XML
             .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")   // caractères interdits en XML
             .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }

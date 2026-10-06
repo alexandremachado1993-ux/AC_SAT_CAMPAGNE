@@ -306,7 +306,7 @@ const EchangesExcel = (() => {
             /* Envoi immédiat : l'équipe reçoit les modifications sans attendre. */
             if (b.ok && typeof Synchro !== "undefined") Synchro.synchroniser();
             AppLayout.fermerFeuille();
-            AppLayout.toast(b.ok
+            AppLayout.toastSucces(b.ok
                 ? "Import terminé ✓ — " + b.clientsCrees + " créé(s), " + b.clientsMaj + " mis à jour · " +
                 (b.contactsCrees + b.contactsMaj) + " contact(s) · " + (b.lignesCreees + b.lignesMaj) + " ligne(s)"
                 : "⚠️ Import non enregistré : le navigateur a refusé l'écriture");
@@ -354,13 +354,13 @@ const EchangesExcel = (() => {
         document.querySelector('[data-export="xlsx"]').addEventListener("click", () => {
             Excel.telechargerXlsx("clients-campagne-" + date + ".xlsx", lignesExport());
             AppLayout.fermerFeuille();
-            AppLayout.toast("Export Excel téléchargé ✓");
+            AppLayout.toastSucces("Export Excel téléchargé ✓");
         });
         document.querySelector('[data-export="csv"]').addEventListener("click", () => {
             const f = lignesExport()[0];
             Excel.telechargerCsv("clients-campagne-" + date + ".csv", f.colonnes, f.lignes);
             AppLayout.fermerFeuille();
-            AppLayout.toast("Export CSV téléchargé ✓");
+            AppLayout.toastSucces("Export CSV téléchargé ✓");
         });
     }
 

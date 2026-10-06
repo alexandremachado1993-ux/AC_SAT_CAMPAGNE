@@ -70,5 +70,5 @@ const Departements = (() => {
         return { departement: code, departementNom: code + " – " + LISTE[code][0], region: client.region || LISTE[code][1] };
     }
 
-    return { codeDepuisCp, emplacement };
+    return { emplacement };
 })();

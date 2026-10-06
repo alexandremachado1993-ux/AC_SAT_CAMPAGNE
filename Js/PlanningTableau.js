@@ -224,5 +224,5 @@ const PlanningTableau = (() => {
         }).join("") + '</ul>';
     }
 
-    return { COULEURS, LIBELLES, jourLong, resumeJour, cartes, barreStatut, calendrier, techniciens, analyses, detailJour, libelleEv };
+    return { jourLong, cartes, barreStatut, calendrier, techniciens, analyses, detailJour, libelleEv };
 })();

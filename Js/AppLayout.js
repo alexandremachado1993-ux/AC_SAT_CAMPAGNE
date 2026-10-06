@@ -17,7 +17,7 @@ const AppLayout = (() => {
     /* Version livrée : la même valeur figure dans version.txt à la racine.
        Après une mise en ligne, ouvrir <site>/version.txt permet de vérifier
        que c'est bien cette version qui est en ligne. */
-    const VERSION = "2026.10.06-a";
+    const VERSION = "2026.10.06-f";
 
     /* Barre latérale ET navigation mobile se construisent depuis cette liste. */
     const ELEMENTS_NAV = [
@@ -55,9 +55,15 @@ const AppLayout = (() => {
         document.documentElement.classList.toggle("dark", theme === "dark");
     }
 
+    /* Logo introuvable : on le masque. Remplace l'ancien onerror="…" écrit en attribut HTML, que la politique de sécurité (CSP)
+       du site bloque. Les erreurs d'image ne remontent pas : on les écoute en phase de capture, sur tout le document. */
+    document.addEventListener("error", (e) => {
+        if (e.target && e.target.tagName === "IMG" && e.target.closest(".entete-logo-icone")) e.target.hidden = true;
+    }, true);
+
     function blocLogo(classe) {
         return '<a href="Index.html" class="' + classe + '">' +
-            '<span class="entete-logo-icone"><img src="Images/logo.png" alt="AC SAT" onerror="this.hidden = true;"></span>' +
+            '<span class="entete-logo-icone"><img src="Images/logo.png" alt="AC SAT"></span>' +
             '<span class="entete-logo-texte">' +
             '<span class="entete-logo-titre" style="display:block;">AC SAT</span>' +
             '<span class="entete-logo-sous-titre" style="display:block;">Campagnes</span>' +
@@ -77,23 +83,64 @@ const AppLayout = (() => {
 
         document.body.appendChild(elVoile);
         document.body.appendChild(elFeuille);
+
+        /* Un champ qui prend le focus dans une fenêtre est ramené au centre : le clavier d'un téléphone ne le cache plus. */
+        elFeuille.addEventListener("focusin", (e) => {
+            const champ = e.target;
+            if (!/^(INPUT|SELECT|TEXTAREA)$/.test(champ.tagName) || typeof champ.scrollIntoView !== "function") return;
+            const reduit = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            setTimeout(() => champ.scrollIntoView({ block: "center", behavior: reduit ? "auto" : "smooth" }), 300);
+        });
     }
 
+    /* Fenêtre (« feuille ») accessible au clavier et aux lecteurs d'écran : rôle dialog, titre annoncé, le focus entre dans la
+       fenêtre à l'ouverture, Tab y reste enfermé, Échap la ferme, et le focus retourne à l'élément qui l'avait ouverte. */
+    const FOCUSABLES = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    let elDeclencheur = null;
+
     function ouvrirFeuille(cote, titre, corpsHtml) {
+        const dejaOuverte = !elFeuille.hidden;
+        if (!dejaOuverte) elDeclencheur = document.activeElement;
         elFeuille.className = "feuille " + (cote === "droite" ? "feuille--droite" : "feuille--bas");
+        elFeuille.setAttribute("role", "dialog");
+        elFeuille.setAttribute("aria-modal", "true");
+        elFeuille.setAttribute("aria-labelledby", "feuille-titre-texte");
+        elFeuille.tabIndex = -1;
         elFeuille.innerHTML =
-            '<div class="feuille-titre"><span>' + escapeHtml(titre) + '</span>' +
+            '<div class="feuille-titre"><span id="feuille-titre-texte">' + escapeHtml(titre) + '</span>' +
             '<button type="button" class="feuille-bouton-fermer" aria-label="Fermer">✕</button></div>' +
             '<div>' + corpsHtml + '</div>';
         elFeuille.hidden = false;
         elVoile.hidden = false;
         elFeuille.querySelector(".feuille-bouton-fermer").addEventListener("click", fermerFeuille);
+        /* Le focus va sur la fenêtre elle-même (pas sur un champ : le clavier d'un téléphone ne doit pas s'ouvrir tout seul). */
+        if (!dejaOuverte) elFeuille.focus({ preventScroll: true });
     }
 
     function fermerFeuille() {
+        const etaitOuverte = !!elFeuille && !elFeuille.hidden;
         if (elFeuille) elFeuille.hidden = true;
         if (elVoile) elVoile.hidden = true;
+        if (etaitOuverte && elDeclencheur && document.contains(elDeclencheur) && typeof elDeclencheur.focus === "function") elDeclencheur.focus({ preventScroll: true });
+        elDeclencheur = null;
     }
+
+    document.addEventListener("keydown", (e) => {
+        if (!elFeuille || elFeuille.hidden) return;
+        if (e.key === "Escape") {
+            /* On ne ferme que si le focus est dans la fenêtre (ou nulle part) : une autre couche, comme l'aperçu d'un rapport, gère son propre Échap. */
+            if (e.target !== document.body && e.target !== document && !elFeuille.contains(e.target)) return;
+            e.preventDefault();
+            fermerFeuille();
+        } else if (e.key === "Tab") {
+            const cibles = Array.from(elFeuille.querySelectorAll(FOCUSABLES)).filter(x => !x.closest("[hidden]"));
+            if (!cibles.length) { e.preventDefault(); elFeuille.focus(); return; }
+            const premier = cibles[0], dernier = cibles[cibles.length - 1], actif = document.activeElement;
+            if (!elFeuille.contains(actif)) { e.preventDefault(); premier.focus(); }
+            else if (e.shiftKey && (actif === premier || actif === elFeuille)) { e.preventDefault(); dernier.focus(); }
+            else if (!e.shiftKey && actif === dernier) { e.preventDefault(); premier.focus(); }
+        }
+    });
 
     /* ---------- Bandeau en ligne / hors ligne ---------- */
 
@@ -219,7 +266,7 @@ const AppLayout = (() => {
             '<span class="indicateur-synchro-point"></span><span data-etat-synchro-texte>…</span></a>' +
             '<nav class="rail-lateral-nav">' +
             ELEMENTS_NAV.map(item => (
-                '<a href="' + item.href + '" class="rail-lateral-lien' + (item.page === pageActuelle ? " actif" : "") + '">' +
+                '<a href="' + item.href + '" class="rail-lateral-lien' + (item.page === pageActuelle ? ' actif" aria-current="page' : '') + '">' +
                 '<span class="rail-lateral-icone">' + item.icone + '</span><span>' + item.libelle + '</span>' +
                 (item.page === "tableau" ? '<span class="badge-nombre" data-badge-a-visiter hidden style="position:static;margin-left:auto;">0</span>' : "") +
                 '</a>'
@@ -263,6 +310,7 @@ const AppLayout = (() => {
             const lien = document.createElement("a");
             lien.href = item.href;
             lien.className = "nav-basse-lien" + (item.page === pageActuelle ? " actif" : "");
+            if (item.page === pageActuelle) lien.setAttribute("aria-current", "page");
             lien.innerHTML =
                 '<span class="nav-basse-icone">' + item.icone + '</span>' +
                 '<span>' + (item.court || item.libelle) + '</span>' +
@@ -348,6 +396,15 @@ const AppLayout = (() => {
 
     /* ---------- Toast ---------- */
 
+    /* Message de SUCCÈS : jamais affiché si l'écriture sur l'appareil a échoué (la donnée disparaîtrait au rechargement). */
+    function toastSucces(message) {
+        if (typeof Donnees !== "undefined" && Donnees.stockageOk && !Donnees.stockageOk()) {
+            toast("⚠️ Non enregistré : le navigateur refuse d'écrire sur cet appareil. Exporte une sauvegarde (Réglages) et libère de l'espace.");
+            return;
+        }
+        toast(message);
+    }
+
     function toast(message) {
         const el = document.createElement("div");
         el.textContent = message;
@@ -358,6 +415,33 @@ const AppLayout = (() => {
             "box-shadow:var(--ombre-elevee);z-index:1100;max-width:90vw;text-align:center;";
         document.body.appendChild(el);
         setTimeout(() => el.remove(), 3500);
+        annoncer(message);
+    }
+
+    /* Les messages de confirmation ou d'erreur sont aussi ANNONCÉS aux lecteurs d'écran, par une région vocale qui existe déjà
+       dans la page (une région créée avec son texte n'est pas annoncée de façon fiable). */
+    function annoncer(message) {
+        let zone = document.getElementById("annonces");
+        if (!zone) {
+            zone = document.createElement("div");
+            zone.id = "annonces"; zone.className = "annonces-vocales";
+            zone.setAttribute("role", "status"); zone.setAttribute("aria-live", "polite");
+            document.body.appendChild(zone);
+        }
+        zone.textContent = "";
+        setTimeout(() => { zone.textContent = message; }, 60);
+    }
+
+    /* Lien « Aller au contenu » : le premier élément atteint par Tab, pour passer le menu. Géré en JavaScript (pas d'ancre #…) :
+       le « # » de l'adresse sert déjà aux onglets de certaines pages. */
+    function ajouterLienEvitement() {
+        const contenu = document.getElementById("contenu-page");
+        if (!contenu || document.querySelector(".lien-evitement")) return;
+        contenu.tabIndex = -1;
+        const lien = document.createElement("a");
+        lien.href = "#contenu-page"; lien.className = "lien-evitement"; lien.textContent = "Aller au contenu";
+        lien.addEventListener("click", (e) => { e.preventDefault(); contenu.focus(); if (typeof contenu.scrollIntoView === "function") contenu.scrollIntoView(); });
+        document.body.insertBefore(lien, document.body.firstChild);
     }
 
     /* Message avec un bouton d'action (ex. « Annuler » après une suppression). */
@@ -419,7 +503,7 @@ const AppLayout = (() => {
 
     function memoriserControle(infos) {
         dernierControle = Date.now();
-        try { sessionStorage.setItem(CLE_MAJ_SESSION, JSON.stringify({ t: dernierControle, infos })); } catch (e) { /* stockage refusé : on recontrôlera */ }
+        try { sessionStorage.setItem(CLE_MAJ_SESSION, JSON.stringify({ t: dernierControle, infos })); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on recontrôlera", e); }
     }
 
     /* Un contrôle sans réponse (null) ne fait pas oublier une mise à jour déjà connue. */
@@ -438,7 +522,7 @@ const AppLayout = (() => {
 
     /* Installe : recharge l'application (le serveur ne met rien en cache pour le code). Les données locales ne sont pas touchées. */
     function appliquerMiseAJour() {
-        try { localStorage.removeItem(CLE_MAJ_REPORT); sessionStorage.removeItem(CLE_MAJ_SESSION); sessionStorage.removeItem(CLE_MAJ_PROPOSEE); } catch (e) { /* idem */ }
+        try { localStorage.removeItem(CLE_MAJ_REPORT); sessionStorage.removeItem(CLE_MAJ_SESSION); sessionStorage.removeItem(CLE_MAJ_PROPOSEE); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on recontrôlera", e); }
         const recharger = () => location.reload();
         if (typeof navigator !== "undefined" && navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
             navigator.serviceWorker.getRegistration().then(r => (r ? r.update() : null)).catch(() => null).then(recharger);
@@ -469,7 +553,7 @@ const AppLayout = (() => {
         try {
             if (sessionStorage.getItem(CLE_MAJ_PROPOSEE) === "1") return;
             if (Date.now() < Number(localStorage.getItem(CLE_MAJ_REPORT) || 0)) return;
-        } catch (e) { /* stockage refusé : on propose */ }
+        } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on propose", e); }
         proposeEnCours = true;
         let essais = 0;
         const tenter = () => {
@@ -478,7 +562,7 @@ const AppLayout = (() => {
             proposeEnCours = false;
             if (!maj.disponible) return;
             if (document.querySelector("#panneau-reglages-informations:not([hidden])")) return;     // déjà sous les yeux (Réglages › Informations) : pas de fenêtre par-dessus
-            try { sessionStorage.setItem(CLE_MAJ_PROPOSEE, "1"); localStorage.setItem(CLE_MAJ_REPORT, String(Date.now() + REPORT_MS)); } catch (e) { /* idem */ }
+            try { sessionStorage.setItem(CLE_MAJ_PROPOSEE, "1"); localStorage.setItem(CLE_MAJ_REPORT, String(Date.now() + REPORT_MS)); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on propose", e); }
             ouvrirSuggestionMaj();
         };
         setTimeout(tenter, 1200);       // après l'annonce « Nouveautés » éventuelle, qui s'ouvre à 0,9 s
@@ -488,12 +572,12 @@ const AppLayout = (() => {
     function notifierSysteme() {
         if (!maj.disponible || typeof Notification === "undefined" || Notification.permission !== "granted" || !document.hidden) return;
         if (!(typeof navigator !== "undefined" && navigator.serviceWorker && navigator.serviceWorker.ready)) return;
-        try { if (!notifMajActive() || localStorage.getItem(CLE_MAJ_NOTIFIEE) === maj.version) return; } catch (e) { /* idem */ }
+        try { if (!notifMajActive() || localStorage.getItem(CLE_MAJ_NOTIFIEE) === maj.version) return; } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on propose", e); }
         const n = maj.infos && maj.infos.nouveaute;
         navigator.serviceWorker.ready.then(reg => reg.showNotification("Mise à jour disponible", {
             body: (n ? "Nouveau : " + n.titre + ". " : "") + "Version " + maj.version + " : ouvre l'application pour l'installer.",
             icon: "Images/icone-192.png", badge: "Images/badge-96.png", tag: "acsc-maj" }))
-            .then(() => { try { localStorage.setItem(CLE_MAJ_NOTIFIEE, maj.version); } catch (e) { /* idem */ } })
+            .then(() => { try { localStorage.setItem(CLE_MAJ_NOTIFIEE, maj.version); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on propose", e); } })
             .catch(() => { /* notification refusée ou indisponible : la fenêtre et la pastille suffisent */ });
     }
 
@@ -538,10 +622,10 @@ const AppLayout = (() => {
         Donnees.ecouter(appliquerTheme);
         Donnees.ecouter(rafraichirBadges);
 
-        let alerteStockageAffichee = false;
+        let derniereAlerteStockage = 0;
         Donnees.surErreurStockage(() => {
-            if (alerteStockageAffichee) return;
-            alerteStockageAffichee = true;
+            if (Date.now() - derniereAlerteStockage < 30000) return;      // pas de rafale, mais l'alerte revient tant que le problème dure
+            derniereAlerteStockage = Date.now();
             toast("⚠️ Enregistrement refusé par le navigateur — exporte une sauvegarde depuis Réglages");
         });
 
@@ -549,6 +633,7 @@ const AppLayout = (() => {
         initBandeauConnexion();
         construireEntete();
         restructurerEnSidebar(pageActuelle);
+        ajouterLienEvitement();
         construireNavBasse(pageActuelle);
         rafraichirBadges();
 
@@ -565,5 +650,5 @@ const AppLayout = (() => {
         if (typeof Nouveautes !== "undefined") Nouveautes.annoncerSiBesoin();      /* « quoi de neuf ? » : une fois, jamais par-dessus l'animation ni une autre fenêtre */
     }
 
-    return { init, ouvrirFeuille, fermerFeuille, toast, toastAction, escapeHtml, VERSION, verifierMiseAJour, appliquerMiseAJour, ouvrirSuggestionMaj, miseAJourDisponible: () => maj, rafraichirNotifications: majPastilleAvatar, notifMajActive, definirNotifMaj };
+    return { init, ouvrirFeuille, fermerFeuille, toast, toastSucces, toastAction, escapeHtml, VERSION, verifierMiseAJour, appliquerMiseAJour, rafraichirNotifications: majPastilleAvatar, notifMajActive, definirNotifMaj };
 })();

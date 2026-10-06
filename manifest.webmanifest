@@ -1,32 +1,68 @@
 {
-    "name": "AC SAT Campagne",
-    "short_name": "Campagnes",
-    "description": "Suivi des visites de campagne (sertissage)",
-    "lang": "fr",
-    "start_url": "Index.html",
-    "scope": "./",
-    "display": "standalone",
-    "orientation": "any",
-    "background_color": "#f9f8fb",
-    "theme_color": "#dc2626",
-    "icons": [
-        {
-            "src": "Images/icone-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "Images/icone-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "Images/icone-maskable-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
-        }
-    ]
+  "name": "AC SAT Campagne",
+  "short_name": "Campagnes",
+  "description": "Suivi des visites de campagne (sertissage)",
+  "lang": "fr",
+  "start_url": "Index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f9f8fb",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "Images/icone-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "Images/icone-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "Images/icone-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "Index.html",
+  "dir": "ltr",
+  "categories": [
+    "productivity",
+    "business"
+  ],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
+  "shortcuts": [
+    {
+      "name": "Planning",
+      "short_name": "Planning",
+      "description": "Tableau de bord, calendrier et timeline des visites",
+      "url": "Planning.html"
+    },
+    {
+      "name": "Tournée",
+      "short_name": "Tournée",
+      "description": "Propositions et rendez-vous des prochains jours",
+      "url": "Tournee.html"
+    },
+    {
+      "name": "Clients",
+      "short_name": "Clients",
+      "description": "Liste des clients et de leurs lignes",
+      "url": "Clients.html"
+    },
+    {
+      "name": "Contrôle de serti",
+      "short_name": "Serti",
+      "description": "Contrôle de serti et comparaison client",
+      "url": "Serti.html"
+    }
+  ]
 }

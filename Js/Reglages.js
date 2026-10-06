@@ -161,7 +161,7 @@
                 if (!email || !mdp) return afficher("Email et mot de passe requis.");
                 afficher("Connexion…");
                 const r = await Synchro.connexion(email, mdp);
-                if (r.ok) { saisie.mdp = ""; saisie.message = ""; AppLayout.toast("Connecté ✓ — synchronisation lancée"); }
+                if (r.ok) { saisie.mdp = ""; saisie.message = ""; AppLayout.toastSucces("Connecté ✓ — synchronisation lancée"); }
                 else afficher(r.message);
             });
             carte.querySelector("[data-inscription]").addEventListener("click", async () => {
@@ -231,7 +231,7 @@
 
     function brancherAnimation() {
         document.querySelectorAll('input[name="anim-mode"]').forEach(r => r.addEventListener("change", () => {
-            try { localStorage.setItem("acsc_animation", r.value); } catch (e) { /* stockage refusé : réglage non mémorisé */ }
+            try { localStorage.setItem("acsc_animation", r.value); } catch (e) { Erreurs.consigner("Reglages : stockage refusé : réglage non mémorisé", e); }
             const st = document.querySelector("[data-animation-statut]");
             if (st) st.textContent = texteEtatAnimation(Splash.etat());
             AppLayout.toast("Animation d'ouverture : " + MODES_ANIMATION.find(m => m[0] === r.value)[1].toLowerCase());
@@ -256,7 +256,7 @@
 
     async function rendreNotifications() {
         const carte = document.getElementById("carte-notifications");
-        if (!carte || typeof Synchro === "undefined" || !Synchro.etatNotifications) return;
+        if (!carte || typeof Notifications === "undefined") return;
         const s = Synchro.etat();
         const titre = '<h2 class="carte-titre">🔔 Notifications</h2>';
         const t = Donnees.getTournee();
@@ -267,7 +267,7 @@
             carte.innerHTML = titre + explication + '<p class="aide-champ">Connecte-toi à la synchronisation pour les activer.</p>';
             return;
         }
-        const e = await Synchro.etatNotifications();
+        const e = await Notifications.etat();
         let corps;
         if (!e.support) {
             corps = e.raison === "iphone-installer"
@@ -296,19 +296,19 @@
             });
         };
         action("[data-notif-activer]", async (msg) => {
-            const r = await Synchro.activerNotifications();
+            const r = await Notifications.activer();
             if (!r.ok) { msg(r.message); await rendreNotifications(); msg(r.message); return; }
             await rendreNotifications();
-            AppLayout.toast("Notifications activées ✓ — envoie un test pour vérifier");
+            AppLayout.toastSucces("Notifications activées ✓ — envoie un test pour vérifier");
         });
         action("[data-notif-tester]", async (msg) => {
-            const r = await Synchro.testerNotifications();
+            const r = await Notifications.tester();
             if (!r.ok) { msg(r.message); b_reactiver(); return; }
-            AppLayout.toast(r.envoyees ? "Notification envoyée ✓ — elle doit arriver dans quelques secondes" : "Aucun appareil abonné trouvé : réactive les notifications");
+            AppLayout.toastSucces(r.envoyees ? "Notification envoyée ✓ — elle doit arriver dans quelques secondes" : "Aucun appareil abonné trouvé : réactive les notifications");
             b_reactiver();
         });
         action("[data-notif-desactiver]", async (msg) => {
-            const r = await Synchro.desactiverNotifications();
+            const r = await Notifications.desactiver();
             if (!r.ok) msg(r.message);
             await rendreNotifications();
         });
@@ -386,7 +386,7 @@
             const r = await Synchro.creerEquipe(saisieEquipe.nom.trim());
             saisieEquipe.message = r.ok ? "" : r.message;
             rendreEquipe(Synchro.etat());
-            if (r.ok) AppLayout.toast("Équipe créée ✓ — donne le code à ton collègue");
+            if (r.ok) AppLayout.toastSucces("Équipe créée ✓ — donne le code à ton collègue");
         });
 
         const bRejoindre = carte.querySelector("[data-rejoindre-equipe]");
@@ -400,13 +400,13 @@
             saisieEquipe.message = r.ok ? "" : r.message;
             if (r.ok) saisieEquipe.code = "";
             rendreEquipe(Synchro.etat());
-            if (r.ok) AppLayout.toast("Équipe rejointe ✓ — clients partagés synchronisés");
+            if (r.ok) AppLayout.toastSucces("Équipe rejointe ✓ — clients partagés synchronisés");
         });
 
         const bCopier = carte.querySelector("[data-copier-code]");
         if (bCopier) bCopier.addEventListener("click", () => {
             const code = (Synchro.etat().equipe || {}).code || "";
-            if (navigator.clipboard) navigator.clipboard.writeText(code).then(() => AppLayout.toast("Code copié ✓"), () => AppLayout.toast("Code : " + code));
+            if (navigator.clipboard) navigator.clipboard.writeText(code).then(() => AppLayout.toastSucces("Code copié ✓"), () => AppLayout.toast("Code : " + code));
             else AppLayout.toast("Code : " + code);
         });
 
@@ -438,8 +438,8 @@
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        try { localStorage.setItem("acsc_derniere_sauvegarde", Donnees.aujourdhuiIso()); } catch (e) { /* rappel seulement */ }
-        AppLayout.toast("Sauvegarde exportée ✓");
+        try { localStorage.setItem("acsc_derniere_sauvegarde", Donnees.aujourdhuiIso()); } catch (e) { Erreurs.signaler("Reglages : rappel seulement", e); }
+        AppLayout.toastSucces("Sauvegarde exportée ✓");
     }
 
     function brancher() {
@@ -447,7 +447,7 @@
         document.getElementById("form-profil").addEventListener("submit", (e) => {
             e.preventDefault();
             if (Donnees.definirNomProfil(document.getElementById("rp-nom").value)) {
-                AppLayout.toast("Profil enregistré ✓ — visible au prochain changement de page");
+                AppLayout.toastSucces("Profil enregistré ✓ — visible au prochain changement de page");
             } else {
                 AppLayout.toast("Le nom ne peut pas être vide");
             }
@@ -470,7 +470,7 @@
             const lecteur = new FileReader();
             lecteur.onload = () => {
                 const r = Donnees.importer(String(lecteur.result));
-                AppLayout.toast(r.ok ? "Sauvegarde restaurée ✓ — " + r.nbClients + " client(s)" : "⚠️ " + r.raison);
+                AppLayout.toastSucces(r.ok ? "Sauvegarde restaurée ✓ — " + r.nbClients + " client(s)" : "⚠️ " + r.raison);
             };
             lecteur.onerror = () => AppLayout.toast("⚠️ Impossible de lire ce fichier");
             lecteur.readAsText(f);
@@ -525,6 +525,17 @@
             '<p class="info-aide" style="margin:6px 0 0;">' + esc(aide) + '</p></div>';
     }
 
+    /* Journal d'erreurs de CET appareil (Erreurs.js) : rien n'est envoyé nulle part. */
+    function carteDiagnostic() {
+        const n = Erreurs.nombre();
+        return '<div class="carte"><h2 class="carte-titre">🛠 Diagnostic</h2><p class="info-aide" style="margin:6px 0 0;">' +
+            (n ? n + (n > 1 ? " problèmes enregistrés" : " problème enregistré") + " sur cet appareil. Rien n'est envoyé nulle part : copie le rapport si tu veux me le transmettre."
+               : "Aucun problème enregistré sur cet appareil.") + '</p>' +
+            (n ? '<div class="info-actions"><button type="button" class="bouton bouton--contour" data-diag-copier>Copier le rapport</button><button type="button" class="bouton bouton--contour" data-diag-effacer>Effacer le journal</button></div>' : "") +
+            '<div class="info-actions"><button type="button" class="bouton bouton--contour" data-diag-verifier>🩺 Vérifier mon installation</button></div>' +
+            '<ul class="liste-journal" data-diag-resultats aria-live="polite"></ul></div>';
+    }
+
     function rendreInfos() {
         const v = AppLayout.VERSION, iso = dateDeVersion(v);
         document.getElementById("panneau-reglages-informations").innerHTML =
@@ -539,7 +550,7 @@
             '<div class="info-ligne"><dt>État</dt><dd><span id="info-etat" role="status" aria-live="polite">Vérification en cours…</span><span class="info-aide" id="info-maj-nouv" hidden></span></dd></div>' +
             '</dl><div class="info-actions"><button type="button" class="bouton bouton--contour" data-verifier-maj>🔄 Vérifier les mises à jour</button>' +
             '<button type="button" class="bouton" data-recharger hidden>Mettre à jour maintenant</button></div></div>' +
-            carteNouveaute() + carteNotifications() + '</div>';
+            carteNouveaute() + carteNotifications() + carteDiagnostic() + '</div>';
         brancherInfos();
         verifierMaj();
     }
@@ -563,6 +574,32 @@
 
     function brancherInfos() {
         const p = document.getElementById("panneau-reglages-informations");
+        const bDiag = p.querySelector("[data-diag-verifier]");
+        if (bDiag) bDiag.addEventListener("click", async () => {
+            const zone = p.querySelector("[data-diag-resultats]");
+            bDiag.disabled = true; bDiag.textContent = "Vérification en cours…";
+            try {
+                const resultats = await AutoDiagnostic.verifier();
+                zone.innerHTML = resultats.map(r => '<li data-etat="' + r.etat + '"><strong>' + AutoDiagnostic.ICONES[r.etat] + " " + esc(r.nom) + "</strong> — " + esc(r.detail) + "</li>").join("") +
+                    '<li><button type="button" class="bouton bouton--contour" data-diag-copier-resultat>Copier ce résultat</button></li>';
+                zone.querySelector("[data-diag-copier-resultat]").addEventListener("click", () => {
+                    if (navigator.clipboard) navigator.clipboard.writeText(AutoDiagnostic.texte(resultats)).then(() => AppLayout.toast("Résultat copié ✓"), () => AppLayout.toast("Copie impossible : sélectionne le texte à la main."));
+                    else AppLayout.toast("Copie impossible sur ce navigateur.");
+                });
+            } catch (e) {
+                Erreurs.signaler("Réglages : auto-diagnostic", e);
+                zone.innerHTML = "<li>La vérification n'a pas pu aller au bout. Réessaie.</li>";
+            }
+            bDiag.disabled = false; bDiag.textContent = "🩺 Vérifier mon installation";
+        });
+        const bc = p.querySelector("[data-diag-copier]");
+        if (bc) bc.addEventListener("click", () => {
+            const texte = Erreurs.rapport(AppLayout.VERSION);
+            if (navigator.clipboard) navigator.clipboard.writeText(texte).then(() => AppLayout.toastSucces("Rapport copié ✓"), () => AppLayout.toast("Copie impossible : sélectionne le texte à la main."));
+            else AppLayout.toast("Copie impossible sur ce navigateur.");
+        });
+        const be = p.querySelector("[data-diag-effacer]");
+        if (be) be.addEventListener("click", () => { Erreurs.effacer(); rendreInfos(); });
         const bv = p.querySelector("[data-verifier-maj]"); if (bv) bv.addEventListener("click", verifierMaj);
         const br = p.querySelector("[data-recharger]"); if (br) br.addEventListener("click", () => AppLayout.appliquerMiseAJour());
         const bn = p.querySelector("[data-notif-maj]"); if (bn) bn.addEventListener("change", () => AppLayout.definirNotifMaj(bn.checked));
@@ -583,7 +620,7 @@
             document.getElementById("panneau-reglages-" + o.id).hidden = !actif;
         });
         if (id === "informations" && change) rendreInfos();
-        if (majAdresse && window.history && history.replaceState) { try { history.replaceState(null, "", id === "informations" ? "#informations" : location.pathname + location.search); } catch (e) { /* adresse non modifiable : sans importance */ } }
+        if (majAdresse && window.history && history.replaceState) { try { history.replaceState(null, "", id === "informations" ? "#informations" : location.pathname + location.search); } catch (e) { Erreurs.consigner("Reglages : adresse non modifiable : sans importance", e); } }
     }
     document.querySelectorAll("[data-onglet-reglages]").forEach(b => {
         b.addEventListener("click", () => afficherOnglet(b.getAttribute("data-onglet-reglages"), true));

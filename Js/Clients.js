@@ -114,7 +114,7 @@
             (tous.length > 0
                 ? '<div class="champ-recherche-conteneur" style="margin-top:12px;">' +
                 '<span class="icone-recherche">🔎</span>' +
-                '<input type="search" id="champ-recherche" placeholder="Rechercher un client, une ville, un groupe…" value="' + esc(etat.recherche) + '">' +
+                '<input type="search" id="champ-recherche" autocomplete="off" enterkeyhint="search" placeholder="Rechercher un client, une ville, un groupe…" value="' + esc(etat.recherche) + '">' +
                 '</div>' +
                 '<div class="puces-filtre">' +
                 puce("tous", "puce--defaut", "Tous", compte.tous) +

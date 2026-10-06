@@ -51,6 +51,7 @@ AC-SAT-CAMPAGNE/
 ├── Js/FicheSerti.js    Bloc « Contrôle de serti » des formulaires de visite (saisie tête par tête)
 ├── Js/Serti.js         Page Serti (liste, filtres, détail, comparaison)
 ├── Js/SertiRapport.js  Rapport de serti sur une période (client / ligne au choix) : Excel en 6 feuilles et aperçu imprimable (PDF)
+├── Js/Erreurs.js       Gestion centralisée des erreurs : journal local, message sobre, gestionnaires globaux (chargé EN PREMIER)
 ├── Js/Nouveautes.js    Fenêtre « Quoi de neuf » : liste des nouveautés (étapes + photos), mémoire de ce qui a été vu
 ├── Js/Splash.js        Animation d'ouverture (vidéo, réglage, journal des ouvertures)
 ├── Modeles/            Modèle d'import Excel (lien « ⬇ modèle »)
@@ -70,6 +71,38 @@ AC-SAT-CAMPAGNE/
 ├── envoyer.bat / envoyer-auto.bat   Scripts d'envoi vers GitHub (non publiés)
 ├── netlify.toml        Hébergement (Netlify) (Index.html avec I majuscule)
 ```
+
+## Architecture : où est quoi
+
+| Je cherche… | Où |
+|---|---|
+| L'**écran** d'une page | `Js/<Page>.js` (`TableauBord`, `Clients`, `ClientFiche`, `Tournee`, `Reglages`, `Documents`, `Planning`, `Serti`) |
+| Les **formulaires** (client, ligne, visite, rendez-vous) | `Js/Formulaires.js` (HTML : `htmlFormulaireVisite`… ; contrôle : `verifierSaisieVisite`) |
+| La **logique métier** pure (sans écran, testée seule) | `PlanningCalcul.js`, `SertiCalcul.js`, `ReferentielSerti.js`, et le moteur d'échéances dans `Donnees.js` |
+| Les **données** et leur stockage local | `Js/Donnees.js` (SEULE couche d'accès : jamais de `localStorage` ailleurs pour les données) |
+| La **synchronisation** (Supabase, équipe) | `Js/Synchro.js` ; côté serveur : tables et fonctions SQL (voir « Synchronisation ») |
+| Les **notifications** | `Js/Notifications.js` (navigateur : permission, abonnement), `Js/Synchro.js` (appels serveur seulement), `sw.js` (réception), `supabase/functions/rappels/` (envoi) |
+| Les **diagnostics** | `Js/Erreurs.js` (journal), `Js/AutoDiagnostic.js` (bouton « Vérifier mon installation », Réglages › Informations) |
+| La **mise à jour** de l'application et les **nouveautés** | `Js/AppLayout.js` (section mise à jour), `Js/Nouveautes.js`, `version.json` |
+| L'**authentification** | Supabase Auth, pilotée par `Js/Synchro.js` (connexion, inscription, session) |
+| Le **démarrage** d'une page | `Js/Amorce.js` (dans `<head>`, avant l'affichage : animation d'ouverture), `Js/Demarrage.js` (en bas ; la page se déclare par `<body data-page="…">`) |
+| La **sécurité** | `netlify.toml` (en-têtes dont la CSP) ; base : `supabase/migrations/` (une migration = un fichier daté, appliquée puis versionnée) |
+| Les **erreurs** | `Js/Erreurs.js` (journal local, Réglages › Informations › Diagnostic) |
+| La **mise en page**, thèmes, responsive | `CSS/style.css` (base), `CSS/campagne.css` (spécifique ; l'échelle des points de rupture est en tête) |
+| Les **tests** | `Tests/` (`npm test`), analyse statique `npm run lint`, audits navigateur `Tests/navigateur/` |
+| Le **déploiement** | GitHub → Netlify (`netlify.toml`) ; fonction serveur : Supabase (voir « Déploiement ») |
+
+Règles : une page = un fichier `Js/<Page>.js` qui assemble ; le calcul ne touche jamais l'écran ; l'écran ne lit jamais le stockage directement (il passe par `Donnees`) ; le journal d'erreurs, l'état des mises à jour et le thème sont **propres à l'appareil** et ne sont jamais synchronisés.
+
+**Ajouter…** une donnée synchronisée : champ dans `Donnees.js` + normalisation + test. Une page : `<Page>.html` + `Js/<Page>.js` + entrée dans `AppLayout` (menu) + déclaration dans `Tests/test25.js`. Une nouveauté visible : bloc en tête de `Js/Nouveautes.js` + photos (`Tests/navigateur/nouveautes-captures.mjs`). Une erreur à tolérer : `Erreurs.consigner("module : raison", e)` (jamais un `catch` vide, un test l'interdit) ; une erreur anormale : `Erreurs.signaler(…)`.
+
+## Sécurité : règles à respecter
+
+- **CSP stricte** (`netlify.toml`) : `script-src 'self'` — **aucun script en ligne** dans les pages, **aucun** `onclick="…"` ni `onerror="…"` en attribut (ni dans les pages, ni dans le HTML construit par `Js/`) : il serait bloqué en ligne. Un test (`test40.js`) le vérifie. Pour réagir à un événement : `addEventListener`.
+- **Toute nouvelle adresse externe** (une API, un service) doit être ajoutée à `connect-src` dans la CSP ; le test refuse une adresse écrite dans le code mais non autorisée. Aujourd'hui : le site, Supabase, `geo.api.gouv.fr`.
+- **Base** : le rôle anonyme (`anon`) n'a aucun droit sur les tables ; l'application n'utilise que des comptes connectés (RLS). Chaque évolution du schéma passe par un fichier de `supabase/migrations/`, **testée d'abord dans une transaction annulée**.
+- **Rejoindre une équipe** : limité à 5 faux codes par compte et par 15 minutes (100 par heure au total). La base RENVOIE `{"erreur":"code_inconnu"}` (au lieu de lever une exception, qui annulerait le décompte) ; `Synchro.js` la retransforme en erreur.
+- **À faire dans le tableau de bord Supabase** (non automatisable ici) : désactiver les inscriptions publiques, activer la protection contre les mots de passe compromis si l'offre le permet.
 
 ## Déploiement et fichiers non publiés
 
@@ -207,7 +240,7 @@ n'est vérifiée que par les règles CSS (`env(safe-area-inset-*)`), pas sur un 
 Les tests ne dépendent plus du jour où on les lance (mois courant, vendredi de génération de la tournée) : un vendredi,
 la page génère elle-même la tournée à son ouverture, ce que les tests neutralisent explicitement.
 
-`Tests/` : plus de 1 200 vérifications (jsdom) ; `Tests/navigateur/` : audit des écrans dans un vrai Chromium. `cd Tests && npm install && npm test`.
+`Tests/` : plus de 1 340 vérifications (jsdom) ; `Tests/navigateur/` : audit des écrans dans un vrai Chromium. `cd Tests && npm install && npm test`.
 Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml`).
 
 ## Lots
@@ -344,6 +377,37 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     ouvrent la timeline par défaut (banc d'essai), `page("Planning.html", stock, "#tableau")` pour le tableau de bord. Style de secours régénéré :
     `python3 Tests/navigateur/generer-compatibilite.py Tests/navigateur/sortie/tokens.json`.
 
+8l. ✅ Qualité interne (2026.10.06-c) : gestion centralisée des erreurs (`Erreurs.js` : 31 erreurs qui étaient avalées en silence sont
+    désormais consignées ou signalées ; un écouteur de données qui plantait sans trace est signalé ; message sobre sans détail technique ;
+    journal local dans Réglages › Informations › Diagnostic) ; analyse statique ESLint (`npm run lint`, aussi dans l'intégration continue) :
+    variable morte, échappement inutile, fonction morte supprimés, 11 fonctions exposées sans raison retirées ; `visite()` allégée (HTML et
+    validation extraits : `htmlFormulaireVisite`, `verifierSaisieVisite`) ; Safari : `-webkit-backdrop-filter` et replis `vh` avant `dvh` ;
+    échelle unique de points de rupture CSS ; `.editorconfig` ; carte « Architecture : où est quoi ». Tests : `test38.js` (erreurs,
+    diagnostic, validation, garde-fou « aucune erreur avalée »), `test39.js` (CONTRAT entre le moteur d'échéances de l'application et celui de
+    la fonction serveur, sur 120 dates et 24 clients aléatoires : toute divergence future fait échouer la suite).
+8m. ✅ Mode exécution (2026.10.06-d) : **sécurité** — CSP stricte (scripts en ligne sortis dans `Amorce.js` et `Demarrage.js`, un `onerror`
+    en attribut remplacé par un écouteur) vérifiée dans Chromium avec contre-épreuves (un script injecté et un site étranger sont bloqués) ;
+    base Supabase : **bug P0 corrigé** (« rejoindre une équipe » échouait à chaque appel : paramètre `code` ambigu), limite de 5 essais par
+    15 minutes, rôle `anon` sans aucun droit sur les tables, index manquant ; migration versionnée (`supabase/migrations/`). **Accessibilité**
+    — fenêtres : rôle dialog, focus géré, Échap, Tab enfermé, focus rendu ; menu : `aria-current="page"` ; mouvement réduit : filet global.
+    **Mobile** — aides de saisie (clavier, majuscules, pas de remplissage automatique sur des champs de clients), touche « Rechercher ».
+    **Ordinateur** — Tournée limitée à 1 120 px, cibles à la souris ≥ 32 px. Tests : `test40.js`.
+8n. ✅ Fiabilité et vérité des données (2026.10.06-e) : **aucun faux succès** — un message « enregistré ✓ » n'est affiché que si l'écriture sur
+    l'appareil a réellement réussi (`Donnees.stockageOk`, `AppLayout.toastSucces`, 30 messages protégés) ; l'alerte de stockage revient tant que
+    le problème dure ; le journal de diagnostic garde aussi les entrées en mémoire quand le stockage est plein. **Synchronisation** — session
+    expirée en cours de route : retour à l'écran de connexion, données conservées ; une erreur serveur inconnue n'est plus montrée telle quelle
+    (message générique, détail dans le journal) ; droits refusés et lenteur du serveur ont leur message. **Formulaires** — un double clic ne crée
+    plus de doublon (`envoiEnDouble`), sans bloquer la correction qui suit un refus. Tests : `test41.js` (parcours complets avec les VRAIS formulaires,
+    rechargements, deuxième appareil, pannes réseau, session expirée, stockage refusé, doubles clics) et `Tests/faux-serveur.js` (faux serveur
+    partagé, avec pannes simulables). Chaîne base vérifiée sur la vraie base (RLS, fonctions, isolation, lots invalides, accès anonyme refusé).
+8o. ✅ Mobile, réseau lent, structure (2026.10.06-f) : **service worker** — réseau d'abord avec délai de 3 s puis copie locale (ouverture en 3 s au lieu de
+    plus de 8 s mesurée avec un réseau à 8 s par fichier), mode « copie d'abord » d'une minute après un rabattement, toute l'application préchargée à
+    l'installation (une page jamais visitée s'ouvre hors ligne), `version.json` jamais servi depuis le cache ; la liste de préchargement est régénérée par
+    `node Tests/maj-version.js`. **Manifeste** — identité stable, raccourcis Android, catégories. **Mobile** — pas de délai tactile, défilement des
+    fenêtres isolé, champ ramené au centre quand le clavier s'ouvre. **Accessibilité** — lien « Aller au contenu », messages annoncés aux lecteurs
+    d'écran, erreurs de formulaire annoncées. **Auto-diagnostic** (« 🩺 Vérifier mon installation ») : 8 contrôles sur l'appareil. **Structure** —
+    notifications séparées de la synchronisation (`Notifications.js` ; sens unique Notifications → Synchro). **Sécurité** — Permissions-Policy resserrée,
+    COOP. Tests : `test42.js`, `test43.js` (frontières entre systèmes).
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)

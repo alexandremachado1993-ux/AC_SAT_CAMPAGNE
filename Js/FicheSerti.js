@@ -201,9 +201,9 @@ const FicheSerti = (() => {
             '<label class="serti-choix-option serti-choix--non"><input type="radio" name="' + p + '-val" value="non" data-serti-val' + (choix === "non" ? " checked" : "") + '><span>NON</span></label></div>' +
             '<p class="aide-champ">' + (auto ? "Proposé d'après les mesures : <strong>" + (auto === "oui" ? "OUI" : "NON") + "</strong>" + (a.aSurveiller && auto === "oui" ? " (⚠ à surveiller)" : "") + "." : "Aucune mesure n'a pu être jugée : choisis OUI ou NON.") +
             (dif ? ' <strong>Décision manuelle</strong> — <button type="button" class="serti-lien" data-serti-auto>revenir à la proposition</button>' : "") + '</p>' +
-            (dif ? '<label for="' + p + '-note">Motif de la décision</label><input id="' + p + '-note" type="text" data-serti-note value="' + esc(inst.note) + '" placeholder="ex. mesure refaite, boîte défectueuse">' : "") +
+            (dif ? '<label for="' + p + '-note">Motif de la décision</label><input id="' + p + '-note" type="text" autocomplete="off" data-serti-note value="' + esc(inst.note) + '" placeholder="ex. mesure refaite, boîte défectueuse">' : "") +
             (inst.serie === "client" || Object.keys(inst.valeurs.client).length || inst.noteClient
-                ? '<label for="' + p + '-noteclient">Feuille du client (référence, n° ou nom du PDF)</label><input id="' + p + '-noteclient" type="text" data-serti-noteclient value="' + esc(inst.noteClient) + '" placeholder="ex. Seametal 02/10 — ligne 1">' : "") +
+                ? '<label for="' + p + '-noteclient">Feuille du client (référence, n° ou nom du PDF)</label><input id="' + p + '-noteclient" type="text" autocomplete="off" data-serti-noteclient value="' + esc(inst.noteClient) + '" placeholder="ex. Seametal 02/10 — ligne 1">' : "") +
             '</fieldset>';
     }
 

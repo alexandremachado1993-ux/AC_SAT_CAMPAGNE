@@ -18,9 +18,28 @@ const Formulaires = (() => {
 
     /* ---------- Briques de formulaire ---------- */
 
+    /* Double envoi (≠ un doublon de nom de ligne ou de client) : un second « submit » dans les 800 ms (double clic, double toucher) est ignoré. Un envoi refusé par la
+       validation ne bloque rien : on ne compte que le moment du dernier essai, et 800 ms sont plus courts qu'une correction. */
+    function envoiEnDouble(form) {
+        const maintenant = Date.now();
+        if (maintenant - (Number(form.dataset.dernierEnvoi) || 0) < 800) return true;
+        form.dataset.dernierEnvoi = String(maintenant);
+        return false;
+    }
+
+    /* Aides de saisie : le bon clavier sur téléphone, et AUCUNE suggestion de remplissage automatique : ces champs décrivent des
+       clients et des contacts, pas l'utilisateur (le navigateur lui proposerait ses propres coordonnées). */
+    function aidesSaisie(id, type) {
+        let attributs = ' autocomplete="off"';
+        if (type === "number") attributs += ' inputmode="numeric"';
+        else if (type === "email") attributs += ' autocapitalize="none" spellcheck="false"';
+        else if (type === "text" && /-(nom|prenom|ville|adresse)$/.test(id)) attributs += ' autocapitalize="words"';
+        return attributs;
+    }
+
     function champ(id, label, type, valeur, placeholder) {
         return '<label for="' + id + '">' + label + '</label>' +
-            '<input type="' + type + '" id="' + id + '" value="' + esc(valeur == null ? "" : valeur) + '"' +
+            '<input type="' + type + '" id="' + id + '"' + aidesSaisie(id, type) + ' value="' + esc(valeur == null ? "" : valeur) + '"' +
             (placeholder ? ' placeholder="' + esc(placeholder) + '"' : '') + '>';
     }
 
@@ -83,7 +102,7 @@ const Formulaires = (() => {
             '<option value="">—</option>' +
             (groupes ? groupes.map(g => '<optgroup label="' + esc(g.libelle) + '">' + g.valeurs.map(option).join("") + '</optgroup>').join("") : liste.map(option).join("")) +
             '<option value="' + AUTRE_LIBRE + '">➕ Autre…</option></select>' +
-            '<input type="text" id="' + id + '-libre" class="champ-libre" placeholder="' + esc(o.placeholder || "Saisir une autre valeur") + '" aria-label="Autre valeur" hidden>';
+            '<input type="text" id="' + id + '-libre" class="champ-libre" autocomplete="off" autocapitalize="words" placeholder="' + esc(o.placeholder || "Saisir une autre valeur") + '" aria-label="Autre valeur" hidden>';
     }
 
     /* Fixe la valeur d'un champ, liste à saisie libre ou champ texte simple. */
@@ -126,7 +145,7 @@ const Formulaires = (() => {
     }
 
     function piedFormulaire(texteBouton) {
-        return '<p class="message-erreur" data-erreur></p>' +
+        return '<p class="message-erreur" data-erreur role="alert"></p>' +
             '<button type="submit" class="bouton bouton--large">' + texteBouton + '</button>';
     }
 
@@ -147,6 +166,7 @@ const Formulaires = (() => {
 
     function erreur(form, message) {
         form.querySelector("[data-erreur]").textContent = message || "";
+        if (message) form.dataset.dernierEnvoi = "0";      // envoi refusé par la validation : la correction qui suit doit pouvoir partir aussitôt (voir envoiEnDouble)
     }
 
     /* ---------- Techniciens de l'équipe ---------- */
@@ -186,7 +206,7 @@ const Formulaires = (() => {
             if (Array.isArray(data) && data.length > 0) {
                 return { ville: data[0].nom, region: (data[0].region && data[0].region.nom) || "" };
             }
-        } catch (e) { /* pas de connexion : l'utilisateur saisit la ville lui-même */ }
+        } catch (e) { Erreurs.consigner("Formulaires : pas de connexion : l'utilisateur saisit la ville lui-même", e); }
         return null;
     }
 
@@ -221,14 +241,14 @@ const Formulaires = (() => {
     const CLE_ANNULATION = "acsc_annuler_suppression";
 
     function memoriserAnnulation(copie) {
-        try { sessionStorage.setItem(CLE_ANNULATION, JSON.stringify({ le: Date.now(), copie })); } catch (e) { /* trop gros : pas d'annulation */ }
+        try { sessionStorage.setItem(CLE_ANNULATION, JSON.stringify({ le: Date.now(), copie })); } catch (e) { Erreurs.consigner("Formulaires : trop gros : pas d'annulation", e); }
     }
 
     function proposerAnnulation(copie) {
         const n = (copie.clients || []).length;
         AppLayout.toastAction(n + " client" + (n > 1 ? "s supprimés" : " supprimé"), "Annuler", () => {
             const r = Donnees.restaurerClients(copie);
-            AppLayout.toast(r + " client" + (r > 1 ? "s restaurés" : " restauré") + " ✓");
+            AppLayout.toastSucces(r + " client" + (r > 1 ? "s restaurés" : " restauré") + " ✓");
         }, 10000);
     }
 
@@ -309,6 +329,7 @@ const Formulaires = (() => {
         const form = document.getElementById("form-client");
         form.addEventListener("submit", (e) => {
             e.preventDefault();
+            if (envoiEnDouble(form)) return;
             const nom = val("fc-nom");
             const cadence = parseInt(val("fc-cadence"), 10);
             if (!nom || !val("fc-ville") || !val("fc-pays")) return erreur(form, "Nom, ville et pays sont requis.");
@@ -330,7 +351,7 @@ const Formulaires = (() => {
 
             const resultat = existant ? Donnees.modifierClient(existant.id, source) : Donnees.ajouterClient(source);
             AppLayout.fermerFeuille();
-            AppLayout.toast(existant ? "Client mis à jour ✓" : "Client créé ✓ — ajoute maintenant ses lignes");
+            AppLayout.toastSucces(existant ? "Client mis à jour ✓" : "Client créé ✓ — ajoute maintenant ses lignes");
             if (apresEnregistrement) apresEnregistrement(resultat);
         });
     }
@@ -354,6 +375,7 @@ const Formulaires = (() => {
         const form = document.getElementById("form-contact");
         form.addEventListener("submit", (e) => {
             e.preventDefault();
+            if (envoiEnDouble(form)) return;
             if (!val("fk-nom")) return erreur(form, "Le nom est requis.");
             Donnees.enregistrerContact(clientId, {
                 role: val("fk-role") || "Autre", prenom: val("fk-prenom"), nom: val("fk-nom"),
@@ -361,7 +383,7 @@ const Formulaires = (() => {
                 principal: coche("fk-principal"), notes: val("fk-notes")
             }, existant && existant.id);
             AppLayout.fermerFeuille();
-            AppLayout.toast("Contact enregistré ✓");
+            AppLayout.toastSucces("Contact enregistré ✓");
         });
     }
 
@@ -385,7 +407,7 @@ const Formulaires = (() => {
                     '<option value="">—</option>' +
                     options.map(f => '<option value="' + esc(f) + '"' + (f === actuel ? " selected" : "") + '>' + esc(f) + '</option>').join("") +
                     '<option value="' + AUTRE + '">➕ Autre…</option></select>' +
-                    '<input type="text" id="fo-' + o.cle + '-autre" placeholder="Nom du fournisseur" hidden style="margin-top:6px;"></div>' +
+                    '<input type="text" id="fo-' + o.cle + '-autre" autocomplete="off" autocapitalize="words" placeholder="Nom du fournisseur" hidden style="margin-top:6px;"></div>' +
                     '<div>' + champTexteSuggere("fo-" + o.cle + "-r", "Référence", x[o.cle + "Ref"] || "", "outil:" + o.cle, "", "ex. P259M") + '</div>' +
                     '</div>';
             }).join("") +
@@ -451,13 +473,12 @@ const Formulaires = (() => {
         marque.addEventListener("change", rafraichirModeles);
         /* Format boîte et format fournisseur se complètent : choisir l'un remplit l'autre quand il n'y a pas d'ambiguïté. */
         const selColonne = document.getElementById("fl-colonne");
-        let colonneAuto = !selColonne.value;
         const aideSerti = () => { document.getElementById("fl-serti-aide").innerHTML = FicheSerti.aideFormat(val("fl-format"), selColonne.value || FicheSerti.colonneAutomatique(val("fl-format"))); };
         /* Un format qui n'a qu'une colonne l'impose ; un format à deux colonnes (4/4) garde le choix s'il en fait partie ;
            un format libre ou inconnu laisse le choix à la main. */
         const formatChange = () => {
             const fmt = val("fl-format"), auto = FicheSerti.colonneAutomatique(fmt), cols = ReferentielSerti.colonnesDuFormat(fmt);
-            if (auto) { selColonne.value = auto; colonneAuto = true; }
+            if (auto) selColonne.value = auto;
             else if (cols.length > 1 && cols.indexOf(selColonne.value) === -1) selColonne.value = "";
             aideSerti();
         };
@@ -465,12 +486,11 @@ const Formulaires = (() => {
         const formatLibre = document.getElementById("fl-format-libre");
         if (formatLibre) formatLibre.addEventListener("input", formatChange);
         selColonne.addEventListener("change", () => {
-            colonneAuto = false;
             const noms = ReferentielSerti.formatsDeLaColonne(selColonne.value);
             if (selColonne.value && !val("fl-format") && noms.length === 1) definirChoix("fl-format", noms[0]);
             aideSerti();
         });
-        if (!existant || !existant.colonneSerti) { const auto = FicheSerti.colonneAutomatique(val("fl-format")); if (auto) selColonne.value = auto; colonneAuto = !!selColonne.value && !(existant && existant.colonneSerti); }
+        if (!existant || !existant.colonneSerti) { const auto = FicheSerti.colonneAutomatique(val("fl-format")); if (auto) selColonne.value = auto; }
         aideSerti();
         const marqueLibre = document.getElementById("fl-marque-libre");
         if (marqueLibre) marqueLibre.addEventListener("change", rafraichirModeles);
@@ -480,6 +500,7 @@ const Formulaires = (() => {
         const form = document.getElementById("form-ligne");
         form.addEventListener("submit", (e) => {
             e.preventDefault();
+            if (envoiEnDouble(form)) return;
             const nom = val("fl-nom");
             if (!nom) return erreur(form, "Le nom de la ligne est requis.");
             const doublon = Donnees.lignesDuClient(clientId).find(l =>
@@ -499,7 +520,7 @@ const Formulaires = (() => {
                 fournisseurActuel: val("fl-fournisseur-actuel")
             }, outillage), existant && existant.id);
             AppLayout.fermerFeuille();
-            AppLayout.toast("Ligne enregistrée ✓");
+            AppLayout.toastSucces("Ligne enregistrée ✓");
         });
     }
 
@@ -668,6 +689,7 @@ const Formulaires = (() => {
         const form = document.getElementById("form-rdv");
         form.addEventListener("submit", (e) => {
             e.preventDefault();
+            if (envoiEnDouble(form)) return;
             const date = champDate.value;
             if (!date) return erreur(form, "La date est requise.");
             if (date < Donnees.aujourdhuiIso()) return erreur(form, "La date est passée : pour une visite déjà faite, utilise « Enregistrer une visite ».");
@@ -678,7 +700,7 @@ const Formulaires = (() => {
             }, existant && existant.id);
             if (!r) return erreur(form, "Rendez-vous non enregistré : vérifie le client et la date.");
             AppLayout.fermerFeuille();
-            AppLayout.toast("Visite planifiée le " + dateFr(r.date) + (r.heure ? " à " + r.heure : "") + " ✓");
+            AppLayout.toastSucces("Visite planifiée le " + dateFr(r.date) + (r.heure ? " à " + r.heure : "") + " ✓");
         });
     }
 
@@ -714,6 +736,7 @@ const Formulaires = (() => {
         if (reporter) form.querySelector("#fi-date").min = aujourdhui;
         form.addEventListener("submit", (e) => {
             e.preventDefault();
+            if (envoiEnDouble(form)) return;
             const date = reporter ? val("fi-date") : "";
             if (reporter) {
                 if (!date) return erreur(form, "Indique la nouvelle date.");
@@ -723,7 +746,7 @@ const Formulaires = (() => {
             const cree = Donnees.cloturerSansVisite(rdvId, { statut, motif: val("fi-motif"), remarques: val("fi-remarques"), reporteLe: date });
             if (!cree) return erreur(form, "Enregistrement impossible : vérifie les informations.");
             AppLayout.fermerFeuille();
-            AppLayout.toast(reporter ? "Visite reportée au " + dateFr(date) + " — notée dans l'historique ✓"
+            AppLayout.toastSucces(reporter ? "Visite reportée au " + dateFr(date) + " — notée dans l'historique ✓"
                 : (statut === "annulee" ? "Visite annulée" : "Visite non effectuée") + " — notée dans l'historique ✓");
         });
     }
@@ -794,6 +817,7 @@ const Formulaires = (() => {
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
+            if (envoiEnDouble(form)) return;
             const date = val("fx-date");
             if (!date) return erreur(form, "La date est requise.");
             if (date > aujourdhui) return erreur(form, "Une visite enregistrée ne peut pas être dans le futur.");
@@ -817,12 +841,50 @@ const Formulaires = (() => {
             reglages.forEach(r => Donnees.enregistrerLigne(r.clientId || (Donnees.getLigne(r.ligneId) || {}).clientId, { nbTetes: r.nbTetes, colonneSerti: r.colonneSerti }, r.ligneId));
             toutes.forEach(l => FicheSerti.demonter("fxs-" + l.id));
             AppLayout.fermerFeuille();
-            AppLayout.toast(creees.length + " visite" + (creees.length > 1 ? "s enregistrées" : " enregistrée") + " ✓ — rendez-vous clôturé");
+            AppLayout.toastSucces(creees.length + " visite" + (creees.length > 1 ? "s enregistrées" : " enregistrée") + " ✓ — rendez-vous clôturé");
         });
     }
 
     /* ---------- Visite ----------
        options : { clientId, ligneId } — tous deux facultatifs. */
+
+    /* Contrôle de la saisie d'une visite (aucun accès à la page).
+       saisie : { existante, date, statut, ligneId, typeId, clientId }.
+       Renvoie { message } si elle est invalide, { planifier: true } si la date est à venir (une visite EFFECTUÉE ne
+       peut pas l'être : on propose de la planifier), sinon null. */
+    function verifierSaisieVisite(saisie) {
+        if (!saisie.date) return { message: "La date est requise." };
+        const aujourdhui = Donnees.aujourdhuiIso();
+        if (!saisie.existante && saisie.statut === "effectuee" && saisie.date > aujourdhui) return { planifier: true };
+        if (saisie.date > aujourdhui) return { message: "Une visite enregistrée ne peut pas être dans le futur." };
+        if (!saisie.ligneId && !Donnees.typeVisite(saisie.typeId).ligneFacultative && saisie.statut === "effectuee") {
+            return { message: Donnees.lignesActivesDuClient(saisie.clientId).length
+                ? "Choisis la ligne visitée."
+                : "Ce client n'a pas de ligne active : ajoute ou réactive une ligne, ou choisis un type sans ligne (réunion, formation, audit)." };
+        }
+        return null;
+    }
+
+    /* Formulaire « visite » : uniquement du HTML, aucun accès à la page (testable seul). */
+    function htmlFormulaireVisite(existante, clients, clientInitId) {
+        return '<form id="form-visite" novalidate>' +
+            liste("fv-client", "Client *", clients.map(c => ({ valeur: c.id, texte: c.nom })), clientInitId) +
+            deuxColonnes(champ("fv-date", "Date *", "date", existante ? existante.date : Donnees.aujourdhuiIso()),
+                liste("fv-type", "Type *", OPTIONS_TYPES, existante ? existante.type : "campagne")) +
+            '<div id="fv-futur" class="bandeau-info" role="status" hidden>📅 Cette date est <strong>à venir</strong> : une visite ne s\'enregistre qu\'une fois faite. ' +
+            'Le bouton ci-dessous la <strong>planifie</strong> à la place (client, ligne, type et remarques sont repris).</div>' +
+            liste("fv-statut", "Statut", Donnees.STATUTS_VISITE.map(st => ({ valeur: st.cle, texte: st.icone + " " + st.libelle })), existante ? Donnees.statutVisite(existante) : "effectuee") +
+            '<label for="fv-ligne">Ligne</label><select id="fv-ligne"></select>' +
+            '<div id="fv-contenu">' +
+            deuxColonnes(choixLibre("fv-format", "Format", Donnees.valeursConnues("format"), ""), choixLibre("fv-produit", "Produit", Donnees.choixPour("produit"), "")) +
+            '<div id="fv-complements"></div><div id="fv-serti"></div></div>' +
+            '<div id="fv-suite" hidden>' +
+            choixLibre("fv-motif", "Motif", Donnees.valeursConnues("motif"), existante ? existante.motif : "", { placeholder: "Préciser le motif" }) +
+            '<div id="fv-reporte-bloc" hidden>' + champ("fv-reporte", "Reportée au", "date", existante ? existante.reporteLe || "" : "") + '</div></div>' +
+            zoneTexte("fv-remarques", "Remarques / compte rendu", existante ? existante.remarques : "", "Réglages effectués, contrôles, points à revoir…") +
+            piedFormulaire(existante ? "Enregistrer les modifications" : "Enregistrer la visite") +
+            '</form>';
+    }
 
     function visite(options) {
         const opts = options || {};
@@ -841,24 +903,7 @@ const Formulaires = (() => {
         const clientInitId = existante ? existante.clientId : ligneInit ? ligneInit.clientId
             : (opts.clientId || (clients.find(c => Donnees.lignesActivesDuClient(c.id).length > 0) || clients[0]).id);
 
-        const corps =
-            '<form id="form-visite" novalidate>' +
-            liste("fv-client", "Client *", clients.map(c => ({ valeur: c.id, texte: c.nom })), clientInitId) +
-            deuxColonnes(champ("fv-date", "Date *", "date", existante ? existante.date : Donnees.aujourdhuiIso()),
-                liste("fv-type", "Type *", OPTIONS_TYPES, existante ? existante.type : "campagne")) +
-            '<div id="fv-futur" class="bandeau-info" role="status" hidden>📅 Cette date est <strong>à venir</strong> : une visite ne s\'enregistre qu\'une fois faite. ' +
-            'Le bouton ci-dessous la <strong>planifie</strong> à la place (client, ligne, type et remarques sont repris).</div>' +
-            liste("fv-statut", "Statut", Donnees.STATUTS_VISITE.map(st => ({ valeur: st.cle, texte: st.icone + " " + st.libelle })), existante ? Donnees.statutVisite(existante) : "effectuee") +
-            '<label for="fv-ligne">Ligne</label><select id="fv-ligne"></select>' +
-            '<div id="fv-contenu">' +
-            deuxColonnes(choixLibre("fv-format", "Format", Donnees.valeursConnues("format"), ""), choixLibre("fv-produit", "Produit", Donnees.choixPour("produit"), "")) +
-            '<div id="fv-complements"></div><div id="fv-serti"></div></div>' +
-            '<div id="fv-suite" hidden>' +
-            choixLibre("fv-motif", "Motif", Donnees.valeursConnues("motif"), existante ? existante.motif : "", { placeholder: "Préciser le motif" }) +
-            '<div id="fv-reporte-bloc" hidden>' + champ("fv-reporte", "Reportée au", "date", existante ? existante.reporteLe || "" : "") + '</div></div>' +
-            zoneTexte("fv-remarques", "Remarques / compte rendu", existante ? existante.remarques : "", "Réglages effectués, contrôles, points à revoir…") +
-            piedFormulaire(existante ? "Enregistrer les modifications" : "Enregistrer la visite") +
-            '</form>';
+        const corps = htmlFormulaireVisite(existante, clients, clientInitId);
 
         AppLayout.ouvrirFeuille("bas", existante ? "Modifier la visite" : "Enregistrer une visite", corps);
 
@@ -961,19 +1006,16 @@ const Formulaires = (() => {
         const form = document.getElementById("form-visite");
         form.addEventListener("submit", (e) => {
             e.preventDefault();
-            if (!champDate.value) return erreur(form, "La date est requise.");
-            if (!existante && selStatut.value === "effectuee" && champDate.value > Donnees.aujourdhuiIso()) {
+            if (envoiEnDouble(form)) return;
+            const controle = verifierSaisieVisite({ existante, date: champDate.value, statut: selStatut.value, ligneId: selLigne.value, typeId: selType.value, clientId: selClient.value });
+            if (controle && controle.message) return erreur(form, controle.message);
+            if (controle && controle.planifier) {
                 /* Date à venir : on ouvre la planification avec tout ce qui est déjà saisi. */
                 rdv({ clientId: selClient.value, ligneId: selLigne.value || undefined, date: champDate.value, type: selType.value,
                     notes: val("fv-remarques"), references: lireComplements("fv").references });
                 return;
             }
-            if (champDate.value > Donnees.aujourdhuiIso()) return erreur(form, "Une visite enregistrée ne peut pas être dans le futur.");
             const t = Donnees.typeVisite(selType.value);
-            if (!selLigne.value && !t.ligneFacultative && selStatut.value === "effectuee") {
-                return erreur(form, Donnees.lignesActivesDuClient(selClient.value).length
-                    ? "Choisis la ligne visitée." : "Ce client n'a pas de ligne active : ajoute ou réactive une ligne, ou choisis un type sans ligne (réunion, formation, audit).");
-            }
             const source = Object.assign({
                 clientId: selClient.value, ligneId: selLigne.value || null, date: champDate.value, type: selType.value,
                 format: val("fv-format"), produit: val("fv-produit"), remarques: val("fv-remarques"),
@@ -986,10 +1028,10 @@ const Formulaires = (() => {
             if (reglages) Donnees.enregistrerLigne(v.clientId, { nbTetes: reglages.nbTetes, colonneSerti: reglages.colonneSerti }, reglages.ligneId);
             FicheSerti.demonter("fv");
             AppLayout.fermerFeuille();
-            if (existante) { AppLayout.toast("Visite modifiée ✓"); return; }
-            if (!Donnees.estEffectuee(v)) { AppLayout.toast(Donnees.infoStatut(Donnees.statutVisite(v)).libelle + " — notée dans l'historique ✓"); return; }
+            if (existante) { AppLayout.toastSucces("Visite modifiée ✓"); return; }
+            if (!Donnees.estEffectuee(v)) { AppLayout.toastSucces(Donnees.infoStatut(Donnees.statutVisite(v)).libelle + " — notée dans l'historique ✓"); return; }
             const c = Donnees.getClient(v.clientId);
-            AppLayout.toast(v.type === "campagne" && c
+            AppLayout.toastSucces(v.type === "campagne" && c
                 ? "Visite enregistrée ✓ — prochaine vers le " + dateFr(Donnees.ajouterJours(v.date, c.cadenceJours))
                 : t.libelle + " enregistrée ✓");
         });
@@ -1254,7 +1296,7 @@ const Formulaires = (() => {
     function apresConfirmation(rdvs) {
         if (!rdvs.length) return;
         if (Donnees.getTournee().messageClient) proposerMessages(rdvs);
-        else { AppLayout.fermerFeuille(); AppLayout.toast(rdvs.length + " rendez-vous confirmé" + (rdvs.length > 1 ? "s" : "") + " ✓"); }
+        else { AppLayout.fermerFeuille(); AppLayout.toastSucces(rdvs.length + " rendez-vous confirmé" + (rdvs.length > 1 ? "s" : "") + " ✓"); }
     }
 
     /* Lance (ou relance) les propositions de tournée. auto = appel au
@@ -1297,6 +1339,6 @@ const Formulaires = (() => {
         });
     }
 
-    return { issueRdv, pastilleStatut, supprimerClients, memoriserAnnulation, proposerAnnulation, reprendreAnnulation, proposerTournee, membresEquipe, nomTechnicien, client, contact, ligne, visite, rdv, realiserRdv, carteRdv, detailRdv, apercuClient, brancherRdv, dateFr, pastilleType, texteComplements,
+    return { pastilleStatut, supprimerClients, memoriserAnnulation, proposerAnnulation, reprendreAnnulation, proposerTournee, membresEquipe, nomTechnicien, client, contact, ligne, visite, verifierSaisieVisite, rdv, realiserRdv, carteRdv, detailRdv, apercuClient, brancherRdv, dateFr, pastilleType, texteComplements,
         fichierIcs, telechargerIcs, messageClient, apresConfirmation };
 })();

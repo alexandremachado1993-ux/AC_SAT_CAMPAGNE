@@ -87,6 +87,7 @@ img { max-width: 100%; display: block; }
 
 .app-conteneur {
     min-height: 100vh;
+    min-height: 100vh;
     min-height: 100dvh;
     padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
@@ -203,6 +204,7 @@ img { max-width: 100%; display: block; }
     top: 0;
     z-index: 30;
     background: color-mix(in oklch, var(--carte) 95%, transparent);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--bordure);
     padding-top: env(safe-area-inset-top);
@@ -492,6 +494,7 @@ img { max-width: 100%; display: block; }
     right: 0;
     bottom: 0;
     border-radius: 16px 16px 0 0;
+    max-height: 80vh;
     max-height: 80vh;
     max-height: 80dvh;
     overflow-y: auto;

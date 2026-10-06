@@ -76,7 +76,7 @@ const Synchro = (() => {
     function memoriserEquipe(equipe) {
         try {
             if (equipe) localStorage.setItem("acsc_equipe", JSON.stringify(equipe)); else localStorage.removeItem("acsc_equipe");
-        } catch (e) { /* affichage seulement */ }
+        } catch (e) { Erreurs.signaler("Synchro : affichage seulement", e); }
     }
 
     /* ---------- Durée de la connexion (30 jours) ---------- */
@@ -88,7 +88,7 @@ const Synchro = (() => {
     function ecrireConnexionLe(iso) {
         try {
             if (iso) localStorage.setItem(CLE_CONNEXION, iso); else localStorage.removeItem(CLE_CONNEXION);
-        } catch (e) { /* stockage refusé : la connexion restera simplement sans échéance */ }
+        } catch (e) { Erreurs.consigner("Synchro : stockage refusé : la connexion restera simplement sans échéance", e); }
     }
 
     function finConnexion() {
@@ -143,6 +143,9 @@ const Synchro = (() => {
             async rejoindreEquipe(code, nomAffiche) {
                 const { data, error } = await client.rpc("rejoindre_equipe", { code, nom_affiche: nomAffiche });
                 if (error) throw error;
+                /* Un faux code est RENVOYÉ par la base (et non levé) : une exception annulerait l'enregistrement de la tentative,
+                   donc la limite de 5 essais par 15 minutes ne compterait rien. On le retransforme en erreur ici. */
+                if (data && data.erreur) throw new Error(data.erreur);
                 return data;
             },
             async quitterEquipe() {
@@ -169,10 +172,16 @@ const Synchro = (() => {
 
     function changerEtat(maj) {
         Object.assign(etat, maj);
-        ecouteurs.forEach(fn => { try { fn(Object.assign({}, etat)); } catch (e) { /* idem */ } });
+        ecouteurs.forEach(fn => { try { fn(Object.assign({}, etat)); } catch (e) { Erreurs.consigner("Synchro : stockage refusé : la connexion restera simplement sans échéance", e); } });
     }
 
     function ecouter(fn) { ecouteurs.push(fn); fn(Object.assign({}, etat)); }
+
+    /* Session de connexion invalide ou expirée : jeton refusé, rafraîchissement impossible, ou fonction de base qui exige une connexion. */
+    function estSessionInvalide(e) {
+        const m = (e && e.message) || String(e);
+        return (e && e.status === 401) || /jwt|invalid.*token|refresh.?token|token.*expired|not authenticated|auth session missing|connexion requise/i.test(m);
+    }
 
     function messageErreur(e) {
         const m = (e && e.message) || String(e);
@@ -183,9 +192,15 @@ const Synchro = (() => {
         if (/password should be at least/i.test(m)) return "Mot de passe trop court (8 caractères minimum conseillés).";
         if (/failed to fetch|network/i.test(m)) return "Réseau indisponible.";
         if (/code_inconnu/.test(m)) return "Code d'équipe inconnu : vérifie les 8 caractères.";
+        if (/trop_de_tentatives/.test(m)) return "Trop d'essais avec un mauvais code : réessaie dans 15 minutes.";
         if (/deja_membre/.test(m)) return "Ce compte fait déjà partie d'une équipe : quitte-la d'abord.";
         if (/aucune_equipe/.test(m)) return "Ce compte ne fait plus partie d'une équipe.";
-        return m;
+        if (estSessionInvalide(e)) return "Session expirée : reconnecte-toi pour reprendre la synchronisation.";
+        if (/permission denied|row-level security|violates row-level/i.test(m)) return "Le serveur a refusé l'opération (droits insuffisants).";
+        if (/timeout|timed out|\b50[234]\b/i.test(m)) return "Le serveur met trop de temps à répondre : réessaie dans un instant.";
+        /* Message inconnu : jamais montré tel quel (détail technique) ; il va dans le journal de diagnostic. */
+        Erreurs.consigner("Synchro : message d'erreur non reconnu : " + m.slice(0, 80), e);
+        return "Opération impossible pour le moment : réessaie dans un instant.";
     }
 
     /* ---------- Synchronisation ---------- */
@@ -204,7 +219,7 @@ const Synchro = (() => {
                    le délai part d'aujourd'hui plutôt que de déconnecter. */
                 ecrireConnexionLe(new Date().toISOString());
             } else if (Date.now() > Date.parse(finConnexion())) {
-                try { await transport.deconnexion(); } catch (e) { /* session locale effacée quand même */ }
+                try { await transport.deconnexion(); } catch (e) { Erreurs.consigner("Synchro : session locale effacée quand même", e); }
                 ecrireConnexionLe(null);
                 changerEtat({ statut: "deconnecte", email: null, valableJusquau: null,
                     erreur: "Connexion expirée après " + DUREE_CONNEXION_JOURS + " jours : reconnecte-toi pour reprendre la synchronisation." });
@@ -241,7 +256,12 @@ const Synchro = (() => {
 
             changerEtat({ statut: "ok", derniere: new Date().toISOString(), erreur: null });
         } catch (e) {
-            changerEtat({ statut: "erreur", erreur: messageErreur(e) });
+            if (estSessionInvalide(e)) {
+                /* Session périmée en cours de route : on l'efface et on ramène à l'écran de connexion (les données restent sur l'appareil). */
+                try { await transport.deconnexion(); } catch (e2) { Erreurs.consigner("Synchro : session invalide effacée quand même", e2); }
+                ecrireConnexionLe(null);
+                changerEtat({ statut: "deconnecte", email: null, valableJusquau: null, erreur: messageErreur(e) });
+            } else changerEtat({ statut: "erreur", erreur: messageErreur(e) });
         } finally {
             enCours = false;
             if (relancer) { relancer = false; synchroniser(); }
@@ -306,74 +326,12 @@ const Synchro = (() => {
         } catch (e) { return { ok: false, message: messageErreur(e) }; }
     }
 
-    /* ---------- Notifications push ----------
-       Clé publique VAPID du projet (la clé privée reste sur le serveur).
-       Un abonnement par appareil ; le serveur (fonction « rappels ») envoie
-       le résumé du matin et le rappel 1 h avant chaque rendez-vous. */
-    const CLE_VAPID = "BKvxrDcmbxe7O3kARZGcu2_XcsOCLpIKjz-DHo7iOaVs1qmGOJMufxC3-UNZXCyt-Q-5Dx2A_-DduUVzLJGfvwY";
-
-    function cleVapid() {
-        const b64 = (CLE_VAPID + "=".repeat((4 - CLE_VAPID.length % 4) % 4)).replace(/-/g, "+").replace(/_/g, "/");
-        const brut = atob(b64);
-        return Uint8Array.from(brut, c => c.charCodeAt(0));
-    }
-
-    function estIphone() { return /iPhone|iPad|iPod/i.test(navigator.userAgent || ""); }
-    function estInstallee() {
-        return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
-    }
-
-    function nomAppareil() {
-        const ua = navigator.userAgent || "";
-        const systeme = /Android/i.test(ua) ? "Android" : estIphone() ? "iPhone" : /Windows/i.test(ua) ? "Windows" : /Mac/i.test(ua) ? "Mac" : "Autre";
-        const navigateur = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "";
-        return (systeme + " " + navigateur).trim() + (estInstallee() ? " (application)" : "");
-    }
-
-    /* { support, raison?, permission, abonne } */
-    async function etatNotifications() {
-        const support = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-        if (!support) return { support: false, raison: estIphone() && !estInstallee() ? "iphone-installer" : "navigateur" };
-        let abonne = false;
-        try {
-            const reg = await navigator.serviceWorker.getRegistration();
-            abonne = !!(reg && await reg.pushManager.getSubscription());
-        } catch (e) { abonne = false; }
-        return { support: true, permission: Notification.permission, abonne };
-    }
-
-    async function activerNotifications() {
-        try {
-            if (!etat.email) return { ok: false, message: "Connecte-toi d'abord à la synchronisation." };
-            const permission = await Notification.requestPermission();
-            if (permission !== "granted") return { ok: false, message: "Autorisation refusée : les notifications restent désactivées sur cet appareil." };
-            const reg = await navigator.serviceWorker.ready;
-            const abonnement = (await reg.pushManager.getSubscription()) ||
-                (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleVapid() }));
-            const j = abonnement.toJSON();
-            await transport.enregistrerAbonnement(j.endpoint, j.keys.p256dh, j.keys.auth, nomAppareil());
-            return { ok: true };
-        } catch (e) { return { ok: false, message: messageErreur(e) }; }
-    }
-
-    async function desactiverNotifications() {
-        try {
-            const reg = await navigator.serviceWorker.getRegistration();
-            const abonnement = reg && await reg.pushManager.getSubscription();
-            if (abonnement) {
-                try { await transport.supprimerAbonnement(abonnement.endpoint); } catch (e) { /* hors ligne : le serveur le retirera à la première erreur d'envoi */ }
-                await abonnement.unsubscribe();
-            }
-            return { ok: true };
-        } catch (e) { return { ok: false, message: messageErreur(e) }; }
-    }
-
-    async function testerNotifications() {
-        try {
-            const r = await transport.testerNotification();
-            return { ok: true, envoyees: (r && r.envoyees) || 0 };
-        } catch (e) { return { ok: false, message: messageErreur(e) }; }
-    }
+    /* ---------- Appels serveur de l'abonnement aux notifications ----------
+       Le navigateur (permission, abonnement push, clé VAPID) est dans Notifications.js ; il passe ici pour parler au serveur. */
+    const estConnecte = () => !!etat.email;
+    const enregistrerAbonnement = (endpoint, p256dh, auth, appareil) => transport.enregistrerAbonnement(endpoint, p256dh, auth, appareil);
+    const supprimerAbonnement = (endpoint) => transport.supprimerAbonnement(endpoint);
+    const testerNotification = () => transport.testerNotification();
 
     /* ---------- Équipe ---------- */
 
@@ -415,7 +373,7 @@ const Synchro = (() => {
     /* Les données restent sur l'appareil : se déconnecter arrête seulement
        la synchronisation. */
     async function deconnexion() {
-        try { await transport.deconnexion(); } catch (e) { /* session locale effacée quand même */ }
+        try { await transport.deconnexion(); } catch (e) { Erreurs.consigner("Synchro : session locale effacée quand même", e); }
         ecrireConnexionLe(null);
         memoriserEquipe(null);
         appliquerTechnicien(null);
@@ -444,6 +402,7 @@ const Synchro = (() => {
 
     return { demarrer, synchroniser, connexion, inscription, deconnexion, ecouter,
         creerEquipe, rejoindreEquipe, quitterEquipe, membresEquipe,
-        etatNotifications, activerNotifications, desactiverNotifications, testerNotifications,
-        etat: () => Object.assign({}, etat) };
+        etat: () => Object.assign({}, etat),
+        estConnecte, enregistrerAbonnement, supprimerAbonnement, testerNotification, messageErreur
+    };
 })();

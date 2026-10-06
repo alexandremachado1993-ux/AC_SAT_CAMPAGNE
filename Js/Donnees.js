@@ -384,18 +384,21 @@ const Donnees = (() => {
     function sauvegarder() {
         const changements = detecterChangements();
         const ok = ecrire();
-        if (changements > 0) ecouteursLocaux.forEach(fn => { try { fn(); } catch (e) { /* idem */ } });
+        if (changements > 0) ecouteursLocaux.forEach(fn => { try { fn(); } catch (e) { Erreurs.consigner("Donnees : idem", e); } });
         return ok;
     }
+
+    let derniereEcritureOk = true;      // résultat de la DERNIÈRE écriture : les messages de succès l'interrogent (Donnees.stockageOk)
 
     function ecrire() {
         let ok = true;
         try {
             localStorage.setItem(CLE_STOCKAGE, JSON.stringify(donnees));
             localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi));
-        } catch (e) { ok = false; }
-        if (!ok) ecouteursErreur.forEach(fn => { try { fn(); } catch (e) { /* idem */ } });
-        ecouteurs.forEach(fn => { try { fn(); } catch (e) { /* un écouteur ne bloque pas les autres */ } });
+        } catch (e) { ok = false; Erreurs.consigner("Donnees : écriture refusée par le navigateur (stockage plein ou mode privé)", e); }
+        derniereEcritureOk = ok;
+        if (!ok) ecouteursErreur.forEach(fn => { try { fn(); } catch (e) { Erreurs.consigner("Donnees : idem", e); } });
+        ecouteurs.forEach(fn => { try { fn(); } catch (e) { Erreurs.signaler("Donnees : un écouteur ne bloque pas les autres", e); } });
         return ok;
     }
 
@@ -522,7 +525,7 @@ const Donnees = (() => {
                 delete suivi.suppressions[cle];
             }
         });
-        try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { /* retenté au prochain enregistrement */ }
+        try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { Erreurs.consigner("Donnees : retenté au prochain enregistrement", e); }
     }
 
     /* Applique les éléments reçus d'un autre appareil. La version locale
@@ -569,7 +572,7 @@ const Donnees = (() => {
             n++;
         });
         if (n > 0) ecrire();
-        else { try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { /* idem */ } }
+        else { try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { Erreurs.consigner("Donnees : retenté au prochain enregistrement", e); } }
         return n;
     }
 
@@ -583,7 +586,7 @@ const Donnees = (() => {
     function definirCurseur(valeur, equipeId) {
         getDonnees();
         if (equipeId) suivi.curseursEquipe[equipeId] = valeur; else suivi.curseur = valeur;
-        try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { /* idem */ }
+        try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { Erreurs.consigner("Donnees : retenté au prochain enregistrement", e); }
     }
 
     /* ---------- Équipe ----------
@@ -596,7 +599,7 @@ const Donnees = (() => {
     function marquerPartagesAEnvoyer() {
         getDonnees();
         COLLECTIONS_PARTAGEES.forEach(col => donnees[col].forEach(el => { suivi.enAttente[col + ":" + el.id] = true; }));
-        try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { /* idem */ }
+        try { localStorage.setItem(CLE_SUIVI, JSON.stringify(suivi)); } catch (e) { Erreurs.consigner("Donnees : retenté au prochain enregistrement", e); }
     }
 
     /* Rejoindre une équipe en remplaçant ses propres clients par ceux de
@@ -636,6 +639,8 @@ const Donnees = (() => {
     /* Appelé quand le navigateur refuse d'enregistrer (stockage plein,
        navigation privée) : AppLayout affiche l'alerte, une seule fois. */
     function surErreurStockage(fn) { ecouteursErreur.push(fn); }
+    /* Vrai si la dernière écriture sur l'appareil a réussi. Faux = les modifications ne survivront PAS à un rechargement. */
+    function stockageOk() { return derniereEcritureOk; }
 
     function nouvelId(prefixe) {
         return prefixe + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -677,7 +682,7 @@ const Donnees = (() => {
         if (nouveau === technicienCourant) return;
         technicienCourant = nouveau;
         getDonnees();
-        ecouteurs.forEach(fn => { try { fn(); } catch (e) { /* idem */ } });
+        ecouteurs.forEach(fn => { try { fn(); } catch (e) { Erreurs.consigner("Donnees : retenté au prochain enregistrement", e); } });
     }
 
     function getTechnicienCourant() { return technicienCourant; }
@@ -920,12 +925,14 @@ const Donnees = (() => {
             .sort((a, b) => b.date.localeCompare(a.date));
     }
 
+    const estDateIso = (valeur) => /^\d{4}-\d{2}-\d{2}$/.test(valeur || "");
+
     /* Construit une visite valide ou renvoie null. Ligne obligatoire pour une visite EFFECTUÉE,
        sauf pour les types « ligneFacultative » (réunion, formation, audit) ; une visite reportée,
        non effectuée ou annulée peut ne concerner que le client. Pour ces dernières, le statut, le
        motif et la nouvelle date (reportée) sont gardés ; format, produit et détails ne le sont pas. */
     function construireVisite(source, clientImpose) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(source.date || "")) return null;
+        if (!estDateIso(source.date)) return null;
         const type = normaliserType(source.type);
         const statut = statutVisite(source);
         const effectuee = statut === "effectuee";
@@ -946,7 +953,7 @@ const Donnees = (() => {
         if (!effectuee) {
             v.statut = statut;
             v.motif = nettoyer(source.motif) || "";
-            if (statut === "reportee" && /^\d{4}-\d{2}-\d{2}$/.test(source.reporteLe || "")) v.reporteLe = source.reporteLe;
+            if (statut === "reportee" && estDateIso(source.reporteLe)) v.reporteLe = source.reporteLe;
         }
         return v;
     }
@@ -989,7 +996,7 @@ const Donnees = (() => {
         if (!r || !o) return null;
         const statut = ["reportee", "non-effectuee", "annulee"].indexOf(o.statut) !== -1 ? o.statut : null;
         if (!statut) return null;
-        if (statut === "reportee" && !(/^\d{4}-\d{2}-\d{2}$/.test(o.reporteLe || "") && o.reporteLe >= aujourdhuiIso())) return null;
+        if (statut === "reportee" && !(estDateIso(o.reporteLe) && o.reporteLe >= aujourdhuiIso())) return null;
         const d = getDonnees();
         const base = { clientId: r.clientId, date: r.date, type: r.type, statut, motif: o.motif, reporteLe: o.reporteLe, remarques: o.remarques };
         const lignes = (r.ligneIds || []).filter(x => getLigne(x));
@@ -1018,7 +1025,7 @@ const Donnees = (() => {
     /* Renvoie le rendez-vous, ou null si client inconnu / date invalide. */
     function enregistrerRdv(source, id) {
         const d = getDonnees();
-        if (!getClient(source.clientId) || !/^\d{4}-\d{2}-\d{2}$/.test(source.date || "")) return null;
+        if (!getClient(source.clientId) || !estDateIso(source.date)) return null;
         let r = id ? d.rdv.find(x => x.id === id) : null;
         if (!r) { r = { id: nouvelId("rdv") }; d.rdv.push(r); }
         const lignesClient = d.lignes.filter(l => l.clientId === source.clientId).map(l => l.id);
@@ -1464,8 +1471,8 @@ const Donnees = (() => {
     return {
         ROLES_CONTACT, MOIS, OUTILS,
         TYPES_VISITE, REFERENCES, typeVisite, styleCouleur,
-        valeursConnues, choixPour, CATALOGUE_PRODUITS, contactsPourChoix, machinesDuClient,
-        init, getDonnees, ecouter, surErreurStockage,
+        valeursConnues, choixPour, contactsPourChoix, machinesDuClient,
+        init, getDonnees, ecouter, surErreurStockage, stockageOk,
         definirTheme, definirNomProfil,
         listerClients, getClient, trouverClientParNom, ajouterClient, modifierClient, resumeSuppression, supprimerClients, restaurerClients,
         definirTechnicienCourant, getTechnicienCourant, estMonClient,

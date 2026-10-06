@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <script>(function(){try{var d=document.documentElement,s=window.sessionStorage,m=null,r="";try{m=window.localStorage.getItem("acsc_animation")}catch(e){}if(s.getItem("acsc_splash"))return;s.setItem("acsc_splash","1");if(m==="jamais")r="jamais";else if(m==="auto"){if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)r="reduit";else if(navigator.connection&&navigator.connection.saveData)r="economie"}s.setItem("acsc_splash_dec",r||"joue");if(r)return;d.classList.add("splash-actif");setTimeout(function(){d.classList.remove("splash-actif")},14000)}catch(e){}})();</script>
+    <script src="Js/Erreurs.js"></script>
+    <script src="Js/Amorce.js"></script>
     <script src="Js/Splash.js"></script>
     <title>Planning — AC SAT Campagne</title>
     <meta name="theme-color" content="#dc2626">
@@ -17,7 +18,7 @@
     <link rel="stylesheet" href="CSS/style.css">
     <link rel="stylesheet" href="CSS/campagne.css">
 </head>
-<body>
+<body data-page="planning">
 
 <header id="entete" class="entete"></header>
 <div id="bandeau-connexion" class="bandeau-connexion" hidden></div>
@@ -40,11 +41,7 @@
 <script src="Js/Nouveautes.js"></script>
 <script src="Js/FicheSerti.js"></script>
 <script src="Js/Formulaires.js"></script>
-<script>
-    Donnees.init();
-    AppLayout.init("planning");
-    Synchro.demarrer();
-</script>
+<script src="Js/Demarrage.js"></script>
 <script src="Js/PlanningCalcul.js"></script>
 <script src="Js/PlanningTableau.js"></script>
 <script src="Js/Planning.js"></script>

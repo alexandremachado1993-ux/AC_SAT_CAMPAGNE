@@ -108,7 +108,7 @@ const Nouveautes = (() => {
     /* ---------- Ce qui a été vu ---------- */
 
     function lireVue() { try { return localStorage.getItem(CLE); } catch (e) { return null; } }
-    function ecrireVue(id) { try { localStorage.setItem(CLE, id); } catch (e) { /* stockage refusé : on réessaiera */ } }
+    function ecrireVue(id) { try { localStorage.setItem(CLE, id); } catch (e) { Erreurs.consigner("Nouveautes : stockage refusé : on réessaiera", e); } }
     function marquerToutVu() {
         if (LISTE.length) ecrireVue(LISTE[0].id);
         if (typeof AppLayout !== "undefined" && AppLayout.rafraichirNotifications) AppLayout.rafraichirNotifications();     /* la pastille du profil se met à jour */
@@ -251,14 +251,14 @@ const Nouveautes = (() => {
 
     /* Appelée à chaque ouverture de page. Patiente pendant l'animation d'ouverture ou si une fenêtre est déjà ouverte. */
     function annoncerSiBesoin() {
-        try { if (sessionStorage.getItem(CLE_SESSION) === "1") return; } catch (e) { /* tant pis : au pire une annonce de plus */ }
+        try { if (sessionStorage.getItem(CLE_SESSION) === "1") return; } catch (e) { Erreurs.consigner("Nouveautes : tant pis : au pire une annonce de plus", e); }
         if (lireVue() === null && Donnees.listerClients().length === 0) { marquerToutVu(); return; }   // première installation
         if (!nonVues().length) return;
         let essais = 0;
         const tenter = () => {
             const occupe = document.documentElement.classList.contains("splash-actif") || !!document.querySelector(".feuille:not([hidden])");
             if (occupe) { if (essais++ < 40) setTimeout(tenter, 500); return; }       // trop occupé : reproposée à la prochaine ouverture
-            try { sessionStorage.setItem(CLE_SESSION, "1"); } catch (e) { /* idem */ }
+            try { sessionStorage.setItem(CLE_SESSION, "1"); } catch (e) { Erreurs.consigner("Nouveautes : tant pis : au pire une annonce de plus", e); }
             ouvrir();
         };
         setTimeout(tenter, 900);

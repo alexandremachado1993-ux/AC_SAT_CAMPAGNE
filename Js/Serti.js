@@ -217,7 +217,7 @@
         else if (b.hasAttribute("data-serti-reinit")) { Object.assign(filtres, { q: "", client: "", ligne: "", format: "", validation: "tous", sea: false }); rendre(); }
         else if (b.hasAttribute("data-serti-ouvrir")) {
             selection = b.getAttribute("data-serti-ouvrir"); mode = "mes"; rendreResultats();
-            const d = document.getElementById("serti-detail"); if (d && d.scrollIntoView) d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            const d = document.getElementById("serti-detail"); if (d && d.scrollIntoView) d.scrollIntoView({ block: "nearest", behavior: (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ? "auto" : "smooth" });
         }
         else if (b.hasAttribute("data-serti-mode")) { mode = b.getAttribute("data-serti-mode"); rendreResultats(); }
         else if (b.hasAttribute("data-serti-modifier")) { const v = Donnees.getVisite(b.getAttribute("data-serti-modifier")); if (v) Formulaires.visite({ visite: v }); }

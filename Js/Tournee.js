@@ -73,13 +73,13 @@
                 jourAuto: document.getElementById("rt-auto").value, heureRappel: document.getElementById("rt-rappel").value, bilanSemaines: document.getElementById("rt-bilan").value,
                 unDepartement: document.getElementById("rt-departement").checked, messageClient: document.getElementById("rt-message").checked
             });
-            AppLayout.toast("Réglages de tournée enregistrés ✓");
+            AppLayout.toastSucces("Réglages de tournée enregistrés ✓");
         });
         conteneur.querySelector("[data-agenda-tout]").addEventListener("click", () => {
             const rdvs = Donnees.listerRdv().filter(r => !Donnees.estPropose(r) && r.date >= Donnees.aujourdhuiIso());
             if (!rdvs.length) { AppLayout.toast("Aucun rendez-vous confirmé à venir"); return; }
             Formulaires.telechargerIcs(rdvs, "visites-ac-sat.ics");
-            AppLayout.toast(rdvs.length + " rendez-vous exportés ✓ — ouvre le fichier pour les ajouter à ton agenda");
+            AppLayout.toastSucces(rdvs.length + " rendez-vous exportés ✓ — ouvre le fichier pour les ajouter à ton agenda");
         });
     }
 
@@ -107,7 +107,7 @@
 
             '<div class="section-entete" style="margin-top:20px;"><h2 class="section-titre">🤖 À confirmer</h2></div>' +
             (proposes.length === 0
-                ? '<div class="etat-vide" style="padding:16px;">' + (aucunClient ? "Ajoute d\'abord tes clients et leurs lignes."
+                ? '<div class="etat-vide" style="padding:16px;">' + (aucunClient ? "Ajoute d'abord tes clients et leurs lignes."
                     : "Aucune proposition en attente. Appuie sur « Proposer ma tournée » ou attends le " + esc(JOURS_SEMAINE[t.jourAuto] || "jour choisi") + ".") + '</div>'
                 : parJour(proposes)) +
 

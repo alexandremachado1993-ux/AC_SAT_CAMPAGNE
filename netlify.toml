@@ -70,6 +70,12 @@
   status = 404
   force = true
 
+[[redirects]]
+  from = "/.editorconfig"
+  to = "/404.html"
+  status = 404
+  force = true
+
 # En-têtes de sécurité standard.
 [[headers]]
   for = "/*"
@@ -77,9 +83,13 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "SAMEORIGIN"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(self)"
+    Permissions-Policy = "geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+    # Politique de sécurité du contenu : aucun script en ligne (script-src 'self'), seuls Supabase et geo.api.gouv.fr (commune d'un code postal) sont joignables.
+    # Les styles en ligne restent permis : l'interface en génère beaucoup. Toute nouvelle adresse externe DOIT être ajoutée ici (connect-src).
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; font-src 'self'; connect-src 'self' https://btzqjbmfkzhdtltgtrob.supabase.co wss://btzqjbmfkzhdtltgtrob.supabase.co https://geo.api.gouv.fr; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
-# Les fichiers Leaflet ne changent jamais : on autorise une mise en cache longue.
+# Les bibliothèques de Vendor (Supabase, fflate) ne changent jamais : mise en cache longue.
 [[headers]]
   for = "/Vendor/*"
   [headers.values]
