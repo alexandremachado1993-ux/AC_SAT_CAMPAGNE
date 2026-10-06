@@ -1535,6 +1535,355 @@ html.splash-actif body > *:not(#splash) { visibility: hidden; }
 /* Rouge d'alerte lisible sur fond sombre : alerte « Date passée : visite faite ? » des rendez-vous. */
 html.dark .ligne-rdv-alerte { color: var(--texte-rouge); }
 
+/* ---------- Bilans de fin de campagne (tableau de bord) ---------- */
+.bloc-bilans { margin-top: 12px; }
+.ligne-bilan { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--bordure); flex-wrap: wrap; }
+.ligne-bilan > div { min-width: 0; overflow-wrap: anywhere; }
+.ligne-bilan a.texte-lien { display: inline-block; padding: 9px 0; }   /* cible tactile suffisante */
+
+/* ---------- Contrôle de serti (formulaire de visite et page Serti) ---------- */
+/* Jetons de verdict : une seule définition, claire et sombre ; les règles ci-dessous n'ont plus aucun code couleur. */
+:root {
+    --v-ok-fond: #dcfce7; --v-ok-texte: #14532d; --v-ok-case: #e8f6ec; --v-ok-bord: #2f7a49;
+    --v-lim-fond: #ffedd5; --v-lim-texte: #7c2d12; --v-lim-case: #ffedd5; --v-lim-bord: #f59e0b;
+    --v-hors-fond: #fee2e2; --v-hors-texte: #7f1d1d; --v-hors-case: #fee2e2; --v-hors-bord: #dc2626;
+    --v-oui-plein: #15803d; --v-non-plein: #b91c1c; --v-plein-texte: #ffffff;
+}
+html.dark {
+    --v-ok-fond: #14532d; --v-ok-texte: #bbf7d0; --v-ok-case: #0f2a1a;
+    --v-lim-fond: #7c2d12; --v-lim-texte: #fed7aa; --v-lim-case: #2b1a07;
+    --v-hors-fond: #7f1d1d; --v-hors-texte: #fecaca; --v-hors-case: #3b1010; --v-hors-bord: #f87171;
+}
+:root { --sj-ok: #bfe3c8; --sj-lim: #f7d9a8; --sj-hors: #f1c9c9; }
+html.dark { --sj-ok: #1f5a36; --sj-lim: #6b4a12; --sj-hors: #6b2323; }
+
+.serti-pastille { min-height: 32px; box-sizing: border-box; justify-content: center; white-space: nowrap; }
+.serti-v--ok { background: var(--v-ok-fond); color: var(--v-ok-texte); }
+.serti-v--limite { background: var(--v-lim-fond); color: var(--v-lim-texte); }
+.serti-v--hors { background: var(--v-hors-fond); color: var(--v-hors-texte); }
+.serti-v--nr { background: var(--secondaire); color: var(--attenue-texte); }
+
+.bloc-serti .serti-series, .serti-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.serti-tetes { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 6px; }
+/* Le conteneur (pas la rangée) colle sous le titre de la feuille : « sticky » ne sort pas de son parent direct. */
+.bloc-serti [data-serti-tetes] { position: sticky; top: var(--serti-decalage-tetes, 4.4rem); z-index: 2; margin: 8px -4px 0; padding: 0 4px; background: var(--secondaire); }
+.serti-tete { flex: 0 0 56px; min-height: 52px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 4px;
+    border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--carte); color: var(--carte-texte); font: inherit; font-weight: 800; cursor: pointer; }
+.serti-tete-etat { font-size: 0.8rem; min-height: 1em; }
+.serti-tete--courante { border: 3px solid var(--texte); }
+.serti-tete--ok { background: var(--v-ok-fond); color: var(--v-ok-texte); }
+.serti-tete--limite { background: var(--v-lim-fond); color: var(--v-lim-texte); }
+.serti-tete--hors { background: var(--v-hors-fond); color: var(--v-hors-texte); }
+
+.serti-carte { margin-top: 10px; padding: 12px; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--carte); }
+.serti-carte-titre { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.serti-groupe { margin: 14px 0 2px; font-size: 0.85rem; font-weight: 800; }
+.serti-param { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-top: 1px solid var(--bordure); }
+.serti-param-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.serti-param-tete label { margin: 0; font-weight: 700; }
+.serti-cible { font-size: 0.78rem; color: var(--attenue-texte); }
+.serti-param-saisie { display: flex; align-items: center; gap: 10px; }
+.serti-champ { position: relative; flex: 1 1 auto; min-width: 0; }
+.serti-champ input { width: 100%; box-sizing: border-box; padding-right: 44px; margin: 0; }
+.serti-unite { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; color: var(--attenue-texte); pointer-events: none; }
+.serti-param-saisie .serti-pastille { min-width: 7.5rem; flex: none; }
+.serti-jauge { position: relative; height: 10px; border-radius: 5px; }
+.serti-repere { position: absolute; top: -3px; width: 4px; height: 16px; border-radius: 2px; background: var(--texte); transform: translateX(-50%); }
+.serti-param--invalide input { border-color: var(--danger); }
+
+.serti-nav { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 12px; }
+.serti-nav .bouton { min-height: 48px; }
+.serti-bilan { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding: 12px; border-radius: var(--rayon-moyen); font-size: 0.9rem; }
+.serti-bilan ul { margin: 4px 0 0; padding-left: 18px; }
+.serti-bilan-cmp { margin-top: 4px; font-size: 0.82rem; }
+fieldset.serti-validation { margin: 12px 0 0; padding: 8px 12px 12px; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); min-width: 0; }
+fieldset.serti-validation legend { padding: 0 6px; font-size: 0.85rem; font-weight: 800; }
+.serti-choix { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.serti-choix-option { position: relative; display: flex; margin: 0; }
+.serti-choix-option input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.serti-choix-option span { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 52px; border: 2px solid var(--bordure); border-radius: var(--rayon-moyen);
+    background: var(--carte); color: var(--carte-texte); font-size: 1.05rem; font-weight: 800; }
+.serti-choix-option input:focus-visible + span { outline: 3px solid var(--texte); outline-offset: 2px; }
+/* Option retenue : fond plein de sa couleur sémantique + symbole, dans les deux thèmes (5:1 et 6,5:1 avec le texte blanc). */
+.serti-choix--oui input:checked + span { background: var(--v-oui-plein); border-color: var(--v-oui-plein); color: var(--v-plein-texte); }
+.serti-choix--non input:checked + span { background: var(--v-non-plein); border-color: var(--v-non-plein); color: var(--v-plein-texte); }
+.serti-choix--oui input:checked + span::before { content: "✓ "; white-space: pre; }
+.serti-choix--non input:checked + span::before { content: "✕ "; white-space: pre; }
+.serti-lien { background: none; border: none; padding: 0; font: inherit; color: var(--lien, var(--texte-rouge)); text-decoration: underline; cursor: pointer; min-height: 44px; display: inline-flex; align-items: center; }
+.serti-actions .bouton { min-height: 44px; }
+.serti-config { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+@media (min-width: 640px) { .serti-config { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }
+
+/* Page Serti */
+.serti-filtres { display: flex; flex-direction: column; gap: 12px; }
+.serti-filtres-grille { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); gap: 12px; }
+.serti-filtres-grille input, .serti-filtres-grille select { width: 100%; box-sizing: border-box; margin: 0; }
+.serti-zone-liste { margin-top: 12px; padding: 0; overflow: hidden; }
+.serti-liste { display: flex; flex-direction: column; max-height: 440px; overflow: auto; }
+.serti-ligne { display: grid; grid-template-columns: 6.2rem minmax(0, 1.6fr) 7.5rem 12rem minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; box-sizing: border-box; padding: 12px 14px;
+    text-align: left; border: none; border-top: 1px solid var(--bordure); background: transparent; color: var(--carte-texte); font: inherit; cursor: pointer; min-height: 56px; }
+.serti-ligne:first-child { border-top: none; }
+.serti-ligne.actif { background: var(--secondaire); box-shadow: inset 0 0 0 2px var(--texte); }
+.serti-ligne-qui { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.serti-ligne-etat { display: flex; }
+.serti-detail { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.serti-detail-entete { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.serti-detail-entete h2 { margin: 0; }
+.serti-sous-titre { margin: 14px 0 0; font-size: 0.9rem; }
+.serti-matrice-defile { overflow-x: auto; margin: 4px 0; }
+.serti-matrice { display: flex; flex-direction: column; gap: 6px; width: max-content; min-width: 100%; }
+.serti-matrice-ligne { display: grid; grid-template-columns: 3.4rem repeat(var(--n), minmax(3.7rem, 1fr)); gap: 6px; align-items: center; }
+.serti-matrice--cmp .serti-matrice-ligne { grid-template-columns: 3.4rem repeat(var(--n), minmax(6.4rem, 1fr)); }
+.serti-matrice-entete span { font-size: 0.72rem; font-weight: 800; text-align: center; color: var(--attenue-texte); }
+.serti-matrice-tete { position: sticky; left: 0; z-index: 1; background: var(--carte); font-weight: 800; text-align: center; }
+.serti-case { box-sizing: border-box; min-height: 42px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--bordure); border-radius: 8px;
+    background: var(--fond); font-size: 0.85rem; }
+.serti-case--ok { border-color: var(--v-ok-bord); background: var(--v-ok-case); color: var(--v-ok-texte); }
+.serti-case--limite { border: 2px dashed var(--v-lim-bord); background: var(--v-lim-case); color: var(--v-lim-texte); }
+.serti-case--hors { border: 3px solid var(--v-hors-bord); background: var(--v-hors-case); color: var(--v-hors-texte); font-weight: 800; }
+.serti-case--nr { color: var(--attenue-texte); }
+.serti-case--cmp { min-height: 54px; font-size: 0.78rem; line-height: 1.3; }
+.serti-case--alerte { border: 2px dashed var(--v-lim-bord); background: var(--v-lim-case); color: var(--v-lim-texte); }
+.serti-delta { font-weight: 800; }
+.serti-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 10px; margin: 6px 0; }
+.serti-stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--fond); }
+.serti-stat strong { font-size: 1.05rem; }
+@media (max-width: 760px) {
+    .serti-filtres-grille { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .serti-filtres-grille > div:first-child { grid-column: 1 / -1; }
+    .serti-ligne { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+    .serti-ligne-date, .serti-ligne-tetes { grid-column: 1; }
+    .serti-ligne-qui { grid-column: 1; }
+    .serti-ligne-etat { grid-column: 2; grid-row: 1 / span 2; align-self: start; justify-content: flex-end; }
+    .serti-ligne-client { grid-column: 1 / -1; font-size: 0.8rem; }
+}
+
+/* ---------- Rapport de serti : aperçu et impression (PDF) ---------- */
+.rapport-serti { position: fixed; inset: 0; z-index: 1200; overflow: auto; background: var(--fond); color: var(--texte); }
+.rapport-barre { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px; background: var(--carte); border-bottom: 1px solid var(--bordure); }
+.rapport-barre .bouton { min-height: 44px; }
+.menu-avatar-version { padding: 8px 14px; font-size: 0.78rem; }
+.rapport-page { box-sizing: border-box; max-width: 980px; margin: 0 auto; padding: 16px 16px 40px; }
+.rapport-page h1 { margin: 0 0 4px; font-size: 1.4rem; }
+.rapport-page h2 { margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--bordure); font-size: 1.05rem; }
+.rapport-page h3 { margin: 16px 0 6px; font-size: 0.9rem; }
+.rapport-page p { margin: 4px 0; }
+.rapport-note { font-size: 0.8rem; color: var(--attenue-texte); }
+.rapport-synthese { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 8px; }
+.rapport-synthese div { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); }
+.rapport-synthese span { font-size: 0.75rem; color: var(--attenue-texte); }
+.rapport-synthese strong { font-size: 1.05rem; }
+.rapport-tableau { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.rapport-tableau th, .rapport-tableau td { padding: 5px 7px; border: 1px solid var(--bordure); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.rapport-tableau thead th { background: var(--secondaire); }
+.rapport-date { white-space: nowrap; }
+.rapport-grille td, .rapport-grille th { text-align: center; padding: 4px 3px; font-size: 0.78rem; }
+@media (max-width: 640px) { .rapport-page { overflow-x: auto; } .rapport-tableau { min-width: 34rem; } }
+@media print {
+    body.rapport-ouvert > *:not(#serti-rapport) { display: none !important; }
+    .rapport-serti { position: static; overflow: visible; background: #ffffff; color: #000000; }
+    .rapport-barre { display: none; }
+    .rapport-page { max-width: none; padding: 0; }
+    .rapport-tableau th, .rapport-tableau td, .rapport-synthese div { border-color: #888888; }
+    .rapport-tableau thead th { background: #eeeeee; }
+    .rapport-tableau tr, .rapport-page section > h2 { break-inside: avoid; }
+    .rapport-note, .rapport-synthese span { color: #444444; }
+}
+
+/* ---------- Nouveautés : fenêtre « quoi de neuf » avec photos ---------- */
+.nouv { display: flex; flex-direction: column; gap: 10px; }
+.nouv-entete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nouv-etiquette { padding: 3px 10px; border-radius: 999px; background: var(--primaire); color: var(--primaire-texte); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.nouv-titre { margin: 0; font-size: 1.25rem; line-height: 1.25; }
+.nouv-resume { margin: 0; line-height: 1.5; }
+.nouv-galerie { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 8px; -webkit-overflow-scrolling: touch; }
+.nouv-figure { flex: 0 0 min(72%, 280px); margin: 0; scroll-snap-align: center; }   /* centrée : 3 positions d'arrêt distinctes (début, milieu, fin) quel que soit l'écran ; avec « start » il n'en restait que 2 sur ordinateur */
+.nouv-figure img { display: block; width: 100%; height: auto; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--secondaire); }
+.nouv-figure figcaption { margin-top: 6px; font-size: 0.78rem; line-height: 1.35; color: var(--attenue-texte); }
+.nouv-astuce { margin: 0; }
+.nouv-sous-titre { margin: 8px 0 0; font-size: 0.95rem; }
+.nouv-etapes { display: flex; flex-direction: column; gap: 8px; margin: 0; padding-left: 1.3rem; line-height: 1.45; }
+.nouv-nav { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; align-items: center; text-align: center; }
+.nouv-nav .bouton { min-height: 44px; }
+.nouv-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.nouv-actions .bouton { flex: 1 1 10rem; min-height: 48px; }
+@media (min-width: 760px) { .nouv-figure { flex-basis: min(46%, 320px); } }
+.menu-avatar-pastille { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px; border-radius: 10px;
+    background: var(--primaire); color: var(--primaire-texte); font-size: 0.72rem; font-weight: 800; }
+
+/* ---------- Réglages › Informations ---------- */
+.info-pile { display: flex; flex-direction: column; gap: 16px; max-width: 760px; margin-top: 12px; }
+.info-identite { display: flex; align-items: center; gap: 14px; }
+.info-logo { width: 56px; height: 56px; border-radius: 14px; flex: none; }
+.info-liste { display: flex; flex-direction: column; margin: 14px 0 0; }
+.info-ligne { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 4px 16px; padding: 12px 0; border-top: 1px solid var(--bordure); }
+.info-ligne dt { font-size: 0.85rem; color: var(--attenue-texte); }
+.info-ligne dd { display: flex; flex-direction: column; gap: 2px; margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.info-version { font-size: 1.4rem; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.info-aide { font-size: 0.78rem; line-height: 1.4; color: var(--attenue-texte); }
+.info-etat--a-jour { font-weight: 700; }      /* le ✅ porte le sens ; une couleur verte manquerait de contraste en thème clair */
+.onglet-reglages { min-height: 44px; }
+.info-etat--nouvelle { font-weight: 700; }
+.info-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.info-actions .bouton { min-height: 44px; }
+/* L'attribut « hidden » ne suffit pas : la règle « display » des boutons l'emporte sur lui. */
+.info-actions [hidden] { display: none; }
+.info-nouv-corps { display: flex; gap: 14px; align-items: flex-start; margin-top: 10px; }
+.info-nouv-photo { width: 7.5rem; height: 9.5rem; flex: none; object-fit: cover; object-position: top; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--secondaire); }
+.info-nouv-texte { min-width: 0; }
+.info-nouv-titre { margin: 6px 0 4px; font-size: 1.05rem; line-height: 1.3; }
+.info-nouv-resume { margin: 0; font-size: 0.88rem; line-height: 1.5; color: var(--attenue-texte); }
+@media (max-width: 520px) { .info-ligne { grid-template-columns: minmax(0, 1fr); } .info-nouv-corps { flex-direction: column; } .info-nouv-photo { width: 100%; height: 11rem; } }
+a.menu-avatar-version { display: flex; align-items: center; min-height: 44px; text-decoration: none; }
+
+/* ---------- Mises à jour : pastille du profil, entrée du menu, fenêtre de suggestion ---------- */
+.entete-avatar { position: relative; overflow: visible; }
+.entete-avatar-pastille { position: absolute; top: -5px; right: -5px; display: flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
+    border-radius: 9px; background: var(--primaire); color: var(--primaire-texte); font-size: 0.68rem; font-weight: 800; line-height: 1; box-shadow: 0 0 0 2px var(--fond); }
+.menu-avatar-item--maj { font-weight: 700; }
+.maj-nouv { padding: 12px 14px; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--secondaire); }
+.maj-nouv strong { font-size: 0.8rem; }
+
+/* ---------- Nouveautés : points de navigation de la galerie (façon Instagram) ---------- */
+.nouv-galerie { position: relative; scrollbar-width: none; }        /* position : les « offsetLeft » des photos se mesurent depuis la galerie */
+.nouv-galerie::-webkit-scrollbar { display: none; }
+.nouv-points { display: flex; justify-content: center; margin: -4px 0 -2px; }
+.nouv-points[hidden] { display: none; }        /* l'attribut « hidden » ne suffit pas : « display: flex » l'emporte sur lui */
+.nouv-point { position: relative; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.nouv-point::before { content: ""; position: absolute; top: 50%; left: 50%; width: 9px; height: 9px; border-radius: 999px; transform: translate(-50%, -50%);
+    background: var(--attenue-texte); opacity: 0.45; transition: width 0.2s ease, opacity 0.2s ease; }
+.nouv-point--actif::before { width: 22px; background: var(--primaire); opacity: 1; }
+.nouv-point:focus-visible { outline: none; }
+.nouv-point:focus-visible::before { outline: 2px solid var(--primaire); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .nouv-point::before { transition: none; } }
+
+/* ---------- Planning › Tableau de bord ---------- */
+.pt-vues { margin-top: 12px; }
+.pt-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
+.pt-page > .pt-tech { order: 1; }
+.pt-page > .pt-droite { order: 2; }
+.pt-page > .pt-centre { order: 3; }
+@media (min-width: 1100px) {
+    .pt-page { grid-template-columns: 15rem minmax(0, 1fr) 21rem; }
+    .pt-page--tech-ferme { grid-template-columns: 11rem minmax(0, 1fr) 21rem; }
+    .pt-page--sans-tech { grid-template-columns: minmax(0, 1fr) 21rem; }
+    .pt-page > .pt-tech, .pt-page > .pt-droite, .pt-page > .pt-centre { order: 0; }
+}
+.pt-h2 { margin: 0 0 10px; font-size: 1rem; }
+.pt-h3 { margin: 0 0 4px; font-size: 0.85rem; }
+.pt-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Techniciens (panneau repliable) */
+.pt-tech { padding: 8px; }
+.pt-tech-bouton { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: var(--texte); font: inherit; font-weight: 700; cursor: pointer; }
+.pt-tech-liste { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.pt-tech-liste[hidden] { display: none; }
+.pt-tech-option { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 44px; padding: 6px 10px; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--carte); color: var(--texte); font: inherit; text-align: left; cursor: pointer; }
+.pt-tech-option.actif { border-color: var(--primaire); background: color-mix(in srgb, var(--primaire) 10%, transparent); font-weight: 700; }
+.pt-tech-initiale { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--secondaire); font-size: 0.8rem; font-weight: 800; }
+.pt-tech-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-tech-nb { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--secondaire); font-size: 0.75rem; font-weight: 700; text-align: center; }
+
+/* Cartes de chiffres et synthèse */
+.pt-cartes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pt-carte { display: flex; align-items: flex-start; gap: 10px; padding: 12px; margin: 0; }
+.pt-carte--periode { grid-column: 1 / -1; }
+.pt-carte-icone { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--secondaire); font-size: 1rem; }
+.pt-carte-corps { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pt-carte-libelle { font-size: 0.78rem; color: var(--attenue-texte); }
+.pt-carte-ligne { display: flex; align-items: baseline; gap: 8px; }
+.pt-carte-valeur { font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.pt-pct { font-size: 0.8rem; font-style: normal; font-weight: 700; }
+.pt-periode-texte { font-size: 0.95rem; }
+.pt-evol { font-size: 0.75rem; color: var(--attenue-texte); }
+.pt-evol-ref { opacity: 0.85; }
+.pt-synthese { margin-top: 12px; padding: 14px; }
+.pt-barre { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: var(--bordure); }
+.pt-barre span { height: 100%; }
+.pt-legende { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 0.85rem; }
+.pt-legende li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
+.pt-pastille { width: 10px; height: 10px; border-radius: 50%; }
+.pt-total-pct { margin: 10px 0 0; font-size: 0.78rem; }
+
+/* Calendrier */
+.pt-calendrier { padding: 14px; }
+.pt-entete { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.pt-nav { display: flex; align-items: center; gap: 8px; }
+.pt-titre { margin: 0; min-width: 9rem; font-size: 1.05rem; text-align: center; }
+.pt-nav-bouton { width: 44px; height: 44px; border: 1px solid var(--bordure); border-radius: var(--rayon-moyen); background: var(--carte); color: var(--texte); font-size: 1.2rem; cursor: pointer; }
+.pt-reglages { display: flex; align-items: center; gap: 8px; }
+.pt-aujourdhui, .pt-gran { min-height: 44px; }
+.pt-defile { overflow-x: auto; }
+.pt-mois { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.pt-mois th { padding: 6px 2px; font-size: 0.75rem; font-weight: 600; color: var(--attenue-texte); }
+.pt-cell { position: relative; height: 5.8rem; padding: 4px; border: 1px solid var(--bordure); vertical-align: top; }
+.pt-mois--semaine .pt-cell { height: auto; min-height: 9rem; }
+.pt-cell--hors { background: var(--secondaire); opacity: 0.55; }
+.pt-cell--weekend { background: color-mix(in srgb, var(--secondaire) 55%, transparent); }
+.pt-cell--aujourdhui { background: color-mix(in srgb, var(--primaire) 8%, transparent); }
+.pt-num { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: flex-start; padding: 5px; border: 0; background: transparent; color: var(--texte); font: inherit; cursor: pointer; }   /* toute la case du jour est le bouton */
+.pt-num-n { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; min-height: 26px; border-radius: 50%; font-size: 0.8rem; font-weight: 600; }
+.pt-cell--aujourdhui .pt-num-n { background: var(--primaire); color: var(--primaire-texte); }
+.pt-puces { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 3px; margin-top: 28px; }
+.pt-puce { display: flex; align-items: center; gap: 4px; width: 100%; min-height: 22px; padding: 2px 6px; border: 0; border-left: 3px solid var(--c); border-radius: 6px; font: inherit; font-size: 0.7rem; text-align: left; cursor: pointer; overflow: hidden; }
+.pt-puce, html.dark .pt-puce { color: var(--texte); }       /* texte normal (contraste) ; le sens est porté par le liseré coloré, le fond teinté ET le mot (Retard, Planifié…) */
+.pt-puce-point { display: none; }
+.pt-puce-texte { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pt-plus { align-self: flex-start; min-height: 28px; min-width: 44px; padding: 0 12px; border: 1px dashed var(--bordure); border-radius: 999px; background: transparent; color: var(--attenue-texte); font: inherit; font-size: 0.7rem; cursor: pointer; }
+.pt-minis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); }
+.pt-minis--3 { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
+.pt-mini-titre { display: block; width: 100%; min-height: 36px; margin-bottom: 4px; border: 0; background: transparent; color: var(--texte); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.pt-mini-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.78rem; }
+.pt-mini-table th { padding: 2px 0; font-weight: 600; color: var(--attenue-texte); }
+.pt-mini-jour { position: relative; width: 100%; min-height: 40px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--texte); font: inherit; cursor: pointer; }
+.pt-mini-jour--aujourdhui { background: var(--primaire); color: var(--primaire-texte); font-weight: 800; }
+.pt-points { position: absolute; left: 0; right: 0; bottom: 3px; display: flex; justify-content: center; gap: 2px; }
+.pt-points i { width: 5px; height: 5px; border-radius: 50%; }
+.pt-liste { margin: 0; padding: 0; list-style: none; }
+.pt-liste ul { margin: 0; padding: 0; list-style: none; }
+.pt-liste-date { margin: 12px 0 6px; font-size: 0.85rem; text-transform: capitalize; }
+.pt-ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0; border-bottom: 1px solid var(--bordure); background: transparent; color: var(--texte); font: inherit; text-align: left; cursor: pointer; }
+
+/* Résumé et analyses */
+.pt-analyses { margin-top: 16px; }
+.pt-analyses-grille { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); align-items: stretch; }
+.pt-donut-carte, .pt-graphe { padding: 14px; margin: 0; }
+.pt-donut { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.pt-donut svg { width: 9rem; height: 9rem; flex: none; }
+.pt-donut-total { font: 800 22px system-ui, sans-serif; fill: var(--texte); }
+.pt-donut-libelle { font: 500 8px system-ui, sans-serif; fill: var(--attenue-texte); }
+.pt-legende--donut { flex: 1 1 9rem; margin: 0; }
+.pt-colonnes { display: flex; align-items: flex-end; gap: 3px; height: 5.5rem; margin-top: 10px; }
+.pt-col { flex: 1; min-width: 0; border-radius: 3px 3px 0 0; opacity: 0.45; }
+.pt-col--courante { opacity: 1; }
+.pt-axe { display: flex; gap: 3px; margin-top: 4px; font-size: 0.6rem; color: var(--attenue-texte); }
+.pt-axe span { flex: 1; min-width: 0; text-align: center; overflow: hidden; }
+.pt-colonne-droite { display: flex; flex-direction: column; gap: 12px; }
+.pt-action { padding: 14px; margin: 0; }
+.pt-action strong { display: block; margin-top: 4px; }
+
+/* Barre de filtres du Planning : cibles tactiles (cases et bouton de réinitialisation) */
+.pl-filtres-pied .champ-case { display: flex; align-items: center; min-height: 44px; }
+.pl-reinitialiser { min-height: 44px; }
+
+/* Détail d'un jour */
+.pt-detail { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.pt-detail-ligne { display: flex; align-items: center; gap: 10px; }
+.pt-detail-corps { flex: 1; min-width: 0; }
+
+/* Téléphone : les pastilles du calendrier deviennent des points ; le détail s'ouvre en touchant le jour */
+@media (max-width: 700px) {
+    .pt-cell { height: 4.2rem; padding: 2px; }
+    .pt-cell { height: 4.8rem; }
+    .pt-num { justify-content: center; padding: 4px; }
+    .pt-puces { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 3px; margin-top: 30px; pointer-events: none; }
+    .pt-puce { width: 8px; min-height: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--c); }
+    .pt-puce-texte, .pt-plus { display: none; }
+    .pt-mois--semaine .pt-cell { min-height: 4.2rem; }
+    .pt-mois--semaine .pt-puces { flex-direction: row; }
+    .pt-titre { min-width: 0; font-size: 0.95rem; }
+    .pt-entete { justify-content: center; }
+}
 
 /* >>> GENERE-DEBUT : couleurs de secours (anciens navigateurs) — ne pas modifier à la main */
 /* Sans oklch() (Chrome < 111, Safari < 15.4, Samsung Internet < 22) : variables et couleurs directes en rgb. */
@@ -1575,5 +1924,11 @@ html.dark .ligne-rdv-alerte { color: var(--texte-rouge); }
   .ligne-rdv--propose { background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(245,240,240,0.7) 10px 20px); }
   html.dark .ligne-rdv--propose { background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(38,38,41,0.7) 10px 20px); }
   .pastille-couleur { background: rgba(128,128,128,0.1); }
+  .pt-tech-option.actif { background: rgba(212,12,26,0.1); }
+  html.dark .pt-tech-option.actif { background: rgba(249,66,61,0.1); }
+  .pt-cell--weekend { background: rgba(245,240,240,0.55); }
+  html.dark .pt-cell--weekend { background: rgba(38,38,41,0.55); }
+  .pt-cell--aujourdhui { background: rgba(212,12,26,0.08); }
+  html.dark .pt-cell--aujourdhui { background: rgba(249,66,61,0.08); }
 }
 /* <<< GENERE-FIN */

@@ -17,7 +17,7 @@ const AppLayout = (() => {
     /* Version livrée : la même valeur figure dans version.txt à la racine.
        Après une mise en ligne, ouvrir <site>/version.txt permet de vérifier
        que c'est bien cette version qui est en ligne. */
-    const VERSION = "2026.10.02-a";
+    const VERSION = "2026.10.06-a";
 
     /* Barre latérale ET navigation mobile se construisent depuis cette liste. */
     const ELEMENTS_NAV = [
@@ -25,6 +25,7 @@ const AppLayout = (() => {
         { page: "planning", href: "Planning.html", icone: "📅", libelle: "Planning" },
         { page: "tournee", href: "Tournee.html", icone: "🤖", libelle: "Tournée" },
         { page: "clients", href: "Clients.html", icone: "👥", libelle: "Clients" },
+        { page: "serti", href: "Serti.html", icone: "📏", libelle: "Serti" },
         { page: "documents", href: "Documents.html", icone: "📄", libelle: "Documents", court: "Docs" },
         { page: "reglages", href: "Reglages.html", icone: "⚙️", libelle: "Réglages" }
     ];
@@ -33,7 +34,7 @@ const AppLayout = (() => {
        (⚙️ et menu du profil). 4 liens + « + » = 5 colonnes de 72 px sur un
        écran de 360 px, avec des libellés lisibles. */
     const NB_AVANT_FAB = 2;
-    const PAGES_HORS_BARRE_MOBILE = ["reglages", "documents"];
+    const PAGES_HORS_BARRE_MOBILE = ["reglages", "documents", "serti"];
 
     let elVoile, elFeuille;
 
@@ -151,7 +152,8 @@ const AppLayout = (() => {
         bouton.type = "button";
         bouton.className = "entete-avatar";
         bouton.setAttribute("aria-label", "Menu utilisateur");
-        bouton.textContent = initiales(Donnees.getDonnees().profil.nom);
+        boutonAvatar = bouton;
+        majPastilleAvatar();
 
         const panneau = document.createElement("div");
         panneau.className = "menu-avatar-panneau";
@@ -165,10 +167,19 @@ const AppLayout = (() => {
                 '<div><div class="menu-avatar-nom">' + escapeHtml(profil.nom) + '</div>' +
                 '<div class="menu-avatar-role">Technicien SAT</div></div>' +
                 '</div>' +
+                (maj.disponible ? '<button type="button" class="menu-avatar-item menu-avatar-item--maj" data-maj>⬆️ Mise à jour disponible<span class="menu-avatar-pastille">' + escapeHtml(maj.version) + '</span></button>' : "") +
+                '<a href="Serti.html" class="menu-avatar-item">📏 Serti</a>' +
                 '<a href="Documents.html" class="menu-avatar-item">📄 Documents</a>' +
                 '<a href="Reglages.html" class="menu-avatar-item">⚙️ Réglages &amp; sauvegarde</a>' +
+                (typeof Nouveautes !== "undefined" ? '<button type="button" class="menu-avatar-item" data-nouveautes>🎁 Nouveautés' +
+                    (Nouveautes.nbNonVues() ? '<span class="menu-avatar-pastille" aria-label="' + Nouveautes.nbNonVues() + ' non vue(s)">' + Nouveautes.nbNonVues() + '</span>' : "") + '</button>' : "") +
                 '<button type="button" class="menu-avatar-item" data-bascule-theme>' +
-                (profil.theme === "dark" ? "☀️ Thème clair" : "🌙 Thème sombre") + '</button>';
+                (profil.theme === "dark" ? "☀️ Thème clair" : "🌙 Thème sombre") + '</button>' +
+                '<a href="Reglages.html#informations" class="menu-avatar-version texte-attenue" aria-label="Version ' + escapeHtml(VERSION) + ' : ouvrir les informations">Version ' + escapeHtml(VERSION) + '</a>';
+            const bm = panneau.querySelector("[data-maj]");
+            if (bm) bm.addEventListener("click", () => { panneau.hidden = true; ouvrirSuggestionMaj(); });
+            const bn = panneau.querySelector("[data-nouveautes]");
+            if (bn) bn.addEventListener("click", () => { panneau.hidden = true; Nouveautes.ouvrir({ tout: true }); });
             panneau.querySelector("[data-bascule-theme]").addEventListener("click", () => {
                 Donnees.definirTheme(profil.theme === "dark" ? "light" : "dark");
                 panneau.hidden = true;
@@ -373,6 +384,153 @@ const AppLayout = (() => {
         return el;
     }
 
+    /* ---------- Mises à jour ----------
+       Le serveur publie version.json { version, date, nouveaute: { id, titre, resume } } (et version.txt, pour les anciennes versions).
+       L'application le compare à sa propre version :
+       - au démarrage, quand on revient sur l'application, et toutes les 30 minutes tant qu'elle est ouverte ;
+       - mise à jour disponible → fenêtre de SUGGESTION (qui annonce ce qu'elle apporte), puis pastille sur le profil et entrée
+         dans le menu tant qu'elle n'est pas installée ; « Plus tard » = pas de nouvelle fenêtre avant 6 heures ;
+       - si l'application est en arrière-plan et que les notifications sont autorisées : une notification système (une par version).
+       Jamais pendant l'animation d'ouverture ni par-dessus une autre fenêtre. Hors connexion ou ouverte depuis un dossier : rien. */
+
+    const CLE_MAJ_SESSION = "acsc_maj_etat";           // sessionStorage : dernier contrôle { t, infos }
+    const CLE_MAJ_PROPOSEE = "acsc_maj_proposee";      // sessionStorage : la fenêtre a déjà été montrée dans cette session
+    const CLE_MAJ_REPORT = "acsc_maj_reportee";        // localStorage : pas de nouvelle fenêtre avant cet instant (ms)
+    const CLE_MAJ_NOTIFIEE = "acsc_maj_notifiee";      // localStorage : dernière version pour laquelle une notification système est partie
+    const REPORT_MS = 6 * 3600 * 1000, INTERVALLE_MS = 30 * 60 * 1000, MIN_ENTRE_MS = 10 * 60 * 1000;
+    let maj = { disponible: false, version: null, infos: null };
+    let dernierControle = 0, proposeEnCours = false, boutonAvatar = null;
+
+    const versionValide = (v) => typeof v === "string" && /^\d{4}\.\d{2}\.\d{2}-[a-z]$/.test(v);
+
+    /* { version, date, nouveaute } publié par le serveur, ou null (hors ligne, fichier absent ou invalide, ouverture depuis un dossier). */
+    function lireInfosServeur() {
+        if (!/^https?:$/.test(location.protocol) || typeof fetch !== "function") return Promise.resolve(null);
+        const lire = (url) => fetch(url, { cache: "no-store" }).then(r => (r.ok ? r.text() : "")).catch(() => "");
+        return lire("version.json").then(t => {
+            let j = null; try { j = JSON.parse(t); } catch (e) { j = null; }
+            if (j && typeof j === "object" && versionValide(j.version)) {
+                const n = j.nouveaute && typeof j.nouveaute === "object" ? { id: String(j.nouveaute.id || "").slice(0, 60), titre: String(j.nouveaute.titre || "").slice(0, 120), resume: String(j.nouveaute.resume || "").slice(0, 300) } : null;
+                return { version: j.version, date: /^\d{4}-\d{2}-\d{2}$/.test(j.date || "") ? j.date : "", nouveaute: n && n.titre ? n : null };
+            }
+            return lire("version.txt").then(tt => { const v = String(tt).trim(); return versionValide(v) ? { version: v, date: "", nouveaute: null } : null; });
+        });
+    }
+
+    function memoriserControle(infos) {
+        dernierControle = Date.now();
+        try { sessionStorage.setItem(CLE_MAJ_SESSION, JSON.stringify({ t: dernierControle, infos })); } catch (e) { /* stockage refusé : on recontrôlera */ }
+    }
+
+    /* Un contrôle sans réponse (null) ne fait pas oublier une mise à jour déjà connue. */
+    function appliquerEtat(infos) {
+        if (infos) maj = { disponible: infos.version !== VERSION, version: infos.version, infos };
+        majPastilleAvatar();
+    }
+
+    /* À la demande (Réglages › Informations) : { etat: "a-jour" | "nouvelle" | "indisponible", serveur, infos }. */
+    function verifierMiseAJour() {
+        return lireInfosServeur().then(infos => {
+            memoriserControle(infos); appliquerEtat(infos);
+            return { etat: !infos ? "indisponible" : infos.version === VERSION ? "a-jour" : "nouvelle", serveur: infos ? infos.version : null, infos };
+        });
+    }
+
+    /* Installe : recharge l'application (le serveur ne met rien en cache pour le code). Les données locales ne sont pas touchées. */
+    function appliquerMiseAJour() {
+        try { localStorage.removeItem(CLE_MAJ_REPORT); sessionStorage.removeItem(CLE_MAJ_SESSION); sessionStorage.removeItem(CLE_MAJ_PROPOSEE); } catch (e) { /* idem */ }
+        const recharger = () => location.reload();
+        if (typeof navigator !== "undefined" && navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+            navigator.serviceWorker.getRegistration().then(r => (r ? r.update() : null)).catch(() => null).then(recharger);
+        } else recharger();
+    }
+
+    /* Fenêtre de suggestion : ce que la mise à jour apporte, puis « Mettre à jour maintenant » ou « Plus tard ». */
+    function ouvrirSuggestionMaj() {
+        if (!maj.disponible) return;
+        const i = maj.infos || {}, n = i.nouveaute;
+        const date = i.date ? i.date.slice(8, 10) + "/" + i.date.slice(5, 7) + "/" + i.date.slice(0, 4) : "";
+        ouvrirFeuille("bas", "Mise à jour disponible",
+            '<div class="nouv maj">' +
+            '<div class="nouv-entete"><span class="nouv-etiquette">Mise à jour</span><span class="texte-attenue">Version ' + escapeHtml(maj.version) + (date ? " · " + escapeHtml(date) : "") + '</span></div>' +
+            '<h2 class="nouv-titre">Une nouvelle version est prête</h2>' +
+            '<p class="nouv-resume">Tu utilises la version ' + escapeHtml(VERSION) + '. La mise à jour prend quelques secondes et tes données restent intactes.</p>' +
+            (n ? '<div class="maj-nouv"><strong>🎁 Au programme</strong><h3 class="info-nouv-titre">' + escapeHtml(n.titre) + '</h3>' + (n.resume ? '<p class="info-nouv-resume">' + escapeHtml(n.resume) + '</p>' : "") + '</div>' : "") +
+            '<p class="aide-champ nouv-astuce">« Plus tard » : cette fenêtre ne reviendra pas avant quelques heures ; la pastille sur ton profil te le rappelle.</p>' +
+            '<div class="nouv-actions"><button type="button" class="bouton bouton--contour" data-maj-plus-tard>Plus tard</button>' +
+            '<button type="button" class="bouton" data-maj-maintenant>Mettre à jour maintenant</button></div></div>');
+        elFeuille.querySelector("[data-maj-plus-tard]").addEventListener("click", fermerFeuille);
+        elFeuille.querySelector("[data-maj-maintenant]").addEventListener("click", appliquerMiseAJour);
+    }
+
+    /* Propose la suggestion quand c'est le bon moment (pas d'animation, pas d'autre fenêtre), une fois par session et pas pendant le « plus tard ». */
+    function proposerMaj() {
+        if (!maj.disponible || proposeEnCours) return;
+        try {
+            if (sessionStorage.getItem(CLE_MAJ_PROPOSEE) === "1") return;
+            if (Date.now() < Number(localStorage.getItem(CLE_MAJ_REPORT) || 0)) return;
+        } catch (e) { /* stockage refusé : on propose */ }
+        proposeEnCours = true;
+        let essais = 0;
+        const tenter = () => {
+            const occupe = document.documentElement.classList.contains("splash-actif") || !!document.querySelector(".feuille:not([hidden])");
+            if (occupe) { if (essais++ < 90) setTimeout(tenter, 1000); else proposeEnCours = false; return; }   // patiente jusqu'à 90 s
+            proposeEnCours = false;
+            if (!maj.disponible) return;
+            if (document.querySelector("#panneau-reglages-informations:not([hidden])")) return;     // déjà sous les yeux (Réglages › Informations) : pas de fenêtre par-dessus
+            try { sessionStorage.setItem(CLE_MAJ_PROPOSEE, "1"); localStorage.setItem(CLE_MAJ_REPORT, String(Date.now() + REPORT_MS)); } catch (e) { /* idem */ }
+            ouvrirSuggestionMaj();
+        };
+        setTimeout(tenter, 1200);       // après l'annonce « Nouveautés » éventuelle, qui s'ouvre à 0,9 s
+    }
+
+    /* Notification système : seulement si l'application est en arrière-plan, que c'est autorisé, et une seule fois par version. */
+    function notifierSysteme() {
+        if (!maj.disponible || typeof Notification === "undefined" || Notification.permission !== "granted" || !document.hidden) return;
+        if (!(typeof navigator !== "undefined" && navigator.serviceWorker && navigator.serviceWorker.ready)) return;
+        try { if (!notifMajActive() || localStorage.getItem(CLE_MAJ_NOTIFIEE) === maj.version) return; } catch (e) { /* idem */ }
+        const n = maj.infos && maj.infos.nouveaute;
+        navigator.serviceWorker.ready.then(reg => reg.showNotification("Mise à jour disponible", {
+            body: (n ? "Nouveau : " + n.titre + ". " : "") + "Version " + maj.version + " : ouvre l'application pour l'installer.",
+            icon: "Images/icone-192.png", badge: "Images/badge-96.png", tag: "acsc-maj" }))
+            .then(() => { try { localStorage.setItem(CLE_MAJ_NOTIFIEE, maj.version); } catch (e) { /* idem */ } })
+            .catch(() => { /* notification refusée ou indisponible : la fenêtre et la pastille suffisent */ });
+    }
+
+    /* Réglage du PROFIL (synchronisé, lu aussi par le serveur qui envoie la notification quand l'application est fermée). */
+    const notifMajActive = () => Donnees.getTournee().prevenirVersions !== false;
+    function definirNotifMaj(actif) { Donnees.definirTournee({ prevenirVersions: !!actif }); }
+
+    /* Pastille du profil : mise à jour à installer (1) + nouveautés non vues. */
+    function nbNotifications() { return (maj.disponible ? 1 : 0) + (typeof Nouveautes !== "undefined" ? Nouveautes.nbNonVues() : 0); }
+    function majPastilleAvatar() {
+        if (!boutonAvatar) return;
+        const n = nbNotifications();
+        boutonAvatar.innerHTML = '<span>' + escapeHtml(initiales(Donnees.getDonnees().profil.nom)) + '</span>' +
+            (n ? '<span class="entete-avatar-pastille" aria-hidden="true">' + n + '</span>' : "");
+        boutonAvatar.setAttribute("aria-label", "Menu utilisateur" + (n ? " : " + n + " notification" + (n > 1 ? "s" : "") : ""));
+    }
+
+    /* Contrôle au démarrage (résultat gardé 10 min pour les autres pages de la session), puis au retour sur l'application et toutes les 30 min. */
+    function verifierVersion() {
+        let memo = null;
+        try { memo = JSON.parse(sessionStorage.getItem(CLE_MAJ_SESSION) || "null"); } catch (e) { memo = null; }
+        if (memo && Date.now() - memo.t < MIN_ENTRE_MS) { dernierControle = memo.t; appliquerEtat(memo.infos); proposerMaj(); return; }
+        lireInfosServeur().then(infos => { memoriserControle(infos); appliquerEtat(infos); proposerMaj(); notifierSysteme(); });
+    }
+
+    function planifierVerifications() {
+        const controle = () => lireInfosServeur().then(infos => {
+            memoriserControle(infos); appliquerEtat(infos);
+            if (maj.disponible) { notifierSysteme(); if (!document.hidden) proposerMaj(); }
+        });
+        setInterval(controle, INTERVALLE_MS);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState !== "visible") return;
+            if (Date.now() - dernierControle > MIN_ENTRE_MS) controle(); else proposerMaj();
+        });
+    }
+
     /* ---------- Point d'entrée ---------- */
 
     function init(pageActuelle) {
@@ -401,7 +559,11 @@ const AppLayout = (() => {
             afficherEtatSynchro({ statut: "indisponible", erreur: "Js/Synchro.js non chargé" });
         }
         enregistrerServiceWorker();
+        majPastilleAvatar();
+        verifierVersion();
+        planifierVerifications();
+        if (typeof Nouveautes !== "undefined") Nouveautes.annoncerSiBesoin();      /* « quoi de neuf ? » : une fois, jamais par-dessus l'animation ni une autre fenêtre */
     }
 
-    return { init, ouvrirFeuille, fermerFeuille, toast, toastAction, escapeHtml, VERSION };
+    return { init, ouvrirFeuille, fermerFeuille, toast, toastAction, escapeHtml, VERSION, verifierMiseAJour, appliquerMiseAJour, ouvrirSuggestionMaj, miseAJourDisponible: () => maj, rafraichirNotifications: majPastilleAvatar, notifMajActive, definirNotifMaj };
 })();

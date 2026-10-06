@@ -60,6 +60,7 @@
                 '<div class="texte-attenue carte-ligne-info">📦 ' + esc([l.formatHabituel, l.produitHabituel].filter(Boolean).join(" · ") || "Format / produit non renseignés") +
                 (l.cadenceLigne ? ' · ' + esc(l.cadenceLigne) + ' b/min' : "") + '</div>' +
                 (outillage.length ? '<div class="carte-ligne-outillage">🔩 ' + outillage.join("") + '</div>' : "") +
+                ((l.nbTetes !== "" && l.nbTetes != null) || l.colonneSerti ? '<div class="texte-attenue carte-ligne-info">🔬 Serti : ' + esc([l.nbTetes === 0 ? "sans tête" : (l.nbTetes ? l.nbTetes + " têtes" : ""), l.colonneSerti].filter(Boolean).join(" · ")) + '</div>' : "") +
                 '<div class="texte-attenue carte-ligne-info">🕑 ' + (derniere ? "Dernière visite le " + Formulaires.dateFr(derniere.date) : "Jamais visitée") +
                 (e && e.echeance ? ' · prochaine le ' + Formulaires.dateFr(e.echeance) : "") + '</div>' +
                 (l.notes ? '<div class="carte-ligne-notes">' + esc(l.notes) + '</div>' : "") +
@@ -123,7 +124,7 @@
                         '<div class="ligne-historique-date">' + Formulaires.dateFr(v.date) + '</div>' +
                         '<div class="ligne-historique-corps">' +
                         '<div><strong>' + esc(l ? l.nom : (v.ligneId ? "Ligne supprimée" : "Visite générale")) + '</strong> ' +
-                        Formulaires.pastilleType(v.type) + ' ' + Formulaires.pastilleStatut(v) + '</div>' +
+                        Formulaires.pastilleType(v.type) + ' ' + Formulaires.pastilleStatut(v) + ' ' + FicheSerti.pastille(v) + '</div>' +
                         (statut === "reportee" && v.reporteLe ? '<div class="texte-attenue">🔁 Reportée au <strong>' + Formulaires.dateFr(v.reporteLe) + '</strong></div>' : "") +
                         (v.motif ? '<div class="texte-attenue">Motif : ' + esc(v.motif) + '</div>' : "") +
                         ((v.format || v.produit) ? '<div class="texte-attenue">📦 ' + esc([v.format, v.produit].filter(Boolean).join(" · ")) + '</div>' : "") +

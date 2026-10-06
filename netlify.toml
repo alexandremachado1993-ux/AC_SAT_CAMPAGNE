@@ -19,6 +19,57 @@
   status = 200
   force = true
 
+# Fichiers de développement : présents dans le dossier publié, mais JAMAIS servis au public.
+# Chaque adresse renvoie la page 404. Le test Tests/test25.js échoue si un nouveau fichier de
+# développement est ajouté à la racine sans règle ici.
+[[redirects]]
+  from = "/Tests/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.github/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/envoyer.bat"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/envoyer-auto.bat"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/netlify.toml"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.gitignore"
+  to = "/404.html"
+  status = 404
+  force = true
+
 # En-têtes de sécurité standard.
 [[headers]]
   for = "/*"
@@ -52,3 +103,9 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
     Accept-Ranges = "bytes"
+
+# Numéro de version publié : jamais en cache (l'application le compare à sa propre version pour proposer la mise à jour).
+[[headers]]
+  for = "/version.*"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

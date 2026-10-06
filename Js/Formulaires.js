@@ -422,6 +422,9 @@ const Formulaires = (() => {
                 '<div id="fl-modele-zone">' + choixLibre("fl-modele", "Modèle sertisseuse", Donnees.valeursConnues("modele", { marque: x.marque }), x.modele) + '</div>') +
             deuxColonnes(choixLibre("fl-format", "Format habituel", Donnees.valeursConnues("format"), x.formatHabituel, { placeholder: "ex. 4/4" }),
                 choixLibre("fl-produit", "Produit habituel", Donnees.choixPour("produit"), x.produitHabituel)) +
+            deuxColonnes(liste("fl-tetes", "Têtes de sertissage", FicheSerti.optionsNbTetes(), x.nbTetes === undefined || x.nbTetes === null ? "" : x.nbTetes),
+                liste("fl-colonne", "Format fournisseur (document)", FicheSerti.optionsColonnes(), x.colonneSerti || "")) +
+            '<p class="aide-champ" id="fl-serti-aide"></p>' +
             blocOutillage(x) +
             deuxColonnes(champ("fl-cadence", "Cadence (boîtes/min)", "number", x.cadenceLigne),
                 champ("fl-serie", "N° de série (facultatif)", "text", x.numeroSerie)) +
@@ -446,6 +449,29 @@ const Formulaires = (() => {
                 choixLibre("fl-modele", "Modèle sertisseuse", Donnees.valeursConnues("modele", { marque: val("fl-marque") }), courant);
         };
         marque.addEventListener("change", rafraichirModeles);
+        /* Format boîte et format fournisseur se complètent : choisir l'un remplit l'autre quand il n'y a pas d'ambiguïté. */
+        const selColonne = document.getElementById("fl-colonne");
+        let colonneAuto = !selColonne.value;
+        const aideSerti = () => { document.getElementById("fl-serti-aide").innerHTML = FicheSerti.aideFormat(val("fl-format"), selColonne.value || FicheSerti.colonneAutomatique(val("fl-format"))); };
+        /* Un format qui n'a qu'une colonne l'impose ; un format à deux colonnes (4/4) garde le choix s'il en fait partie ;
+           un format libre ou inconnu laisse le choix à la main. */
+        const formatChange = () => {
+            const fmt = val("fl-format"), auto = FicheSerti.colonneAutomatique(fmt), cols = ReferentielSerti.colonnesDuFormat(fmt);
+            if (auto) { selColonne.value = auto; colonneAuto = true; }
+            else if (cols.length > 1 && cols.indexOf(selColonne.value) === -1) selColonne.value = "";
+            aideSerti();
+        };
+        document.getElementById("fl-format").addEventListener("change", formatChange);
+        const formatLibre = document.getElementById("fl-format-libre");
+        if (formatLibre) formatLibre.addEventListener("input", formatChange);
+        selColonne.addEventListener("change", () => {
+            colonneAuto = false;
+            const noms = ReferentielSerti.formatsDeLaColonne(selColonne.value);
+            if (selColonne.value && !val("fl-format") && noms.length === 1) definirChoix("fl-format", noms[0]);
+            aideSerti();
+        });
+        if (!existant || !existant.colonneSerti) { const auto = FicheSerti.colonneAutomatique(val("fl-format")); if (auto) selColonne.value = auto; colonneAuto = !!selColonne.value && !(existant && existant.colonneSerti); }
+        aideSerti();
         const marqueLibre = document.getElementById("fl-marque-libre");
         if (marqueLibre) marqueLibre.addEventListener("change", rafraichirModeles);
         document.querySelectorAll('input[name="fl-statut"]').forEach(r => r.addEventListener("change", () => {
@@ -465,6 +491,9 @@ const Formulaires = (() => {
             Donnees.enregistrerLigne(clientId, Object.assign({
                 nom, marque: val("fl-marque"), modele: val("fl-modele"), numeroSerie: val("fl-serie"),
                 cadenceLigne: val("fl-cadence"), formatHabituel: val("fl-format"),
+                nbTetes: val("fl-tetes"),
+                /* La colonne n'est retenue que si elle diffère de celle que le format donne tout seul (sinon elle resterait figée si le format change). */
+                colonneSerti: selColonne.value && selColonne.value !== FicheSerti.colonneAutomatique(val("fl-format")) ? selColonne.value : "",
                 produitHabituel: val("fl-produit"), notes: val("fl-notes"),
                 statut: (document.querySelector('input[name="fl-statut"]:checked') || {}).value || "active",
                 fournisseurActuel: val("fl-fournisseur-actuel")
@@ -731,6 +760,8 @@ const Formulaires = (() => {
                 deuxColonnes(choixLibre("fx-f-" + l.id, "Format", Donnees.valeursConnues("format"), l.formatHabituel),
                     choixLibre("fx-p-" + l.id, "Produit", Donnees.choixPour("produit"), l.produitHabituel)) +
                 zoneTexte("fx-r-" + l.id, "Remarques", "", "Réglages, contrôles, points à revoir…") +
+                '<button type="button" class="bouton bouton--petit bouton--contour" data-serti-ouvrir="' + esc(l.id) + '">🔬 Contrôle de serti</button>' +
+                '<div id="fxs-' + esc(l.id) + '"></div>' +
                 '</div>').join("") +
             piedFormulaire("Enregistrer la visite") +
             '</form>';
@@ -752,6 +783,14 @@ const Formulaires = (() => {
         }
         selType.addEventListener("change", redessiner);
         redessiner();
+        /* Contrôle de serti : monté seulement quand on le demande (une ligne à la fois, pas tous d'un coup). */
+        form.querySelectorAll("[data-serti-ouvrir]").forEach(b => b.addEventListener("click", () => {
+            const id = b.getAttribute("data-serti-ouvrir");
+            FicheSerti.monter("fxs-" + id, document.getElementById("fxs-" + id), { ligne: Donnees.getLigne(id), formatCourant: () => val("fx-f-" + id) });
+            b.hidden = true;
+            const d = document.querySelector("#fxs-" + id + " details"); if (d) d.open = true;
+        }));
+        form.addEventListener("change", (e) => { const m = /^fx-f-(.+?)(-libre)?$/.exec(e.target.id || ""); if (m && FicheSerti.estMonte("fxs-" + m[1])) FicheSerti.majFormat("fxs-" + m[1]); });
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
@@ -762,8 +801,12 @@ const Formulaires = (() => {
             const complements = lireComplements("fx");
             const visites = Array.prototype.filter.call(form.querySelectorAll("[data-ligne-vue]"), el => el.checked).map(el => {
                 const id = el.getAttribute("data-ligne-vue");
-                return Object.assign({ ligneId: id, date, type, format: val("fx-f-" + id), produit: val("fx-p-" + id), remarques: val("fx-r-" + id) }, complements);
+                const visiteLigne = Object.assign({ ligneId: id, date, type, format: val("fx-f-" + id), produit: val("fx-p-" + id), remarques: val("fx-r-" + id) }, complements);
+                const mes = FicheSerti.lire("fxs-" + id);
+                if (mes) visiteLigne.mesures = mes;
+                return visiteLigne;
             });
+            const reglages = toutes.map(l => FicheSerti.reglagesLigne("fxs-" + l.id)).filter(Boolean);
             const general = val("fx-g");
             if (Donnees.typeVisite(type).ligneFacultative && (general || visites.length === 0)) {
                 visites.push(Object.assign({ ligneId: null, date, type, remarques: general }, complements));
@@ -771,6 +814,8 @@ const Formulaires = (() => {
             if (visites.length === 0) return erreur(form, "Coche au moins une ligne visitée.");
             const creees = Donnees.realiserRdv(rdvId, visites);
             if (!creees) return erreur(form, "Visite non enregistrée.");
+            reglages.forEach(r => Donnees.enregistrerLigne(r.clientId || (Donnees.getLigne(r.ligneId) || {}).clientId, { nbTetes: r.nbTetes, colonneSerti: r.colonneSerti }, r.ligneId));
+            toutes.forEach(l => FicheSerti.demonter("fxs-" + l.id));
             AppLayout.fermerFeuille();
             AppLayout.toast(creees.length + " visite" + (creees.length > 1 ? "s enregistrées" : " enregistrée") + " ✓ — rendez-vous clôturé");
         });
@@ -807,7 +852,7 @@ const Formulaires = (() => {
             '<label for="fv-ligne">Ligne</label><select id="fv-ligne"></select>' +
             '<div id="fv-contenu">' +
             deuxColonnes(choixLibre("fv-format", "Format", Donnees.valeursConnues("format"), ""), choixLibre("fv-produit", "Produit", Donnees.choixPour("produit"), "")) +
-            '<div id="fv-complements"></div></div>' +
+            '<div id="fv-complements"></div><div id="fv-serti"></div></div>' +
             '<div id="fv-suite" hidden>' +
             choixLibre("fv-motif", "Motif", Donnees.valeursConnues("motif"), existante ? existante.motif : "", { placeholder: "Préciser le motif" }) +
             '<div id="fv-reporte-bloc" hidden>' + champ("fv-reporte", "Reportée au", "date", existante ? existante.reporteLe || "" : "") + '</div></div>' +
@@ -840,6 +885,7 @@ const Formulaires = (() => {
             document.getElementById("fv-reporte-bloc").hidden = st !== "reportee";
             remplirLignes();
             majFutur();
+            majSerti();
         }
         let typeChoisiALaMain = !!existante;
 
@@ -872,11 +918,22 @@ const Formulaires = (() => {
                 lignes.map(l => '<option value="' + esc(l.id) + '"' + (l.id === avant ? " selected" : "") + '>' + esc(l.nom) + '</option>').join("");
         }
 
+        /* Contrôle de serti : bloc repliable, proposé dès qu'une ligne est choisie sur une visite effectuée. */
+        function majSerti() {
+            const zone = document.getElementById("fv-serti");
+            const l = selLigne.value ? Donnees.getLigne(selLigne.value) : null;
+            if (!l) { FicheSerti.demonter("fv"); zone.innerHTML = ""; return; }
+            if (selStatut.value !== "effectuee") return;     /* le bloc est caché avec #fv-contenu : on garde la saisie */
+            if (FicheSerti.ligneMontee("fv") === l.id) { FicheSerti.majFormat("fv"); return; }
+            FicheSerti.monter("fv", zone, { ligne: l, formatCourant: () => val("fv-format"), mesures: existante && existante.ligneId === l.id ? existante.mesures : null });
+        }
+
         function preremplir() {
             const l = Donnees.getLigne(selLigne.value);
             definirChoix("fv-format", (l && l.formatHabituel) || "");
             definirChoix("fv-produit", (l && l.produitHabituel) || "");
             redessinerComplements(true);
+            majSerti();
         }
 
         selClient.addEventListener("change", () => { remplirLignes(null); preremplir(); proposerType(); });
@@ -884,7 +941,10 @@ const Formulaires = (() => {
         champDate.addEventListener("change", () => { proposerType(); majFutur(); });
         champDate.addEventListener("input", majFutur);
         selStatut.addEventListener("change", majStatut);
-        selType.addEventListener("change", () => { typeChoisiALaMain = true; remplirLignes(); redessinerComplements(false); });
+        selType.addEventListener("change", () => { typeChoisiALaMain = true; remplirLignes(); redessinerComplements(false); majSerti(); });
+        /* Le format de la visite change : le verdict est recalculé avec le nouveau format. */
+        document.getElementById("fv-contenu").addEventListener("change", (e) => { if (e.target.id === "fv-format" || e.target.id === "fv-format-libre") FicheSerti.majFormat("fv"); });
+        document.getElementById("fv-contenu").addEventListener("input", (e) => { if (e.target.id === "fv-format-libre") FicheSerti.majFormat("fv"); });
         if (existante) {
             remplirLignes(existante.ligneId || "");
             definirChoix("fv-format", existante.format || "");
@@ -919,8 +979,12 @@ const Formulaires = (() => {
                 format: val("fv-format"), produit: val("fv-produit"), remarques: val("fv-remarques"),
                 statut: selStatut.value, motif: val("fv-motif"), reporteLe: val("fv-reporte")
             }, lireComplements("fv"));
+            if (selStatut.value === "effectuee" && selLigne.value) { const mes = FicheSerti.lire("fv"); if (mes) source.mesures = mes; }
+            const reglages = selStatut.value === "effectuee" ? FicheSerti.reglagesLigne("fv") : null;
             const v = existante ? Donnees.modifierVisite(existante.id, source) : Donnees.enregistrerVisite(source);
             if (!v) return erreur(form, "Visite non enregistrée : vérifie la date et la ligne.");
+            if (reglages) Donnees.enregistrerLigne(v.clientId, { nbTetes: reglages.nbTetes, colonneSerti: reglages.colonneSerti }, reglages.ligneId);
+            FicheSerti.demonter("fv");
             AppLayout.fermerFeuille();
             if (existante) { AppLayout.toast("Visite modifiée ✓"); return; }
             if (!Donnees.estEffectuee(v)) { AppLayout.toast(Donnees.infoStatut(Donnees.statutVisite(v)).libelle + " — notée dans l'historique ✓"); return; }

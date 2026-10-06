@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <script>(function(){try{var d=document.documentElement,s=window.sessionStorage,m=null,r="";try{m=window.localStorage.getItem("acsc_animation")}catch(e){}if(s.getItem("acsc_splash"))return;s.setItem("acsc_splash","1");if(m==="jamais")r="jamais";else if(m==="auto"){if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)r="reduit";else if(navigator.connection&&navigator.connection.saveData)r="economie"}s.setItem("acsc_splash_dec",r||"joue");if(r)return;d.classList.add("splash-actif");setTimeout(function(){d.classList.remove("splash-actif")},14000)}catch(e){}})();</script>
     <script src="Js/Splash.js"></script>
-    <title>Fiche client — AC SAT Campagne</title>
+    <title>Serti — AC SAT Campagne</title>
     <meta name="theme-color" content="#dc2626">
     <link rel="icon" type="image/png" href="Images/icone-192.png">
     <link rel="manifest" href="manifest.webmanifest">
@@ -40,9 +40,12 @@
 <script src="Js/Formulaires.js"></script>
 <script>
     Donnees.init();
-    AppLayout.init("clients");
+    AppLayout.init("serti");
     Synchro.demarrer();
 </script>
-<script src="Js/ClientFiche.js"></script>
+<script src="Vendor/fflate/fflate.min.js"></script>
+<script src="Js/Excel.js"></script>
+<script src="Js/SertiRapport.js"></script>
+<script src="Js/Serti.js"></script>
 </body>
 </html>

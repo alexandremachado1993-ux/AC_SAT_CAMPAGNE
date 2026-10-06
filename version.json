@@ -1,0 +1,9 @@
+{
+  "version": "2026.10.06-a",
+  "date": "2026-10-06",
+  "nouveaute": {
+    "id": "planning-tableau-de-bord",
+    "titre": "Planning : le nouveau tableau de bord",
+    "resume": "Le Planning s'ouvre maintenant sur un tableau de bord : un calendrier par semaine, mois, trimestre ou année, la synthèse de tes visites (réalisées, planifiées, en retard, échéances) avec des pourcentages qui font toujours 100 %, et des graphiques mois par mois. Les vues Timeline et Mois restent disp"
+  }
+}

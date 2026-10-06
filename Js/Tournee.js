@@ -50,6 +50,8 @@
             '<div class="grille-2-colonnes">' +
             '<div><label for="rt-auto">Propositions refaites le</label><select id="rt-auto">' + opt(JOURS_LONGS.map((j, i) => [i, j]), t.jourAuto) + '</select></div>' +
             '<div><label for="rt-rappel">Résumé du matin (notification) à</label><input type="time" id="rt-rappel" value="' + esc(t.heureRappel) + '"></div>' +
+            '<div><label for="rt-bilan">Bilan de fin de campagne : me le rappeler</label><select id="rt-bilan">' +
+                opt([[0, "Jamais"], [2, "2 semaines avant la fin"], [4, "4 semaines avant la fin"], [6, "6 semaines avant la fin"], [8, "8 semaines avant la fin"], [12, "12 semaines avant la fin"]], t.bilanSemaines) + '</select></div>' +
             '</div>' +
             '<label class="champ-case"><input type="checkbox" id="rt-departement"' + (t.unDepartement ? " checked" : "") + '> Un seul département par jour (moins de route)</label>' +
             '<label class="champ-case"><input type="checkbox" id="rt-message"' + (t.messageClient ? " checked" : "") + '> Proposer un SMS / email au client à la confirmation</label>' +
@@ -68,7 +70,7 @@
             Donnees.definirTournee({
                 jours, maxParJour: document.getElementById("rt-max").value, horizon: document.getElementById("rt-horizon").value,
                 heureDebut: document.getElementById("rt-heure").value, ecartHeures: document.getElementById("rt-ecart").value,
-                jourAuto: document.getElementById("rt-auto").value, heureRappel: document.getElementById("rt-rappel").value,
+                jourAuto: document.getElementById("rt-auto").value, heureRappel: document.getElementById("rt-rappel").value, bilanSemaines: document.getElementById("rt-bilan").value,
                 unDepartement: document.getElementById("rt-departement").checked, messageClient: document.getElementById("rt-message").checked
             });
             AppLayout.toast("Réglages de tournée enregistrés ✓");

@@ -7,7 +7,19 @@
     "use strict";
 
     const esc = (t) => AppLayout.escapeHtml(t);
-    const conteneur = document.getElementById("contenu-page");
+    /* Page = titre + deux onglets : « Réglages » (le contenu historique) et « Informations » (version, mise à jour, nouveauté).
+       #informations dans l'adresse ouvre directement le second (lien du menu du profil). */
+    const ONGLETS = [{ id: "general", icone: "⚙️", libelle: "Réglages" }, { id: "informations", icone: "ℹ️", libelle: "Informations" }];
+    const page = document.getElementById("contenu-page");
+    page.innerHTML =
+        '<div class="entete-page"><div><h1 class="titre-page">Réglages</h1>' +
+        '<p class="texte-attenue" style="font-size:0.85rem;">Profil, apparence, sauvegarde de tes données, et informations sur l\'application</p></div></div>' +
+        '<div class="onglets-fiche" role="tablist" aria-label="Sections de Réglages" style="margin-top:12px;">' + ONGLETS.map(o =>
+            '<button type="button" role="tab" id="onglet-reglages-' + o.id + '" class="onglet-fiche onglet-bouton onglet-reglages" data-onglet-reglages="' + o.id + '" aria-controls="panneau-reglages-' + o.id + '">' +
+            '<span class="onglet-icone" aria-hidden="true">' + o.icone + '</span>' + o.libelle + '</button>').join("") + '</div>' +
+        '<div id="panneau-reglages-general" role="tabpanel" aria-labelledby="onglet-reglages-general"></div>' +
+        '<div id="panneau-reglages-informations" role="tabpanel" aria-labelledby="onglet-reglages-informations" hidden></div>';
+    const conteneur = document.getElementById("panneau-reglages-general");
 
     function carteTheme(valeur, icone, titre, sousTitre, actuel) {
         return '<button type="button" class="carte-apparence' + (actuel === valeur ? " carte-apparence--actif" : "") + '" data-theme="' + valeur + '">' +
@@ -23,9 +35,6 @@
             '<div class="ligne-info"><span class="texte-attenue">' + libelle + '</span><strong>' + valeur + '</strong></div>';
 
         conteneur.innerHTML =
-            '<div class="entete-page"><div><h1 class="titre-page">Réglages</h1>' +
-            '<p class="texte-attenue" style="font-size:0.85rem;">Profil, apparence et sauvegarde de tes données</p></div></div>' +
-
             '<div class="grille-reglages" style="margin-top:12px;">' +
             '<div style="display:flex;flex-direction:column;gap:16px;">' +
 
@@ -66,7 +75,6 @@
             ligneApercu("Lignes", d.lignes.length) +
             ligneApercu("Contacts", d.contacts.length) +
             ligneApercu("Visites enregistrées", d.visites.filter(Donnees.estEffectuee).length) +
-            ligneApercu("Version de l'application", esc(AppLayout.VERSION)) +
             '</div>' +
             '</div>';
 
@@ -469,6 +477,124 @@
         });
     }
 
+    /* ---------- Onglet Informations ----------
+       Ordre : 1. numéro de version · 2. dernière mise à jour · 3. état (à jour ?) · puis la dernière nouveauté. */
+
+    const MOIS_LONGS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+    const JOURS_LONGS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+
+    /* « 2026.10.05-c » → « 2026-10-05 » (la date de publication est dans le numéro de version). */
+    function dateDeVersion(v) { const m = /^(\d{4})\.(\d{2})\.(\d{2})-[a-z]$/.exec(v || ""); return m ? m[1] + "-" + m[2] + "-" + m[3] : ""; }
+    function dateLongue(iso) {
+        const [a, m, j] = iso.split("-").map(Number);
+        return JOURS_LONGS[new Date(Date.UTC(a, m - 1, j)).getUTCDay()] + " " + j + (j === 1 ? "er " : " ") + MOIS_LONGS[m - 1] + " " + a;
+    }
+    function ecoule(iso) {
+        const [a, m, j] = iso.split("-").map(Number), [a2, m2, j2] = Donnees.aujourdhuiIso().split("-").map(Number);
+        const n = Math.round((Date.UTC(a2, m2 - 1, j2) - Date.UTC(a, m - 1, j)) / 86400000);
+        if (n < 0) return "";
+        if (n === 0) return "aujourd'hui";
+        if (n === 1) return "hier";
+        if (n < 31) return "il y a " + n + " jours";
+        if (n < 365) return "il y a " + Math.floor(n / 30) + " mois";
+        return "il y a " + Math.floor(n / 365) + (n < 730 ? " an" : " ans");
+    }
+
+    function carteNouveaute() {
+        const L = typeof Nouveautes !== "undefined" ? Nouveautes.LISTE : [];
+        if (!L.length) return '<div class="carte"><h2 class="carte-titre">🎁 Dernière nouveauté</h2><p class="texte-attenue">Aucune nouveauté annoncée pour le moment.</p></div>';
+        const n = L[0], im = n.images[0];
+        return '<div class="carte info-nouv"><h2 class="carte-titre">🎁 Dernière nouveauté</h2>' +
+            '<div class="info-nouv-corps">' +
+            (im ? '<img class="info-nouv-photo" src="' + esc(im.src) + '" alt="' + esc(im.alt) + '" width="' + im.largeur + '" height="' + im.hauteur + '" loading="lazy" decoding="async">' : "") +
+            '<div class="info-nouv-texte"><div class="nouv-entete"><span class="nouv-etiquette">Nouveau</span>' +
+            '<span class="texte-attenue">' + esc(n.date.slice(8, 10) + "/" + n.date.slice(5, 7) + "/" + n.date.slice(0, 4)) + ' · version ' + esc(n.version) + '</span></div>' +
+            '<h3 class="info-nouv-titre">' + esc(n.titre) + '</h3><p class="info-nouv-resume">' + esc(n.resume) + '</p></div></div>' +
+            '<div class="info-actions"><button type="button" class="bouton" data-nouv-derniere>Voir la nouveauté</button>' +
+            (L.length > 1 ? '<button type="button" class="bouton bouton--contour" data-nouv-historique>Toutes les nouveautés (' + L.length + ')</button>' : "") + '</div></div>';
+    }
+
+    function carteNotifications() {
+        const perm = typeof Notification === "undefined" ? "indisponible" : Notification.permission;
+        const aide = perm === "granted" ? "Tu reçois une notification, même application fermée, sur les appareils où les notifications sont activées. Ce réglage vaut pour tous tes appareils."
+            : perm === "denied" ? "Les notifications sont bloquées par le navigateur sur cet appareil : la fenêtre de suggestion et la pastille sur ton profil te préviennent à la place."
+            : perm === "default" ? "Pour recevoir une notification, active-les d'abord dans l'onglet « Réglages » (carte Notifications). En attendant, la fenêtre de suggestion et la pastille sur ton profil te préviennent."
+            : "Ce navigateur ne propose pas les notifications : la fenêtre de suggestion et la pastille sur ton profil te préviennent.";
+        return '<div class="carte"><h2 class="carte-titre">🔔 Alertes de mise à jour</h2>' +
+            '<label class="champ-case" style="min-height:44px;display:flex;align-items:center;gap:8px;"><input type="checkbox" data-notif-maj' + (AppLayout.notifMajActive() ? " checked" : "") + '> Me prévenir des mises à jour et des nouvelles fonctionnalités</label>' +
+            '<p class="info-aide" style="margin:6px 0 0;">' + esc(aide) + '</p></div>';
+    }
+
+    function rendreInfos() {
+        const v = AppLayout.VERSION, iso = dateDeVersion(v);
+        document.getElementById("panneau-reglages-informations").innerHTML =
+            '<div class="info-pile">' +
+            '<div class="carte info-carte"><div class="info-identite"><img class="info-logo" src="Images/icone-192.png" alt="" width="56" height="56">' +
+            '<div><h2 class="carte-titre" style="margin:0;">AC SAT Campagnes</h2><p class="texte-attenue" style="margin:2px 0 0;font-size:0.85rem;">Suivi des visites de campagne</p></div></div>' +
+            '<dl class="info-liste">' +
+            '<div class="info-ligne"><dt>Numéro de version</dt><dd><strong class="info-version">' + esc(v) + '</strong>' +
+            '<span class="info-aide">Année · mois · jour de la version, puis une lettre quand il y en a plusieurs le même jour.</span></dd></div>' +
+            '<div class="info-ligne"><dt>Dernière mise à jour</dt><dd>' + (iso ? '<strong>' + esc(dateLongue(iso)) + '</strong>' +
+                '<span class="info-aide">' + esc([ecoule(iso), "date de publication de la version installée"].filter(Boolean).join(" · ")) + '</span>' : '<strong>—</strong>') + '</dd></div>' +
+            '<div class="info-ligne"><dt>État</dt><dd><span id="info-etat" role="status" aria-live="polite">Vérification en cours…</span><span class="info-aide" id="info-maj-nouv" hidden></span></dd></div>' +
+            '</dl><div class="info-actions"><button type="button" class="bouton bouton--contour" data-verifier-maj>🔄 Vérifier les mises à jour</button>' +
+            '<button type="button" class="bouton" data-recharger hidden>Mettre à jour maintenant</button></div></div>' +
+            carteNouveaute() + carteNotifications() + '</div>';
+        brancherInfos();
+        verifierMaj();
+    }
+
+    function verifierMaj() {
+        const el = document.getElementById("info-etat"); if (!el) return;
+        el.textContent = "Vérification en cours…";
+        AppLayout.verifierMiseAJour().then(r => {
+            const e = document.getElementById("info-etat"); if (!e) return;        // l'onglet a été redessiné entre-temps
+            const h = new Date(), heure = String(h.getHours()).padStart(2, "0") + ":" + String(h.getMinutes()).padStart(2, "0");
+            const rech = document.querySelector("[data-recharger]");
+            if (rech) rech.hidden = r.etat !== "nouvelle";
+            e.className = "info-etat info-etat--" + r.etat;
+            const prog = document.getElementById("info-maj-nouv");
+            if (prog) { const n = r.infos && r.infos.nouveaute; prog.hidden = !(r.etat === "nouvelle" && n); prog.textContent = r.etat === "nouvelle" && n ? "Au programme : " + n.titre : ""; }
+            e.textContent = r.etat === "a-jour" ? "✅ Tu as la dernière version (vérifié à " + heure + ")."
+                : r.etat === "nouvelle" ? "⬆️ Une nouvelle version est disponible : " + r.serveur + "."
+                : "ℹ️ Vérification impossible : pas de connexion, ou application ouverte depuis un dossier de l'ordinateur.";
+        });
+    }
+
+    function brancherInfos() {
+        const p = document.getElementById("panneau-reglages-informations");
+        const bv = p.querySelector("[data-verifier-maj]"); if (bv) bv.addEventListener("click", verifierMaj);
+        const br = p.querySelector("[data-recharger]"); if (br) br.addEventListener("click", () => AppLayout.appliquerMiseAJour());
+        const bn = p.querySelector("[data-notif-maj]"); if (bn) bn.addEventListener("change", () => AppLayout.definirNotifMaj(bn.checked));
+        const bd = p.querySelector("[data-nouv-derniere]"); if (bd) bd.addEventListener("click", () => Nouveautes.ouvrir({ derniere: true }));
+        const bh = p.querySelector("[data-nouv-historique]"); if (bh) bh.addEventListener("click", () => Nouveautes.ouvrir({ tout: true }));
+    }
+
+    /* ---------- Onglets ---------- */
+
+    let ongletActuel = "";
+    function afficherOnglet(id, majAdresse) {
+        if (!ONGLETS.some(o => o.id === id)) id = "general";
+        const change = id !== ongletActuel;
+        ongletActuel = id;
+        ONGLETS.forEach(o => {
+            const b = document.getElementById("onglet-reglages-" + o.id), actif = o.id === id;
+            b.classList.toggle("actif", actif); b.setAttribute("aria-selected", actif ? "true" : "false"); b.setAttribute("tabindex", actif ? "0" : "-1");
+            document.getElementById("panneau-reglages-" + o.id).hidden = !actif;
+        });
+        if (id === "informations" && change) rendreInfos();
+        if (majAdresse && window.history && history.replaceState) { try { history.replaceState(null, "", id === "informations" ? "#informations" : location.pathname + location.search); } catch (e) { /* adresse non modifiable : sans importance */ } }
+    }
+    document.querySelectorAll("[data-onglet-reglages]").forEach(b => {
+        b.addEventListener("click", () => afficherOnglet(b.getAttribute("data-onglet-reglages"), true));
+        b.addEventListener("keydown", (e) => {                       // flèches gauche / droite : onglet voisin (clavier)
+            if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+            const i = ONGLETS.findIndex(o => o.id === ongletActuel), j = (i + (e.key === "ArrowRight" ? 1 : ONGLETS.length - 1)) % ONGLETS.length;
+            afficherOnglet(ONGLETS[j].id, true); document.getElementById("onglet-reglages-" + ONGLETS[j].id).focus(); e.preventDefault();
+        });
+    });
+    window.addEventListener("hashchange", () => afficherOnglet(location.hash === "#informations" ? "informations" : "general", false));
+
     function rendreTout() {
         rendre();
         if (typeof Synchro !== "undefined") { rendreSynchro(Synchro.etat()); rendreEquipe(Synchro.etat()); rendreNotifications(); }
@@ -477,6 +603,7 @@
 
     Donnees.ecouter(rendreTout);
     rendreTout();
+    afficherOnglet(location.hash === "#informations" ? "informations" : "general", false);
     if (typeof Synchro !== "undefined") {
         Synchro.ecouter(rendreSynchro);
         Synchro.ecouter(rendreEquipe);

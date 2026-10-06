@@ -99,11 +99,32 @@
             '</div></div>';
     }
 
+    /* Réunions de fin de campagne : à planifier (bouton) ou déjà prévues. */
+    function blocBilans(bilans) {
+        const aPlanifier = bilans.filter(b => b.statut === "a_planifier").length;
+        return '<div class="carte bloc-bilans">' +
+            '<h2 class="section-titre">🏁 Bilans de fin de campagne <span class="texte-attenue">— ' + aPlanifier + ' à planifier</span></h2>' +
+            '<p class="aide-champ" style="margin-top:0;">Une réunion de bilan par client, à planifier avant la fin de sa campagne. Le bouton propose le lendemain de la fin ; tu choisis la vraie date.</p>' +
+            bilans.map(b => {
+                const quand = b.joursAvantFin >= 0
+                    ? "Campagne jusqu'au " + Formulaires.dateFr(b.fin) + " (dans " + b.joursAvantFin + " j)"
+                    : "Campagne terminée le " + Formulaires.dateFr(b.fin) + " (il y a " + (-b.joursAvantFin) + " j)";
+                return '<div class="ligne-bilan">' +
+                    '<div><a href="Client.html?id=' + encodeURIComponent(b.client.id) + '" class="texte-lien"><strong>' + esc(b.client.nom) + '</strong></a>' +
+                    '<div class="texte-attenue" style="font-size:0.82rem;">' + esc(quand) + '</div></div>' +
+                    (b.statut === "planifie"
+                        ? '<span class="pastille-statut pastille-couleur" style="' + Donnees.styleCouleur("#16a34a") + '">✅ Prévu le ' + esc(Formulaires.dateFr(b.rdv.date)) + '</span>'
+                        : '<button type="button" class="bouton bouton--petit" data-bilan-planifier="' + esc(b.client.id) + '">📅 Planifier</button>') +
+                    '</div>';
+            }).join("") + '</div>';
+    }
+
     function rendre() {
         const aujourdhui = Donnees.aujourdhuiIso();
         const profil = Donnees.getDonnees().profil;
         const nbClients = Donnees.getDonnees().clients.length;
         const { lignes, horsCampagne, sansLigne } = Donnees.calculerEcheances(aujourdhui);
+        const bilans = Donnees.bilansAPlanifier(aujourdhui);
 
         const compte = { retard: 0, jamais: 0, bientot: 0, ok: 0 };
         lignes.forEach(e => { compte[e.statut]++; });
@@ -217,6 +238,8 @@
                 '</div>'
                 : "") +
 
+            (bilans.length > 0 ? blocBilans(bilans) : "") +
+
             (horsCampagne.length > 0
                 ? '<details class="carte bloc-hors-campagne">' +
                 '<summary><strong>❄️ Hors campagne</strong> <span class="texte-attenue">— ' + horsCampagne.length + ' client' + (horsCampagne.length > 1 ? "s" : "") + '</span></summary>' +
@@ -251,6 +274,10 @@
         conteneur.querySelectorAll("[data-visite]").forEach(b => b.addEventListener("click", () =>
             Formulaires.visite({ ligneId: b.getAttribute("data-visite") })));
         Formulaires.brancherRdv(conteneur);
+        conteneur.querySelectorAll("[data-bilan-planifier]").forEach(b => b.addEventListener("click", () => {
+            const bilan = Donnees.bilansAPlanifier(Donnees.aujourdhuiIso()).find(x => x.client.id === b.getAttribute("data-bilan-planifier"));
+            if (bilan) Formulaires.rdv({ clientId: bilan.client.id, type: "reunion-fin", date: Donnees.dateBilanParDefaut(bilan) });
+        }));
         conteneur.querySelectorAll("[data-rdv-pastille]").forEach(b => b.addEventListener("click", () => Formulaires.detailRdv(b.getAttribute("data-rdv-pastille"))));
         conteneur.querySelectorAll("[data-apercu-client]").forEach(carte => {
             const ouvrir = (ev) => {

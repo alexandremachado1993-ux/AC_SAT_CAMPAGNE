@@ -42,7 +42,11 @@
     }
     const etat = {
         annee: new Date().getFullYear(),
-        vue: "timeline",   // "timeline" | "mois"
+        vue: "tableau",    // "tableau" (par défaut) | "timeline" | "mois"
+        gran: "mois",      // tableau de bord : "semaine" | "mois" | "trimestre" | "annee"
+        ref: Donnees.aujourdhuiIso(),
+        affichage: "calendrier",   // "calendrier" | "liste"
+        panneauTech: window.innerWidth >= 1100,
         detailLignes: false,
         filtresOuverts: window.innerWidth >= 768,
         filtres: Object.assign({}, FILTRES_VIDES)
@@ -686,7 +690,7 @@
             '<option value="' + esc(v.valeur) + '"' + (v.valeur === choisie ? " selected" : "") + '>' + esc(v.texte) + '</option>').join("");
     }
 
-    function barreFiltres() {
+    function barreFiltres(epure) {
         const f = etat.filtres;
         const tous = Donnees.listerClients().filter(c => f.inactifs || c.actif !== false);
         const uniques = (fn) => {
@@ -700,13 +704,13 @@
             '<div class="pl-filtres-grille">' +
             '<div><label for="pf-recherche">Recherche</label><div class="pl-recherche"><input type="search" id="pf-recherche" placeholder="Nom, ville, groupe…" value="' + esc(f.recherche) + '">' +
             '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div></div>' +
-            '<div><label for="pf-client">Client</label><select id="pf-client">' +
-            options(tous.map(c => ({ valeur: c.id, texte: c.nom })), f.client, "Tous les clients") + '</select></div>' +
+            (epure ? "" : '<div><label for="pf-client">Client</label><select id="pf-client">' +
+            options(tous.map(c => ({ valeur: c.id, texte: c.nom })), f.client, "Tous les clients") + '</select></div>') +
             '<div><label for="pf-region">Région</label><select id="pf-region">' +
             options(uniques(c => { const r = Departements.emplacement(c).region; return { valeur: r, texte: r }; }), f.region, "Toutes") + '</select></div>' +
             '<div><label for="pf-departement">Département</label><select id="pf-departement">' +
             options(uniques(c => { const e = Departements.emplacement(c); return { valeur: e.departement, texte: e.departementNom }; }), f.departement, "Tous") + '</select></div>' +
-            (enEquipe() ? '<div><label for="pf-technicien">Technicien</label><select id="pf-technicien">' +
+            (enEquipe() && !epure ? '<div><label for="pf-technicien">Technicien</label><select id="pf-technicien">' +
                 [["moi", "Mes clients"], ["", "Tous"], ["aucun", "Non attribués"]]
                     .concat(Formulaires.membresEquipe().filter(m => !m.moi).map(m => [m.id, m.nom || "(sans nom)"]))
                     .map(o => '<option value="' + esc(o[0]) + '"' + (o[0] === f.technicien ? " selected" : "") + '>' + esc(o[1]) + '</option>').join("") +
@@ -746,8 +750,15 @@
             '</div>';
     }
 
+    /* Onglets de vue : TOUJOURS au même endroit (sous le titre, avant les filtres), quelle que soit la vue. */
+    function barreVues() {
+        const b = (cle, libelle) => '<button type="button" class="bascule-vue-bouton' + (etat.vue === cle ? " actif" : "") + '" data-vue="' + cle + '" aria-pressed="' + (etat.vue === cle) + '">' + libelle + '</button>';
+        return '<div class="bascule-vue pt-vues" role="group" aria-label="Vue">' + b("tableau", "Tableau de bord") + b("timeline", "Timeline") + b("mois", "Mois") + '</div>';
+    }
+
     function rendre() {
         const focus = document.activeElement && document.activeElement.id === "pf-recherche";
+        if (etat.vue === "tableau") { rendreTableau(focus); return; }
         const p = construire();
         const lignesSynthese = syntheseParClient(p);
         const aucunClient = Donnees.getDonnees().clients.length === 0;
@@ -772,13 +783,9 @@
             (aucunClient
                 ? '<div class="etat-vide" style="margin-top:16px;">📅<br>Le planning se remplira avec tes clients et leurs visites.<br>' +
                 '<a href="Clients.html" class="bouton" style="margin-top:12px;">Aller aux clients</a></div>'
-                : barreFiltres() +
+                : barreVues() + barreFiltres() +
                 '<div class="carte tl-carte">' +
                 '<div class="tl-outils">' +
-                '<div class="bascule-vue">' +
-                '<button type="button" class="bascule-vue-bouton' + (etat.vue === "timeline" ? " actif" : "") + '" data-vue="timeline">Timeline</button>' +
-                '<button type="button" class="bascule-vue-bouton' + (etat.vue === "mois" ? " actif" : "") + '" data-vue="mois">Mois</button>' +
-                '</div>' +
                 '<label class="champ-case" style="margin-top:0;"><input type="checkbox" id="pf-detail"' + (etat.detailLignes ? " checked" : "") + '> Détail par ligne</label>' +
                 legende() +
                 '</div>' +
@@ -833,6 +840,97 @@
             recherche.addEventListener("input", () => { etat.filtres.recherche = recherche.value; rendre(); });
             if (remettreFocus) { recherche.focus(); recherche.setSelectionRange(recherche.value.length, recherche.value.length); }
         }
+    }
+
+    /* ---------- Tableau de bord (vue par défaut) ----------
+       Calculs : PlanningCalcul (purs, testés). Affichage : PlanningTableau. Ici : données, assemblage, actions. */
+
+    function donneesTableau() {
+        const clients = clientsFiltres(), ids = new Set(clients.map(c => c.id)), t = etat.filtres.typeVisite, memo = {};
+        const entrees = {
+            visites: Donnees.listerVisites().filter(v => ids.has(v.clientId) && (t === "tous" || v.type === t)).map(v => ({ id: v.id, date: v.date, clientId: v.clientId, ligneId: v.ligneId, type: v.type })),
+            rdv: Donnees.listerRdv().filter(r => ids.has(r.clientId) && (t === "tous" || r.type === t)).map(r => ({ id: r.id, date: r.date, clientId: r.clientId, ligneIds: r.ligneIds || [], type: r.type })),
+            /* « tous » : les clients du technicien choisi, pas seulement les miens ; le filtre technicien est déjà dans « clients ». */
+            echeancesA: (iso) => memo[iso] || (memo[iso] = Donnees.calculerEcheances(iso, { tous: true }).lignes.filter(e => ids.has(e.client.id)))
+        };
+        const T = Donnees.aujourdhuiIso(), periode = PlanningCalcul.bornes(etat.gran, etat.ref), precedente = PlanningCalcul.decaler(etat.gran, etat.ref, -1);
+        const annee = Number(periode.debut.slice(0, 4));
+        return { clients, T, periode, annee, a: PlanningCalcul.analyser(periode, T, entrees), prec: PlanningCalcul.analyser(precedente, T, entrees), serie: PlanningCalcul.serieMensuelle(annee, T, entrees) };
+    }
+
+    function ctxTableau(T) {
+        return {
+            aujourdhui: T,
+            nomClient: (id) => { const c = Donnees.getClient(id); return c ? c.nom : "Client supprimé"; },
+            nomLigne: (id) => { const l = Donnees.getLigne(id); return l ? l.nom : ""; },
+            typeLibelle: (t) => Donnees.typeVisite(t).libelle,
+            couleurRealisee: (t) => t === "campagne" ? COULEURS.campagne : t === "maintenance" ? COULEURS.maintenance : Donnees.typeVisite(t).couleur
+        };
+    }
+
+    /* Panneau « Techniciens » : seulement en équipe. Mêmes valeurs que l'ancien filtre : « moi » (par défaut = le technicien connecté), « » tous, « aucun », ou l'id d'un membre. */
+    function optionsTechniciens() {
+        if (!enEquipe()) return null;
+        const nb = (valeur) => Donnees.listerClients().filter(c => (etat.filtres.inactifs || c.actif !== false) && filtreTechnicien(c, valeur)).length;
+        return [["moi", "Mes clients"], ["", "Tous"], ["aucun", "Non attribués"]]
+            .concat(Formulaires.membresEquipe().filter(m => !m.moi).map(m => [m.id, m.nom || "(sans nom)"]))
+            .map(o => ({ valeur: o[0], libelle: o[1], nb: nb(o[0]) }));
+    }
+
+    function rendreTableau(focus) {
+        const aucunClient = Donnees.getDonnees().clients.length === 0, n = nbFiltresActifs();
+        const vues = barreVues();
+        let d = null, corps;
+        if (aucunClient) {
+            corps = '<div class="etat-vide" style="margin-top:16px;">📅<br>Le planning se remplira avec tes clients et leurs visites.<br><a href="Clients.html" class="bouton" style="margin-top:12px;">Aller aux clients</a></div>';
+        } else {
+            d = donneesTableau();
+            const ctx = ctxTableau(d.T), tech = optionsTechniciens(), ouvert = !!tech && etat.panneauTech;
+            corps = vues + barreFiltres(true) +
+                '<div class="pt-page' + (tech ? "" : " pt-page--sans-tech") + (tech && !ouvert ? " pt-page--tech-ferme" : "") + '">' +
+                (tech ? PlanningTableau.techniciens(tech, etat.filtres.technicien, ouvert) : "") +
+                '<div class="pt-centre">' + PlanningTableau.calendrier(d.a, etat, ctx) + '</div>' +
+                '<aside class="pt-droite" aria-label="Synthèse"><h2 class="pt-h2">📋 Synthèse</h2>' + PlanningTableau.cartes(d.a, d.prec) + PlanningTableau.barreStatut(d.a) + '</aside></div>' +
+                (d.clients.length ? PlanningTableau.analyses(d.a, d.serie, d.annee, d.prec) : '<div class="etat-vide" style="margin-top:12px;">Aucun client ne correspond aux filtres.</div>');
+            etat.annee = d.annee;                      // le compte rendu et les anciennes vues suivent l'année affichée
+        }
+        conteneur.innerHTML =
+            '<div class="entete-page"><div><h1 class="titre-page">Planning d\'interventions</h1>' +
+            '<p class="texte-attenue" style="font-size:0.9rem;">Tableau de bord • <strong style="color:var(--texte);">' + esc(d ? PlanningCalcul.libelle(d.periode) : String(etat.annee)) + '</strong></p></div>' +
+            '<div class="actions-page">' +
+            (aucunClient ? "" : '<button type="button" class="bouton" data-planifier>' + ICONES.calendrier + ' Planifier</button>') +
+            (aucunClient ? "" : '<button type="button" class="bouton bouton--contour pl-bouton-filtres' + (etat.filtresOuverts ? " actif" : "") + '" data-filtres aria-expanded="' + etat.filtresOuverts + '">' + ICONES.filtre + ' Filtres' + (n ? ' <span class="onglet-fiche-compteur">' + n + '</span>' : "") + '</button>') +
+            '<button type="button" class="bouton" data-exporter' + (aucunClient ? " disabled" : "") + '>' + ICONES.document + ' Compte rendu</button></div></div>' + corps;
+
+        const p = construire();
+        brancher(p, syntheseParClient(p), focus);
+        if (d) brancherTableau(d, ctxTableau(d.T));
+    }
+
+    function brancherTableau(d, ctx) {
+        const sur = (sel, evt, fn) => conteneur.querySelectorAll(sel).forEach(el => el.addEventListener(evt, () => fn(el)));
+        sur("[data-pt-nav]", "click", el => {
+            const k = Number(el.getAttribute("data-pt-nav"));
+            etat.ref = k === 0 ? Donnees.aujourdhuiIso() : PlanningCalcul.decaler(etat.gran, etat.ref, k).debut;
+            rendre();
+        });
+        sur("[data-pt-gran]", "change", el => { etat.gran = el.value; rendre(); });
+        sur("[data-pt-affichage]", "click", el => { etat.affichage = el.getAttribute("data-pt-affichage"); rendre(); });
+        sur("[data-pt-zoom]", "click", el => { etat.gran = "mois"; etat.ref = el.getAttribute("data-pt-zoom"); rendre(); });
+        sur("[data-pt-panneau]", "click", () => { etat.panneauTech = !etat.panneauTech; rendre(); });
+        sur("[data-pt-tech]", "click", el => { etat.filtres.technicien = el.getAttribute("data-pt-tech"); rendre(); });
+        sur("[data-jour]", "click", el => ouvrirJour(el.getAttribute("data-jour"), d, ctx));
+    }
+
+    function ouvrirJour(date, d, ctx) {
+        const evs = d.a.evenements.filter(e => e.date === date);
+        const titre = PlanningTableau.jourLong(date); 
+        AppLayout.ouvrirFeuille("bas", titre.charAt(0).toUpperCase() + titre.slice(1),
+            PlanningTableau.detailJour(date, evs, ctx) +
+            (date >= d.T ? '<button type="button" class="bouton" style="margin-top:12px;width:100%;" data-pt-rdv-jour>' + ICONES.calendrier + ' Planifier un rendez-vous ce jour</button>' : ""));
+        document.querySelectorAll("[data-pt-planifier]").forEach(b => b.addEventListener("click", () => { AppLayout.fermerFeuille(); planifierPour(b.getAttribute("data-pt-planifier"), dateDansPeriode(date)); }));
+        const rdv = document.querySelector("[data-pt-rdv-jour]");
+        if (rdv) rdv.addEventListener("click", () => { AppLayout.fermerFeuille(); Formulaires.rdv({ date: dateDansPeriode(date) }); });
     }
 
     Donnees.ecouter(rendre);

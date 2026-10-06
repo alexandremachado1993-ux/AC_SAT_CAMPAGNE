@@ -133,7 +133,7 @@ const Donnees = (() => {
 
     const AMORCES_CHOIX = {
         marque: ["Ferrum"],
-        format: ["1/8", "1/4", "1/2", "4/4", "1/2H", "1/2M", "2/1", "3/1", "5/1", "10/1"],
+        format: ["1/6", "1/8", "1/4", "1/4 US", "1/2", "1/2H", "1/2M", "3/4", "4/4", "2/1", "3/1", "5/1", "5/1B", "10/1"],
         /* Produits de conserverie les plus courants : liste de départ, à compléter par « Autre… »
            (chaque produit saisi est ensuite proposé). */
         produit: [].concat.apply([], CATALOGUE_PRODUITS.map(f => f.produits)),
@@ -808,7 +808,8 @@ const Donnees = (() => {
     OUTILS.forEach(o => CHAMPS_OUTILLAGE.push(o.cle + "Fournisseur", o.cle + "Ref"));
 
     const CHAMPS_LIGNE = CHAMPS_OUTILLAGE.concat(["nom", "marque", "modele", "numeroSerie", "formatHabituel",
-        "produitHabituel", "cadenceLigne", "suiviCampagne", "statut", "fournisseurActuel", "notes"]);
+        "produitHabituel", "cadenceLigne", "suiviCampagne", "statut", "fournisseurActuel", "notes",
+        "nbTetes", "colonneSerti"]);
 
     /* Statut d'une ligne. Seule une ligne « active » entre dans les rappels,
        les visites et les rendez-vous ; son historique reste consultable
@@ -853,6 +854,9 @@ const Donnees = (() => {
         let x = id ? d.lignes.find(k => k.id === id) : null;
         if (!x) { x = { id: nouvelId("lig"), clientId, statut: "active", suiviCampagne: true }; d.lignes.push(x); }
         CHAMPS_LIGNE.forEach(ch => { if (source[ch] !== undefined) x[ch] = nettoyer(source[ch]); });
+        /* Serti : têtes (0 à 24, par paire) et colonne du référentiel, sinon vide. */
+        if (source.nbTetes !== undefined) { const nb = SertiCalcul.normaliserNbTetes(source.nbTetes); x.nbTetes = nb === null ? "" : nb; }
+        if (source.colonneSerti !== undefined) x.colonneSerti = ReferentielSerti.colonne(source.colonneSerti) ? source.colonneSerti : "";
         harmoniserStatut(x, source);
         sauvegarder();
         return x;
@@ -905,6 +909,11 @@ const Donnees = (() => {
     }
 
     /* Historique complet d'un client : tous les statuts (effectuée, reportée, non effectuée, annulée). */
+    /* Visites effectuées qui portent un contrôle de serti (page Serti), la plus récente d'abord. */
+    function visitesAvecMesures() {
+        return getDonnees().visites.filter(v => v.mesures).sort((a, b) => b.date.localeCompare(a.date) || (b.id > a.id ? 1 : -1));
+    }
+
     function historiqueDuClient(clientId) {
         return getDonnees().visites
             .filter(v => v.clientId === clientId)
@@ -930,6 +939,10 @@ const Donnees = (() => {
             format: effectuee ? (nettoyer(source.format) || "") : "", produit: effectuee ? (nettoyer(source.produit) || "") : "",
             remarques: nettoyer(source.remarques) || ""
         }, effectuee ? preparerComplements(source, type) : { references: {}, details: {} });
+        if (effectuee && source.mesures) {
+            const m = SertiCalcul.nettoyer(source.mesures);
+            if (m) v.mesures = m;
+        }
         if (!effectuee) {
             v.statut = statut;
             v.motif = nettoyer(source.motif) || "";
@@ -1063,11 +1076,13 @@ const Donnees = (() => {
                          refaites automatiquement (0 = jamais)
          messageClient   proposer un SMS / email au contact à la confirmation
          heureRappel     heure du résumé du matin (notification push, lue
-                         par la fonction serveur « rappels ») */
+                         par la fonction serveur « rappels »)
+         prevenirVersions  prévenir (notification) d'une mise à jour ou d'une nouvelle
+                         fonctionnalité ; lu aussi par la fonction serveur « rappels » */
     const TOURNEE_DEFAUT = {
         jours: [1, 2, 3, 4, 5], maxParJour: 3, unDepartement: true, horizon: 14,
         heureDebut: "08:30", ecartHeures: 2, jourAuto: 5, messageClient: true, derniereGeneration: null,
-        heureRappel: "07:30"
+        heureRappel: "07:30", bilanSemaines: 6, prevenirVersions: true
     };
 
     function getTournee() {
@@ -1084,7 +1099,9 @@ const Donnees = (() => {
         t.jourAuto = borne(parseInt(t.jourAuto, 10), 0, 7, TOURNEE_DEFAUT.jourAuto);
         t.heureDebut = /^\d{2}:\d{2}$/.test(t.heureDebut || "") ? t.heureDebut : TOURNEE_DEFAUT.heureDebut;
         t.heureRappel = /^\d{2}:\d{2}$/.test(t.heureRappel || "") ? t.heureRappel : TOURNEE_DEFAUT.heureRappel;
+        t.bilanSemaines = borne(parseInt(t.bilanSemaines, 10), 0, 12, TOURNEE_DEFAUT.bilanSemaines);
         t.unDepartement = t.unDepartement !== false;
+        t.prevenirVersions = t.prevenirVersions !== false;
         t.messageClient = t.messageClient !== false;
         getDonnees().profil.tournee = t;
         sauvegarder();
@@ -1309,6 +1326,59 @@ const Donnees = (() => {
         return annee + "-" + String(client.debutCampagne).padStart(2, "0") + "-01";
     }
 
+    /* ---------- Bilan de fin de campagne ----------
+       Chaque client a une campagne (mois de début → mois de fin). La RÉUNION DE FIN DE CAMPAGNE
+       (type « reunion-fin ») se planifie avant la fin ; les dates exactes ne sont pas connues
+       d'avance, donc l'application se cale sur la fin de campagne de CHAQUE client : elle rappelle
+       le bilan à partir de « bilanSemaines » semaines avant la fin (réglage de la Tournée, 0 = jamais)
+       et jusqu'à DELAI_BILAN_JOURS jours après, tant qu'il n'est ni fait ni planifié.
+       Un bilan est « fait » s'il existe une réunion de fin de campagne EFFECTUÉE depuis le début de
+       cette campagne, « planifié » s'il existe un rendez-vous de ce type depuis son début. */
+    const DELAI_BILAN_JOURS = 60;
+
+    function finDeMois(annee, mois) {
+        return annee + "-" + String(mois).padStart(2, "0") + "-" + String(new Date(Date.UTC(annee, mois, 0)).getUTCDate()).padStart(2, "0");
+    }
+
+    function campagneDemarreeEn(client, annee) {
+        const deb = client.debutCampagne, fin = client.finCampagne;
+        return { debut: annee + "-" + String(deb).padStart(2, "0") + "-01", fin: finDeMois(deb <= fin ? annee : annee + 1, fin) };
+    }
+
+    /* Campagne en cours à la date donnée, ou la dernière commencée : { debut, fin } (gère le passage d'une année à l'autre). */
+    function bornesCampagne(client, iso) {
+        const ref = iso || aujourdhuiIso();
+        const y = Number(ref.slice(0, 4));
+        const cette = campagneDemarreeEn(client, y);
+        return cette.debut <= ref ? cette : campagneDemarreeEn(client, y - 1);
+    }
+
+    function bilansAPlanifier(iso) {
+        const ref = iso || aujourdhuiIso();
+        const semaines = getTournee().bilanSemaines;
+        if (!semaines) return [];
+        const d = getDonnees();
+        const res = [];
+        d.clients.forEach(client => {
+            if (client.actif === false || !estMonClient(client) || !client.debutCampagne || !client.finCampagne) return;
+            const c = bornesCampagne(client, ref);
+            if (ref < ajouterJours(c.fin, -semaines * 7) || ref > ajouterJours(c.fin, DELAI_BILAN_JOURS)) return;
+            const duBilan = (x) => x.clientId === client.id && x.type === "reunion-fin" && x.date >= c.debut;
+            if (d.visites.some(v => duBilan(v) && estEffectuee(v))) return;                       // déjà fait
+            const prevus = d.rdv.filter(duBilan).sort(trierRdv);
+            const rdv = prevus.find(r => r.date >= ref) || prevus[prevus.length - 1] || null;     // le prochain, sinon le dernier (à clôturer)
+            res.push({ client, debut: c.debut, fin: c.fin, joursAvantFin: ecartJours(ref, c.fin), statut: rdv ? "planifie" : "a_planifier", rdv });
+        });
+        return res.sort((a, b) => a.fin.localeCompare(b.fin) || a.client.nom.localeCompare(b.client.nom, "fr"));
+    }
+
+    /* Date proposée pour le bilan : le lendemain de la fin de campagne (ou demain si c'est passé), jour travaillé. */
+    function dateBilanParDefaut(bilan, iso) {
+        const demain = ajouterJours(iso || aujourdhuiIso(), 1);
+        const apresFin = ajouterJours(bilan.fin, 1);
+        return prochainJourTravaille(apresFin > demain ? apresFin : demain);
+    }
+
     /* ---------- Moteur d'échéances (cœur de l'application) ----------
        Pour chaque ligne suivie d'un client actif EN CAMPAGNE :
          - dernière visite de campagne depuis le début de la campagne en cours
@@ -1318,13 +1388,14 @@ const Donnees = (() => {
                 cette campagne) | "bientot" (≤ JOURS_BIENTOT) | "ok" (à jour)
        Les clients hors campagne sont renvoyés à part : leur règle de
        maintenance/hiver n'est pas encore définie. */
-    function calculerEcheances(iso) {
+    function calculerEcheances(iso, options) {
+        const tous = !!(options && options.tous);       // tous : aussi les clients des autres techniciens (tableau de bord du Planning) ; par défaut : les miens
         const ref = iso || aujourdhuiIso();
         const d = getDonnees();
         const resultat = { lignes: [], horsCampagne: [], sansLigne: [] };
 
         d.clients.forEach(client => {
-            if (client.actif === false || !estMonClient(client)) return;
+            if (client.actif === false || (!tous && !estMonClient(client))) return;
             const toutesLignes = d.lignes.filter(l => l.clientId === client.id);
             const lignes = toutesLignes.filter(estLigneActive);
             const debut = debutCampagneEnCours(client, ref);
@@ -1405,11 +1476,11 @@ const Donnees = (() => {
         estPropose, confirmerRdv, confirmerTousLesRdv, rdvACloturer,
         getTournee, definirTournee, prochainJourTravaille, propositionsAFaire, proposerTournee, jourSemaine,
         modifierVisite, getVisite,
-        visitesDuClient, visitesDeLaLigne, historiqueDuClient, listerVisites, enregistrerVisite, supprimerVisite,
+        visitesDuClient, visitesDeLaLigne, historiqueDuClient, visitesAvecMesures, listerVisites, enregistrerVisite, supprimerVisite,
         STATUTS_VISITE, statutVisite, estEffectuee, infoStatut, cloturerSansVisite,
         appliquerImport,
         aujourdhuiIso, ecartJours, ajouterJours,
-        estEnCampagne, debutCampagneEnCours, calculerEcheances,
+        estEnCampagne, debutCampagneEnCours, calculerEcheances, bornesCampagne, bilansAPlanifier, dateBilanParDefaut,
         exporter, importer, normaliserTexte,
         elementsAEnvoyer, confirmerEnvoi, appliquerDistant, getCurseur, definirCurseur,
         COLLECTIONS_PARTAGEES, marquerPartagesAEnvoyer, oublierPartages,
