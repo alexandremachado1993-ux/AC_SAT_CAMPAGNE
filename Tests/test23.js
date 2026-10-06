@@ -9,7 +9,7 @@ module.exports = async function ({ page, t }) {
   const g = D.choixPour("produit").groupes;
   const tous = [].concat.apply([], g.map(x => x.valeurs));
   t("catalogue : plus de 100 produits, rangés par famille", tous.length > 100 && g.length >= 9);
-  t("catalogue : les familles attendues", ["Légumes", "Légumineuses", "Tomates", "Fruits", "Poissons et fruits de mer", "Viandes et plats cuisinés", "Soupes et sauces", "Laitages et desserts", "Boissons", "Aliments pour animaux"].every(f => g.some(x => x.libelle === f)));
+  t("catalogue : les familles attendues", ["Légumes", "Légumes secs", "Tomates", "Fruits", "Poissons et fruits de mer", "Viandes et plats cuisinés", "Soupes et sauces", "Laitages et desserts", "Boissons", "Aliments pour animaux"].every(f => g.some(x => x.libelle === f)));
   t("tes produits déjà utilisés passent en premier", g[0].libelle === "Déjà utilisés chez toi" && g[0].valeurs.join() === "Maïs,Produit maison");
   t("un produit déjà utilisé n'est pas répété dans sa famille", !g.find(x => x.libelle === "Légumes").valeurs.includes("Maïs") && tous.filter(p => p === "Maïs").length === 1);
   t("aucun doublon (casse et accents ignorés)", new Set(tous.map(p => D.normaliserTexte(p))).size === tous.length);

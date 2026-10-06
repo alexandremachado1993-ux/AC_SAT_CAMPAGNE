@@ -2,6 +2,14 @@
   "name": "ac-sat-campagne-tests",
   "private": true,
   "description": "Tests automatiques d'AC SAT Campagne (jsdom, sans navigateur)",
-  "scripts": { "test": "node test.js" },
-  "devDependencies": { "jsdom": "^24.1.0" }
+  "scripts": {
+    "test": "node test.js",
+    "lint": "cd .. && node Tests/node_modules/eslint/bin/eslint.js -c Tests/eslint.config.js Js sw.js supabase/functions/rappels/logique.js Tests/maj-version.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "globals": "^17.13.0",
+    "jsdom": "^24.1.0"
+  }
 }

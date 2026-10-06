@@ -30,14 +30,18 @@ module.exports = async function ({ t, P, fs }) {
 
   // Grilles : une colonne « 1fr » seule ne rétrécit pas sous son contenu (débordement sur petit écran).
   const fautives = [];
-  (source + bloc).replace(/grid-template-(?:columns|rows):\s*([^;}]*)/g, (_, v) => { const sans = v.replace(/minmax\([^)]*\)/g, ""); if (/\d\s*fr\b/.test(sans)) fautives.push(norm(v)); return ""; });
+  /* minmax( … ) avec UN niveau de parenthèses imbriquées : minmax(min(320px, 100%), 1fr) est valide ; un « 1fr » seul ne l'est pas. */
+  const MINMAX = /minmax\((?:[^()]|\([^()]*\))*\)/g;
+  const nu = (v) => /\d\s*fr\b/.test(v.replace(MINMAX, ""));
+  t("grilles : le garde-fou accepte minmax(min(320px, 100%), 1fr) et refuse toujours un « 1fr » nu", !nu("repeat(auto-fill, minmax(min(320px, 100%), 1fr))") && !nu("minmax(0, 1fr) minmax(0, 2fr)") && nu("repeat(2, 1fr)") && nu("1fr 2fr") && nu("minmax(10px, 20px) 1fr"));
+  (source + bloc).replace(/grid-template-(?:columns|rows):\s*([^;}]*)/g, (_, v) => { const sans = v.replace(MINMAX, ""); if (/\d\s*fr\b/.test(sans)) fautives.push(norm(v)); return ""; });
   t("grilles : chaque colonne « fr » est dans un minmax(0, …)", fautives.length === 0);
   if (fautives.length) console.log("   grilles fautives :", fautives.slice(0, 4));
   const enLigne = fs.readdirSync(path.join(P, "Js")).filter(f => f.endsWith(".js")).filter(f => /grid-template-columns:\s*\d*fr/.test(lire("Js/" + f)));
   t("grilles en ligne dans le JavaScript : idem", enLigne.length === 0);
 
   // Balises de chaque page pour les téléphones.
-  const pages = fs.readdirSync(P).filter(f => f.endsWith(".html"));
+  const pages = fs.readdirSync(P).filter(f => f.endsWith(".html") && f !== "404.html");   /* 404.html : page autonome, vérifiée par test25.js */
   const ok = (re) => pages.every(f => re.test(lire(f)));
   t("pages : viewport-fit=cover (encoche) et largeur d'appareil", ok(/viewport-fit=cover/) && ok(/width=device-width/));
   t("pages : application installable (Android et iPhone) et numéros non soulignés", ok(/mobile-web-app-capable/) && ok(/apple-mobile-web-app-capable/) && ok(/format-detection/));

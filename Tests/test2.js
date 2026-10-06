@@ -99,7 +99,7 @@ module.exports = function ({ page, t, P, fs }, fin) {
   const q = (s) => wp.document.querySelectorAll(s);
   // ----- Timeline (vue par défaut, maquette validée)
   t("planning : titre", wp.document.querySelector(".titre-page").textContent === "Planning d'interventions");
-  t("timeline par défaut", !!wp.document.querySelector(".tl-grille") && !wp.document.querySelector(".pl-table"));
+  t("timeline : la vue reste accessible (bouton « Timeline ») et affiche la frise, pas la grille", !!wp.document.querySelector(".tl-grille") && !wp.document.querySelector(".pl-table"));
   t("timeline : 12 mois, mois courant en pastille", q(".tl-mois span").length === 12 && wp.document.querySelector(".tl-mois-courant").textContent === q(".tl-mois span")[new Date().getMonth()].textContent);
   t("timeline : rangées = clients actifs", q(".tl-rangee--client").length === 3);
   const tLot = [...q(".tl-rangee--client")].find(r => r.textContent.includes("Conserverie Lot"));

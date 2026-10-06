@@ -9,7 +9,7 @@ module.exports = async function ({ page, t }) {
   D.enregistrerContact(c.id, { role: "Rôle sur mesure", prenom: "Ana", nom: "Lima" });
   // Valeurs connues
   t("valeurs connues : dédoublonnées sans tenir compte de la casse", D.valeursConnues("groupe").join() === "Groupe A");
-  t("valeurs connues : valeurs de départ + saisies, triées", D.valeursConnues("format").join() === "1/2,1/2H,1/2M,1/4,1/8,2/1,3/1,4/4,5/1,10/1");
+  t("valeurs connues : valeurs de départ + saisies, triées", D.valeursConnues("format").join() === "1/2,1/2H,1/2M,1/4,1/4 US,1/6,1/8,2/1,3/1,3/4,4/4,5/1,5/1B,10/1");
   t("valeurs connues : marque de départ + saisie", D.valeursConnues("marque").join() === "Autre Marque,Ferrum");
   t("modèles filtrés par marque", D.valeursConnues("modele", { marque: "ferrum" }).join() === "F240" && D.valeursConnues("modele").join() === "F240,Z9");
   t("types de production : liste fixe (sans « Autre ») puis valeurs saisies", D.valeursConnues("typeProduction")[0] === "Légumes" && D.valeursConnues("typeProduction").indexOf("Autre") === -1 && D.valeursConnues("typeProduction").indexOf("Conserves spéciales") !== -1);

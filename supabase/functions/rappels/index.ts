@@ -7,12 +7,13 @@
 //     chaque rendez-vous confirmé ;
 //   - depuis l'application (bouton « Envoyer une notification de test »),
 //     avec le jeton de l'utilisateur connecté : test sur ses appareils.
+//   - une fois par version publiée sur le site (nouvelle fonctionnalité / mise à jour à installer) ;
 // Chaque notification n'est envoyée qu'une fois (public.notifications_journal).
 // Les appareils désinstallés (réponse 404 / 410) sont retirés.
 // =============================================================
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
-import { calculer, heureParis, heureDuResume, rappelsProches, resumeDuMatin } from "./logique.js";
+import { annonceVersion, calculer, heureParis, heureDuResume, rappelsProches, resumeDuMatin } from "./logique.js";
 
 const CORS = {
     "Access-Control-Allow-Origin": "*",
@@ -108,11 +109,22 @@ Deno.serve(async (req) => {
     // --- Tâche planifiée
     if (req.headers.get("x-cron-secret") !== cfg.secret_cron) return json({ erreur: "non autorisé" }, 401);
     const maintenant = heureParis(new Date());
+
+    // Version publiée par le site (version.json) : annoncée une seule fois par compte (journal « version:… »),
+    // seulement aux comptes qui ne l'ont pas désactivée (profil.tournee.prevenirVersions). SITE_URL peut être
+    // défini dans les secrets de la fonction ; à défaut, l'adresse du site publié.
+    const SITE = (Deno.env.get("SITE_URL") || "https://ac-sat-campagne.netlify.app").replace(/\/+$/, "");
+    let annonce: Client = null;
+    try {
+        const r = await fetch(SITE + "/version.json", { headers: { "Cache-Control": "no-cache" } });
+        if (r.ok) annonce = annonceVersion(await r.json(), maintenant);
+    } catch { /* site injoignable ou fichier invalide : pas d'annonce à ce tour */ }
+
     const tous = await toutLire(() => admin.from("push_abonnements").select("*"));
     const parCompte: Record<string, Client[]> = {};
     tous.forEach((a) => (parCompte[a.user_id] = parCompte[a.user_id] || []).push(a));
 
-    const bilan = { comptes: 0, resumes: 0, rappels: 0 };
+    const bilan = { comptes: 0, resumes: 0, rappels: 0, versions: 0 };
     for (const userId of Object.keys(parCompte)) {
         bilan.comptes++;
         try {
@@ -131,6 +143,10 @@ Deno.serve(async (req) => {
                     await envoyer(admin, parCompte[userId], { titre: r.titre, corps: r.corps, url: r.url, tag: r.tag });
                     bilan.rappels++;
                 }
+            }
+            if (annonce && donnees.profil?.tournee?.prevenirVersions !== false && await reserver(admin, userId, "version:" + annonce.version)) {
+                await envoyer(admin, parCompte[userId], annonce.charge);
+                bilan.versions++;
             }
         } catch (e) {
             console.error("Compte", userId, (e as Error).message);

@@ -130,8 +130,8 @@ module.exports = async function ({ page, t, P, fs }) {
   t("… puis rétablie (rouge de l'application)", d.querySelector('meta[name="theme-color"]').getAttribute("content") === "#dc2626");
 
   // ---- garanties statiques
-  const pages = fs.readdirSync(P).filter(f => f.endsWith(".html"));
-  t("toutes les pages : décision en tête (avec le réglage) + Splash.js", pages.every(f => /acsc_splash/.test(lire(f)) && /acsc_animation/.test(lire(f)) && /Js\/Splash\.js/.test(lire(f))));
+  const pages = fs.readdirSync(P).filter(f => f.endsWith(".html") && f !== "404.html");   /* 404.html : page autonome, vérifiée par test25.js */
+  t("toutes les pages : Amorce.js (décision de l'animation, avec le réglage) est chargé dans l'en-tête, AVANT Splash.js et avant l'affichage", pages.every(f => { const h = lire(f); return h.indexOf("Js/Amorce.js") > -1 && h.indexOf("Js/Amorce.js") < h.indexOf("Js/Splash.js") && h.indexOf("Js/Splash.js") < h.indexOf("<body"); }) && /acsc_splash/.test(lire("Js/Amorce.js")) && /acsc_animation/.test(lire("Js/Amorce.js")));
   t("décision prise avant les feuilles de style (pas de flash)", pages.every(f => { const s = lire(f); return s.indexOf("acsc_splash") < s.indexOf("CSS/style.css"); }));
   t("médias présents et légers (< 400 Ko chacun)", ["ouverture.mp4", "ouverture.webm", "ouverture-poster.jpg"].every(f => fs.existsSync(path.join(P, "Media", f)) && fs.statSync(path.join(P, "Media", f)).size < 400 * 1024));
   const css = lire("CSS/campagne.css");

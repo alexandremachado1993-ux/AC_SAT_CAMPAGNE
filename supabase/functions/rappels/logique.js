@@ -125,3 +125,27 @@ export function heureDuResume(minutesMaintenant, heureRappel) {
     const cible = minutesDe(heureRappel) ?? minutesDe("07:30");
     return minutesMaintenant >= cible && minutesMaintenant < cible + 180;
 }
+
+/* ---------- Annonce d'une version (mise à jour à installer / nouvelle fonctionnalité) ----------
+   infos : contenu de version.json publié par le site { version, date, nouveaute: { id, titre, resume } | null }
+   maintenant : { date, minutes } en heure de Paris (heureParis).
+   Renvoie { version, charge } (charge = notification à envoyer) ou null s'il ne faut rien envoyer :
+   - version absente ou invalide ;
+   - version ANCIENNE (plus de 3 jours) : à la mise en service on n'annonce pas d'anciennes versions ;
+   - version datée dans le futur ;
+   - de nuit (avant 8 h ou après 20 h 30, heure de Paris) : l'annonce part à la tâche suivante du matin. */
+export function annonceVersion(infos, maintenant) {
+    if (!infos || typeof infos !== "object" || typeof infos.version !== "string" || !maintenant || !maintenant.date) return null;
+    const m = /^(\d{4})\.(\d{2})\.(\d{2})-[a-z]$/.exec(infos.version);
+    if (!m) return null;
+    const dateVersion = m[1] + "-" + m[2] + "-" + m[3];
+    if (dateVersion > maintenant.date || ajouterJours(dateVersion, 3) < maintenant.date) return null;
+    if (maintenant.minutes < 8 * 60 || maintenant.minutes > 20 * 60 + 30) return null;
+    const coupe = (t, max) => { const x = String(t || "").replace(/\s+/g, " ").trim(); return x.length > max ? x.slice(0, max - 1).trimEnd() + "…" : x; };
+    const n = infos.nouveaute && typeof infos.nouveaute === "object" && infos.nouveaute.titre ? infos.nouveaute : null;
+    const charge = n
+        ? { titre: "🎁 Nouveauté : " + coupe(n.titre, 60), corps: (coupe(n.resume, 110) + " Ouvre l'application pour l'installer.").trim() }
+        : { titre: "⬆️ Mise à jour disponible", corps: "Version " + infos.version + " : ouvre l'application pour l'installer." };
+    /* même « tag » que la notification locale de l'application : sur un appareil, la seconde remplace la première au lieu de s'empiler */
+    return { version: infos.version, charge: Object.assign(charge, { url: "Reglages.html#informations", tag: "acsc-maj" }) };
+}

@@ -13,3 +13,9 @@ contrastes (WCAG 4,5:1), texte < 11 px, cibles tactiles < 32 px.
 Résultats et captures dans `sortie/`. Outil de contrôle manuel : il n'est pas
 lancé par GitHub. Les « texte minuscule » sur les initiales des mois du
 Planning et les « contraste » sur des emojis sont des faux positifs connus.
+
+
+## nouveautes-captures.mjs
+
+Génère les photos de présentation de la fenêtre « Nouveautés » (`Media/nouveautes/`, données fictives, repères numérotés).
+`node nouveautes-captures.mjs` — voir le README du projet, lot 8g, pour la marche à suivre complète.
