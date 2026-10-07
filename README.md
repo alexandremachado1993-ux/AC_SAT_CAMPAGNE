@@ -81,7 +81,11 @@ AC-SAT-CAMPAGNE/
 | La **logique métier** pure (sans écran, testée seule) | `PlanningCalcul.js`, `SertiCalcul.js`, `ReferentielSerti.js`, et le moteur d'échéances dans `Donnees.js` |
 | Les **données** et leur stockage local | `Js/Donnees.js` (SEULE couche d'accès : jamais de `localStorage` ailleurs pour les données) |
 | La **synchronisation** (Supabase, équipe) | `Js/Synchro.js` ; côté serveur : tables et fonctions SQL (voir « Synchronisation ») |
+| La **navigation mobile** (barre du bas, tiroir « Plus d'outils », présentation) | `Js/AppLayout.js` (`construireNavBasse`, `construireTiroir`), `Js/Presentation.js` ; styles `.nav-poignee`, `.nav-tiroir`, `.pres` dans `CSS/campagne.css` |
+| La **typographie et les espacements** | jetons de `:root` dans `CSS/style.css` (`--texte-*`, `--titre-*`, `--interligne*`, `--rayon-*`) : ne jamais écrire une taille en dur |
 | Les **notifications** | `Js/Notifications.js` (navigateur : permission, abonnement), `Js/Synchro.js` (appels serveur seulement), `sw.js` (réception), `supabase/functions/rappels/` (envoi) |
+| La **navigation mobile** (barre du bas, menu étendu « Plus d'outils », gestes) | `Js/AppLayout.js` (`construireNavBasse`, `construireTiroir`), styles `.nav-*` dans `CSS/campagne.css` |
+| La **présentation de première connexion** | `Js/Presentation.js`, styles `.pres-*` |
 | Les **diagnostics** | `Js/Erreurs.js` (journal), `Js/AutoDiagnostic.js` (bouton « Vérifier mon installation », Réglages › Informations) |
 | La **mise à jour** de l'application et les **nouveautés** | `Js/AppLayout.js` (section mise à jour), `Js/Nouveautes.js`, `version.json` |
 | L'**authentification** | Supabase Auth, pilotée par `Js/Synchro.js` (connexion, inscription, session) |
@@ -240,7 +244,7 @@ n'est vérifiée que par les règles CSS (`env(safe-area-inset-*)`), pas sur un 
 Les tests ne dépendent plus du jour où on les lance (mois courant, vendredi de génération de la tournée) : un vendredi,
 la page génère elle-même la tournée à son ouverture, ce que les tests neutralisent explicitement.
 
-`Tests/` : plus de 1 340 vérifications (jsdom) ; `Tests/navigateur/` : audit des écrans dans un vrai Chromium. `cd Tests && npm install && npm test`.
+`Tests/` : plus de 1 400 vérifications (jsdom) ; `Tests/navigateur/` : audit des écrans dans un vrai Chromium. `cd Tests && npm install && npm test`.
 Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml`).
 
 ## Lots
@@ -408,6 +412,34 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     d'écran, erreurs de formulaire annoncées. **Auto-diagnostic** (« 🩺 Vérifier mon installation ») : 8 contrôles sur l'appareil. **Structure** —
     notifications séparées de la synchronisation (`Notifications.js` ; sens unique Notifications → Synchro). **Sécurité** — Permissions-Policy resserrée,
     COOP. Tests : `test42.js`, `test43.js` (frontières entre systèmes).
+8p. ✅ Navigation étendue et interface homogène (2026.10.07-a) : **Serti et Documents quittent le menu du profil** et passent dans un tiroir « Plus d'outils »
+    (mobile) : glisser la barre du bas vers le haut (le tiroir SUIT le doigt, finit selon la distance ou la vitesse), ou la languette ⌃ (64 × 44 px), Échap,
+    glissement vers le bas, toucher à côté. `AppLayout.js` (construireTiroir). **Présentation de première connexion** (`Js/Presentation.js`) : 3 écrans animés
+    (bienvenue, barre du bas, geste), une fois par appareil, nouvelles installations sur téléphone seulement, rejouable dans Réglages › Informations ; « Essayer
+    le geste » ouvre le vrai tiroir. **Échelle typographique unique** : 26 tailles de texte → 9 jetons (`--texte-micro` … `--titre-xl`), 9 interlignes → 3, arrondis et
+    espacements sur les jetons du thème. **Harmonisation mobile** : boutons d'en-tête en grille à 2 colonnes (Clients, Planning, Tournée), étiquette de type
+    toujours sous le nom du client, onglets de largeur égale, en-têtes de section qui ne coupent plus leur bouton, libellés « (facultatif) » identiques.
+    Tests : `test44.js` (menu étendu), `test45.js` (présentation), `test46.js` (homogénéité).
+8q. ✅ Corrections terrain (2026.10.07-b) : **outillage** — le champ « Référence » était un champ texte avec suggestions natives (`<datalist>`) : le navigateur ne montrait
+    que les entrées commençant par ce qui était déjà tapé (avec « P259 » dans le champ, jamais « P259M »). C'est maintenant une VRAIE liste déroulante : toutes les
+    références connues, groupées par fournisseur (celui de l'outil en premier, remis en tête quand on change de fournisseur), « ➕ Autre… » pour une nouvelle ;
+    simple champ texte tant qu'aucune référence n'est connue. **Contrôle de serti** — vocabulaire de la fiche papier : « Calage crochet de corps » (et non « de fond »),
+    « Hauteur serti » (l'ancien « Flange » était une erreur de traduction du document ; identifiant `flange` conservé), ajout de la colonne « Croisure % » (saisie et conservée, jamais
+    jugée : le document SQ/EMB/067 n'en donne aucune limite). Les identifiants des paramètres n'ont pas changé : les contrôles déjà enregistrés restent lisibles.
+    Reste à ajouter selon la fiche : « Équilibre crochets » et la colonne « Sc. » (unité, tolérance, sens à confirmer). Tests : `test47.js`.
+8r. ✅ Fichiers joints au contrôle client (2026.10.07-d) : dans l'onglet « Contrôle client (Seametal) » du formulaire de visite, « 📎 Ajouter un fichier » (PDF ou images,
+    plusieurs à la fois) et « 📷 Photo » (appareil photo arrière) ; liste avec vignette, nom, type, taille, « Ouvrir », « ⬇ », « ✕ » (avec « Annuler »). Visible aussi dans le détail
+    du contrôle sur la page Serti (lecture seule). **Où sont les fichiers** : dans IndexedDB (`Js/Pieces.js`), JAMAIS dans les données (localStorage ≈ 5 Mo pour tout) ; avec le
+    contrôle on n'enregistre qu'une petite FICHE (`mesures.client.pieces` : id, nom, type, taille, date ; 10 au plus). Les photos sont réduites (1 800 px, JPEG) : 9 Mo → 0,7 Mo
+    mesuré. Limites : 15 Mo par fichier, refus au-delà de 85 % de l'espace du navigateur, stockage durable demandé. **Les fichiers restent sur l'appareil où ils ont été ajoutés** :
+    ni synchronisés, ni dans la sauvegarde JSON (la fiche s'affiche ailleurs avec « fichier absent de cet appareil »). Un fichier jamais rattaché à un contrôle est supprimé
+    après 24 h. `SertiCalcul.nettoyer` (liste blanche) conserve maintenant les fiches. CSP : `object-src 'self' blob:` (lecteur de PDF). Tests : `test48.js`.
+8s. ✅ Côté client (Seametal) = une feuille jointe, AUCUNE valeur à saisir (2026.10.07-e) : l'onglet « Contrôle client (Seametal) » du formulaire de visite ne propose plus que
+    l'ajout de la feuille (fichiers) et un champ facultatif « Référence de la feuille » : plus de têtes, de cases de mesure, de verdict ni de validation de ce côté. Les
+    contrôles où des valeurs client avaient DÉJÀ été saisies gardent l'ancien écran (rien n'est perdu ni masqué) et la comparaison reste disponible pour eux. Le résumé du bloc
+    annonce « · 📎 N ». Page Serti : un contrôle client = ses valeurs OU sa feuille jointe (filtre « Avec contrôle client », étiquette « Seametal »). La colonne « Croisure % »
+    (ajoutée en 2026.10.07-b) est RETIRÉE : « Sc. », « Croisure % » et « Équilibre crochets » sont des colonnes de la feuille Seametal, pas de la saisie manuelle. Tests : `test27.js`,
+    `test47.js`, `test48.js` adaptés.
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)

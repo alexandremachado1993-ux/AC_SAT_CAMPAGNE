@@ -11,6 +11,9 @@
 
    Pour renseigner ce que le document ne donne pas (profondeur de cuvette,
    hauteur de boîte du 1/2 et du 1/2H…), voir le bloc « AJOUTS » plus bas.
+   Vocabulaire : celui de la FICHE DE CONTRÔLE papier du technicien (Épaisseur, Croisure, Crochet de corps / de fond, Hauteur de serti,
+   Calage crochet de corps, Ondulation). Les colonnes propres à la feuille SEAMETAL (Sc., Croisure %, Équilibre crochets) ne sont PAS saisies : on joint la feuille (Pieces.js). L'identifiant « flange » est une ERREUR DE TRADUCTION du document
+   d'origine : cette ligne est la « Hauteur serti » de la fiche ; l'identifiant est conservé pour que les contrôles déjà enregistrés restent lisibles.
    ============================================================= */
 
 const ReferentielSerti = (() => {
@@ -23,10 +26,10 @@ const ReferentielSerti = (() => {
        « reference » : valeur donnée à titre indicatif, sans tolérance. */
     const PARAMETRES = [
         { id: "croisure", libelle: "Croisure", court: "Cro", categorie: "critique", unite: "mm", decimales: 2 },
-        { id: "calage", libelle: "Calage crochet de fond", court: "Cal", categorie: "critique", unite: "%", decimales: 0 },
+        { id: "calage", libelle: "Calage crochet de corps", court: "Cal", categorie: "critique", unite: "%", decimales: 0 },
         { id: "ondulation", libelle: "Ondulation", court: "Ond", categorie: "critique", unite: "%", decimales: 0 },
         { id: "hauteurBoite", libelle: "Hauteur de boîte", court: "H.b", categorie: "recommande", unite: "mm", decimales: 2 },
-        { id: "flange", libelle: "Flange", court: "Fla", categorie: "recommande", unite: "mm", decimales: 2 },
+        { id: "flange", libelle: "Hauteur serti", court: "H.s2", categorie: "recommande", unite: "mm", decimales: 2 },
         { id: "hauteurSerti", libelle: "Hauteur de serti", court: "H.s", categorie: "recommande", unite: "mm", decimales: 2 },
         { id: "epaisseurSerti", libelle: "Épaisseur de serti", court: "Ép.", categorie: "recommande", unite: "mm", decimales: 2 },
         { id: "crochetFond", libelle: "Crochet de fond", court: "C.f", categorie: "recommande", unite: "mm", decimales: 2 },

@@ -31,6 +31,22 @@ const Nouveautes = (() => {
        Dans les légendes, ① ② ③ renvoient aux repères dessinés sur la photo. */
     const LISTE = [
         {
+            id: "menu-etendu", version: "2026.10.07-a", date: "2026-10-07",
+            titre: "Plus d'outils : Serti et Documents d'un geste",
+            resume: "Serti et Documents ont quitté le menu du profil : glisse la barre du bas vers le haut (ou touche la languette ⌃) pour les ouvrir. La barre garde ses quatre pages principales, et l'interface est harmonisée : mêmes tailles de texte et mêmes espacements partout.",
+            etapes: [
+                "Pose le doigt sur la barre du bas et fais-la glisser vers le haut : un tiroir « Plus d'outils » monte en suivant ton doigt.",
+                "Relâche : s'il est assez monté, il finit de s'ouvrir tout seul ; sinon il se referme. Un geste rapide suffit même s'il est court.",
+                "Choisis « Contrôle de serti » ou « Documents ».",
+                "Tu préfères toucher ? La languette ⌃, à droite de la barre, ouvre et ferme le même tiroir.",
+                "Pour le refermer : glisse-le vers le bas, touche en dehors, ou touche à nouveau la languette."
+            ],
+            images: [
+                { src: "Media/nouveautes/menu-etendu-glisse-v1.webp", largeur: 780, hauteur: 808, alt: "Barre du bas d'un téléphone avec le tiroir Plus d'outils qui monte en suivant le doigt, le reste de l'écran s'assombrit.", legende: "Le tiroir suit ton doigt" },
+                { src: "Media/nouveautes/menu-etendu-ouvert-v1.webp", largeur: 780, hauteur: 928, alt: "Tiroir Plus d'outils ouvert avec deux cartes, Contrôle de serti et Documents, au-dessus de la barre de navigation.", legende: "Serti et Documents, à portée de pouce" }
+            ]
+        },
+        {
             id: "planning-tableau-de-bord", version: "2026.10.06-a", date: "2026-10-06",
             titre: "Planning : le nouveau tableau de bord",
             resume: "Le Planning s'ouvre maintenant sur un tableau de bord : un calendrier par semaine, mois, trimestre ou année, la synthèse de tes visites (réalisées, planifiées, en retard, échéances) avec des pourcentages qui font toujours 100 %, et des graphiques mois par mois. Les vues Timeline et Mois restent disponibles.",
@@ -240,8 +256,9 @@ const Nouveautes = (() => {
        sinon les nouveautés non vues. Renvoie false s'il n'y a rien à montrer. */
     function ouvrir(opts) {
         const derniere = !!(opts && opts.derniere);
-        const tout = !!(opts && opts.tout) || derniere;
-        const items = derniere ? LISTE.slice(0, 1) : tout ? LISTE.slice() : nonVues();
+        const parId = opts && opts.id ? LISTE.filter(x => x.id === opts.id) : null;        // une annonce précise (les tests de la galerie n'en dépendent plus de « la dernière »)
+        const tout = !!(opts && opts.tout) || derniere || !!parId;
+        const items = parId || (derniere ? LISTE.slice(0, 1) : tout ? LISTE.slice() : nonVues());
         if (!items.length) return false;
         etat = { items, i: 0, tout };
         AppLayout.ouvrirFeuille("bas", tout ? "Nouveautés" : (items.length > 1 ? "Nouveautés (" + items.length + ")" : "Nouveauté"), '<div id="nouv-corps" class="nouv"></div>');

@@ -408,10 +408,52 @@ const Formulaires = (() => {
                     options.map(f => '<option value="' + esc(f) + '"' + (f === actuel ? " selected" : "") + '>' + esc(f) + '</option>').join("") +
                     '<option value="' + AUTRE + '">➕ Autre…</option></select>' +
                     '<input type="text" id="fo-' + o.cle + '-autre" autocomplete="off" autocapitalize="words" placeholder="Nom du fournisseur" hidden style="margin-top:6px;"></div>' +
-                    '<div>' + champTexteSuggere("fo-" + o.cle + "-r", "Référence", x[o.cle + "Ref"] || "", "outil:" + o.cle, "", "ex. P259M") + '</div>' +
+                    '<div>' + choixLibre("fo-" + o.cle + "-r", "Référence", { groupes: groupesReferences(o.cle, actuel) }, x[o.cle + "Ref"] || "", { placeholder: "ex. P259M", suggestions: "outil:" + o.cle }) + '</div>' +
                     '</div>';
             }).join("") +
             '</div>';
+    }
+
+    /* Références d'outillage connues pour un outil, groupées par FOURNISSEUR (celui de l'outil en cours d'abord). Les deux molettes
+       partagent leurs références (une molette 2 peut être une référence déjà utilisée en molette 1) ; le mandrin a les siennes.
+       C'était un champ texte avec suggestions natives (<datalist>) : le navigateur ne montrait que les entrées commençant par ce qui
+       était déjà tapé, donc, avec « P259 » dans le champ, jamais « P259M » ni les autres références. Une vraie liste montre TOUT. */
+    function groupesReferences(cle, fournisseurActuel) {
+        const famille = cle === "mandrin" ? ["mandrin"] : ["molette1", "molette2"];
+        const norm = (t) => Donnees.normaliserTexte(t);
+        const parFournisseur = new Map();
+        const ajouter = (fournisseur, reference) => {
+            const ref = String(reference || "").trim();
+            if (!ref) return;
+            const nom = String(fournisseur || "").trim();
+            if (!parFournisseur.has(nom)) parFournisseur.set(nom, []);
+            const liste = parFournisseur.get(nom);
+            if (!liste.some(x => norm(x) === norm(ref))) liste.push(ref);
+        };
+        Donnees.getDonnees().lignes.forEach(l => famille.forEach(k => ajouter(l[k + "Fournisseur"], l[k + "Ref"])));
+        /* Références connues sans fournisseur retrouvé (pré-chargées ou issues d'un import) : regroupées à part. */
+        Donnees.valeursConnues("outil:" + cle).forEach(r => {
+            if (!Array.from(parFournisseur.values()).some(liste => liste.some(x => norm(x) === norm(r)))) ajouter("", r);
+        });
+        const tri = (a, b) => a.localeCompare(b, "fr", { numeric: true, sensitivity: "base" });
+        const ordre = (nom) => (nom === "" ? 2 : nom === fournisseurActuel ? 0 : 1);
+        return Array.from(parFournisseur.keys()).sort((a, b) => ordre(a) - ordre(b) || tri(a, b))
+            .map(nom => ({ libelle: nom === "" ? "Autres références" : nom, valeurs: parFournisseur.get(nom).sort(tri) }));
+    }
+
+    /* Quand on change de fournisseur, la liste des références remet ses références en premier ; la valeur déjà choisie est gardée. */
+    function rafraichirReferences(cle) {
+        const ref = document.getElementById("fo-" + cle + "-r");
+        if (!ref || !ref.hasAttribute("data-choix-libre")) return;          // aucune référence connue : simple champ texte
+        const courant = val("fo-" + cle + "-r");
+        const choix = val("fo-" + cle + "-f");
+        const fournisseur = choix === AUTRE ? val("fo-" + cle + "-autre") : choix;
+        const temporaire = document.createElement("div");
+        temporaire.innerHTML = choixLibre("fo-temporaire", "", { groupes: groupesReferences(cle, fournisseur) }, courant, {});
+        const nouvelle = temporaire.querySelector("select");
+        if (!nouvelle) return;
+        ref.innerHTML = nouvelle.innerHTML;
+        definirChoix("fo-" + cle + "-r", courant);
     }
 
     function brancherOutillage() {
@@ -420,6 +462,7 @@ const Formulaires = (() => {
             sel.addEventListener("change", () => {
                 autre.hidden = sel.value !== AUTRE;
                 if (!autre.hidden) autre.focus();
+                rafraichirReferences(sel.getAttribute("data-outil"));
             });
         });
     }
@@ -573,7 +616,7 @@ const Formulaires = (() => {
     function htmlReferences(prefixe, references, ouvert) {
         const refs = references || {};
         return '<details class="bloc-formulaire bloc-references"' + (ouvert || Object.keys(refs).some(k => refs[k]) ? " open" : "") + '>' +
-            '<summary class="bloc-formulaire-titre">🏷️ Références' + (ouvert ? "" : " (facultatif)") + '</summary>' +
+            '<summary class="bloc-formulaire-titre">🏷️ Références' + (ouvert ? "" : ' <span class="serti-court">(facultatif)</span>') + '</summary>' +
             '<div class="grille-2-colonnes">' + Donnees.REFERENCES.map(r =>
                 '<div>' + champTexteSuggere(prefixe + "-r-" + r.cle, esc(r.libelle), refs[r.cle] || "", "ref:" + r.cle,
                     ' data-ref="' + prefixe + '" data-cle="' + r.cle + '"') + '</div>').join("") + '</div></details>';

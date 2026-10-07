@@ -17,7 +17,7 @@ const AppLayout = (() => {
     /* Version livrée : la même valeur figure dans version.txt à la racine.
        Après une mise en ligne, ouvrir <site>/version.txt permet de vérifier
        que c'est bien cette version qui est en ligne. */
-    const VERSION = "2026.10.06-f";
+    const VERSION = "2026.10.07-e";
 
     /* Barre latérale ET navigation mobile se construisent depuis cette liste. */
     const ELEMENTS_NAV = [
@@ -30,9 +30,9 @@ const AppLayout = (() => {
         { page: "reglages", href: "Reglages.html", icone: "⚙️", libelle: "Réglages" }
     ];
     /* Navigation mobile : 2 liens, le bouton « + » au centre, 2 liens.
-       Réglages et Documents n'y figurent pas : ils sont dans l'en-tête
-       (⚙️ et menu du profil). 4 liens + « + » = 5 colonnes de 72 px sur un
-       écran de 360 px, avec des libellés lisibles. */
+       Réglages est dans l'en-tête (⚙️) ; Serti et Documents sont dans le menu étendu « Plus d'outils » (glisser la barre vers le haut,
+       ou la languette ⌃) ; plus aucun des deux n'est dans le menu du profil. 4 liens + « + » = 5 colonnes de 72 px sur un écran de
+       360 px, avec des libellés lisibles. */
     const NB_AVANT_FAB = 2;
     const PAGES_HORS_BARRE_MOBILE = ["reglages", "documents", "serti"];
 
@@ -215,8 +215,6 @@ const AppLayout = (() => {
                 '<div class="menu-avatar-role">Technicien SAT</div></div>' +
                 '</div>' +
                 (maj.disponible ? '<button type="button" class="menu-avatar-item menu-avatar-item--maj" data-maj>⬆️ Mise à jour disponible<span class="menu-avatar-pastille">' + escapeHtml(maj.version) + '</span></button>' : "") +
-                '<a href="Serti.html" class="menu-avatar-item">📏 Serti</a>' +
-                '<a href="Documents.html" class="menu-avatar-item">📄 Documents</a>' +
                 '<a href="Reglages.html" class="menu-avatar-item">⚙️ Réglages &amp; sauvegarde</a>' +
                 (typeof Nouveautes !== "undefined" ? '<button type="button" class="menu-avatar-item" data-nouveautes>🎁 Nouveautés' +
                     (Nouveautes.nbNonVues() ? '<span class="menu-avatar-pastille" aria-label="' + Nouveautes.nbNonVues() + ' non vue(s)">' + Nouveautes.nbNonVues() + '</span>' : "") + '</button>' : "") +
@@ -333,6 +331,119 @@ const AppLayout = (() => {
 
         liens.slice(NB_AVANT_FAB).forEach(item => grille.appendChild(creerLien(item)));
         conteneur.appendChild(grille);
+        construireTiroir(conteneur, pageActuelle);
+    }
+
+    /* ---------- Menu étendu « Plus d'outils » (mobile) ----------
+       Serti et Documents s'ouvrent par un GLISSEMENT VERS LE HAUT depuis la barre du bas : le tiroir suit le doigt, puis finit de
+       s'ouvrir (ou de se fermer) selon la distance parcourue ou la vitesse du geste. Le geste n'est JAMAIS la seule voie : la languette
+       ⌃ (toucher, Entrée) fait la même chose, et Échap, un glissement vers le bas ou un toucher à côté referment. */
+    const OUTILS = [
+        { page: "serti", href: "Serti.html", icone: "📏", titre: "Contrôle de serti", detail: "Mesures, verdict et rapport" },
+        { page: "documents", href: "Documents.html", icone: "📄", titre: "Documents", detail: "Fiches de référence" }
+    ];
+    const DISTANCE_OUVERTURE_PX = 120;     // glissement pour un tiroir entièrement ouvert
+    const SEUIL_OUVERTURE = 0.4;           // au-delà de 40 % à la relâche, il finit de s'ouvrir
+    const VITESSE_LANCER = 0.45;           // px/ms : un geste rapide suffit même s'il est court
+    const ECART_GESTE_PX = 8;              // en dessous, c'est un toucher et non un glissement
+    const DUREE_ANIMATION_MS = 380;
+    let tiroir = null;
+
+    function construireTiroir(barre, pageActuelle) {
+        if (!barre || tiroir) return;
+        const voile = document.createElement("div");
+        voile.className = "nav-tiroir-voile"; voile.hidden = true;
+        const el = document.createElement("div");
+        el.className = "nav-tiroir"; el.id = "nav-tiroir"; el.hidden = true;
+        el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Plus d'outils");
+        el.innerHTML = '<div class="nav-tiroir-grip" aria-hidden="true"></div><p class="nav-tiroir-titre">Plus d\'outils</p><div class="nav-tiroir-liste">' +
+            OUTILS.map((o, i) => '<a class="nav-tiroir-carte' + (o.page === pageActuelle ? " actif" : "") + '" href="' + o.href + '" style="--rang:' + i + '"' +
+                (o.page === pageActuelle ? ' aria-current="page"' : "") + '><span class="nav-tiroir-icone" aria-hidden="true">' + o.icone + '</span>' +
+                '<span class="nav-tiroir-texte"><strong>' + escapeHtml(o.titre) + '</strong><small>' + escapeHtml(o.detail) + '</small></span>' +
+                '<span class="nav-tiroir-fleche" aria-hidden="true">›</span></a>').join("") + '</div>';
+        const languette = document.createElement("button");
+        languette.type = "button"; languette.className = "nav-poignee";
+        languette.setAttribute("aria-label", "Plus d'outils : contrôle de serti et documents");
+        languette.setAttribute("aria-expanded", "false"); languette.setAttribute("aria-controls", "nav-tiroir");
+        languette.innerHTML = '<span class="nav-poignee-corps" aria-hidden="true"><span class="nav-poignee-chevron"></span></span>';
+        if (OUTILS.some(o => o.page === pageActuelle)) languette.classList.add("nav-poignee--actif");      // un point : on est dans l'un des outils
+        barre.insertBefore(languette, barre.firstChild);
+        document.body.appendChild(voile);
+        document.body.appendChild(el);
+
+        let progres = 0, minuteur = null, geste = null, clicBloque = false;
+        const estOuvert = () => languette.getAttribute("aria-expanded") === "true";
+        const poser = (p) => { progres = Math.max(0, Math.min(1, p)); el.style.setProperty("--p", progres.toFixed(3)); voile.style.setProperty("--p", progres.toFixed(3)); };
+        const afficher = (visible) => { el.hidden = !visible; voile.hidden = !visible; };
+        function preparer() {
+            el.style.setProperty("--nav-h", Math.round(barre.getBoundingClientRect().height) + "px");
+            voile.style.setProperty("--nav-h", el.style.getPropertyValue("--nav-h"));
+            afficher(true);
+            void el.offsetWidth;      // le navigateur « voit » l'état de départ avant la transition
+        }
+        function animerVers(cible) {
+            preparer();
+            el.classList.add("nav-tiroir--anime"); voile.classList.add("nav-tiroir--anime");
+            poser(cible);
+            clearTimeout(minuteur);
+            minuteur = setTimeout(() => {
+                el.classList.remove("nav-tiroir--anime"); voile.classList.remove("nav-tiroir--anime");
+                if (cible === 0) afficher(false);
+            }, DUREE_ANIMATION_MS);
+        }
+        function ouvrir(donnerFocus) {
+            if (elFeuille && !elFeuille.hidden) return;
+            languette.setAttribute("aria-expanded", "true");
+            animerVers(1);
+            if (donnerFocus) { const premiere = el.querySelector(".nav-tiroir-carte"); if (premiere) premiere.focus({ preventScroll: true }); }
+            if (typeof navigator.vibrate === "function") { try { navigator.vibrate(8); } catch (e) { Erreurs.consigner("AppLayout : vibration refusée par le navigateur", e); } }
+        }
+        function fermer(rendreFocus) {
+            languette.setAttribute("aria-expanded", "false");
+            animerVers(0);
+            if (rendreFocus) languette.focus({ preventScroll: true });
+        }
+
+        languette.addEventListener("click", () => { if (estOuvert()) fermer(true); else ouvrir(true); });
+        voile.addEventListener("click", () => fermer(false));
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape" && estOuvert()) { e.preventDefault(); fermer(true); } });
+        window.addEventListener("resize", () => { if (estOuvert() && window.innerWidth >= 768) { languette.setAttribute("aria-expanded", "false"); poser(0); afficher(false); } });
+        poser(0);
+
+        /* --- Le geste : glisser depuis la barre (vers le haut pour ouvrir) ou depuis le tiroir (vers le bas pour fermer) --- */
+        function debut(e) {
+            if (e.isPrimary === false || (typeof e.button === "number" && e.button > 0)) return;
+            geste = { x: e.clientX, y: e.clientY, t: performance.now(), depart: progres, actif: false, cible: e.currentTarget };
+        }
+        function mouvement(e) {
+            if (!geste) return;
+            const dy = geste.y - e.clientY, dx = e.clientX - geste.x;
+            if (!geste.actif) {
+                if (Math.abs(dy) < ECART_GESTE_PX && Math.abs(dx) < ECART_GESTE_PX) return;
+                if (Math.abs(dx) > Math.abs(dy)) { geste = null; return; }          // plutôt horizontal : ce n'est pas notre geste
+                geste.actif = true;
+                if (geste.depart === 0) preparer();
+                try { geste.cible.setPointerCapture(e.pointerId); } catch (err) { Erreurs.consigner("AppLayout : capture du pointeur impossible, le geste continue sans", err); }
+            }
+            poser(geste.depart + dy / DISTANCE_OUVERTURE_PX);
+        }
+        function fin(e) {
+            if (!geste) return;
+            const g = geste; geste = null;
+            if (!g.actif) return;
+            const vitesse = (g.y - e.clientY) / Math.max(1, performance.now() - g.t);       // px/ms, positif = vers le haut
+            clicBloque = true; setTimeout(() => { clicBloque = false; }, 350);               // le toucher qui termine un glissement ne doit pas ouvrir un lien
+            if ((progres > SEUIL_OUVERTURE && vitesse > -VITESSE_LANCER) || vitesse > VITESSE_LANCER) ouvrir(false);
+            else fermer(false);
+        }
+        [barre, el].forEach(zone => {
+            zone.addEventListener("pointerdown", debut);
+            zone.addEventListener("pointermove", mouvement);
+            zone.addEventListener("pointerup", fin);
+            zone.addEventListener("pointercancel", () => { if (geste && geste.actif) { geste = null; if (estOuvert()) ouvrir(false); else fermer(false); } else geste = null; });
+            zone.addEventListener("click", (e) => { if (clicBloque) { e.preventDefault(); e.stopPropagation(); } }, true);
+        });
+        tiroir = { ouvrir, fermer, estOuvert };
     }
 
     function ouvrirActionsRapides() {
@@ -634,6 +745,7 @@ const AppLayout = (() => {
         construireEntete();
         restructurerEnSidebar(pageActuelle);
         ajouterLienEvitement();
+        if (typeof Presentation !== "undefined") Presentation.afficherSiPremiere();
         construireNavBasse(pageActuelle);
         rafraichirBadges();
 
@@ -650,5 +762,5 @@ const AppLayout = (() => {
         if (typeof Nouveautes !== "undefined") Nouveautes.annoncerSiBesoin();      /* « quoi de neuf ? » : une fois, jamais par-dessus l'animation ni une autre fenêtre */
     }
 
-    return { init, ouvrirFeuille, fermerFeuille, toast, toastSucces, toastAction, escapeHtml, VERSION, verifierMiseAJour, appliquerMiseAJour, rafraichirNotifications: majPastilleAvatar, notifMajActive, definirNotifMaj };
+    return { init, ouvrirFeuille, fermerFeuille, toast, toastSucces, ouvrirOutils: () => tiroir && tiroir.ouvrir(false), fermerOutils: () => tiroir && tiroir.fermer(false), toastAction, escapeHtml, VERSION, verifierMiseAJour, appliquerMiseAJour, rafraichirNotifications: majPastilleAvatar, notifMajActive, definirNotifMaj };
 })();

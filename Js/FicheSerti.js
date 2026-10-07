@@ -69,6 +69,7 @@ const FicheSerti = (() => {
             memoriser: true, serie: "mes", tete: 1,
             valeurs: m ? depuisMesures(m) : { mes: {}, client: {} },
             note: m && m.note ? m.note : "", noteClient: m && m.client ? m.client.note || "" : "",
+            pieces: m && m.client && Array.isArray(m.client.pieces) ? m.client.pieces.slice() : [], erreurPieces: "",
             validation: m && m.forcee ? m.validation : ""
         };
         const liste = listeTetes(inst);
@@ -103,7 +104,7 @@ const FicheSerti = (() => {
             '<button type="button" class="puce-filtre puce--defaut actif" data-serti-serie="mes" aria-pressed="true">Mes mesures</button>' +
             '<button type="button" class="puce-filtre puce--defaut" data-serti-serie="client" aria-pressed="false">Contrôle client (Seametal)</button></div>' +
             '<div data-serti-tetes></div><p class="aide-champ" data-serti-avance></p><div data-serti-saisie></div><div data-serti-nav></div>' +
-            '<div data-serti-bilan></div><div data-serti-validation></div>' +
+            '<div data-serti-bilan></div><div data-serti-validation></div><div data-serti-pieces></div>' +
             '</details>';
     }
 
@@ -284,14 +285,35 @@ const FicheSerti = (() => {
         inst.racine.querySelector("[data-serti-bilan]").innerHTML = htmlBilan(inst, a);
         const val = inst.racine.querySelector("[data-serti-validation]");
         if (!val.contains(document.activeElement) || !val.innerHTML) val.innerHTML = htmlValidation(inst, a);
+        majResume(inst, a);
+    }
+
+    /* Résumé affiché à côté du titre du bloc : mesures, validation, et nombre de fichiers joints. */
+    function majResume(inst, analyse) {
+        const a = analyse || analyseCourante(inst);
         const choix = inst.validation || a.validationAuto;
         const court = inst.racine.querySelector("[data-serti-court]");
         court.textContent = a.mesurees || inst.validation
             ? "· " + (a.mesurees ? a.mesurees + (inst.nbTetes > 0 ? " tête" + (a.mesurees > 1 ? "s" : "") : " mesure") : "") + (choix ? " · " + (choix === "oui" ? "OUI" : "NON") : "") + (a.aSurveiller && choix === "oui" ? " ⚠" : "")
-            : "· facultatif";
+            : "(facultatif)";
+        if (inst.pieces.length) court.textContent = (court.textContent === "(facultatif)" ? "·" : court.textContent + " ·") + " 📎 " + inst.pieces.length;
+    }
+
+    /* Côté client (Seametal) : on joint seulement SA FEUILLE (photo ou PDF), aucune valeur à saisir. Les contrôles où des valeurs client avaient
+       déjà été saisies gardent l'ancien écran : rien n'est perdu ni masqué. */
+    const aValeursClient = (inst) => Object.keys(inst.valeurs.client).some(n => Object.values(inst.valeurs.client[n] || {}).some(v => String(v).trim() !== ""));
+    const modeDocuments = (inst) => inst.serie === "client" && !aValeursClient(inst);
+
+    function toutDocuments(inst) {
+        const z = inst.racine;
+        ["[data-serti-config]", "[data-serti-tetes]", "[data-serti-saisie]", "[data-serti-nav]", "[data-serti-bilan]", "[data-serti-validation]"].forEach(sel => { z.querySelector(sel).innerHTML = ""; });
+        const av = z.querySelector("[data-serti-avance]"); if (av) av.textContent = "";
+        z.querySelectorAll("[data-serti-serie]").forEach(b => { const on = b.getAttribute("data-serti-serie") === inst.serie; b.classList.toggle("actif", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+        majPieces(inst);
     }
 
     function tout(inst) {
+        if (modeDocuments(inst)) { toutDocuments(inst); return; }
         const z = inst.racine;
         const cfg = z.querySelector("[data-serti-config]");
         if (!cfg.contains(document.activeElement)) cfg.innerHTML = htmlConfig(inst);
@@ -303,12 +325,56 @@ const FicheSerti = (() => {
         majTetes(inst); majVerdictTete(inst);
         const val = z.querySelector("[data-serti-validation]"); val.innerHTML = "";
         majBilan(inst);
+        majPieces(inst);
+    }
+
+    /* ---------- Fichiers joints du contrôle client (photo ou PDF de la feuille du client) ---------- */
+
+    function majPieces(inst) {
+        const zone = inst.racine.querySelector("[data-serti-pieces]");
+        if (!zone) return;
+        if (inst.serie !== "client" || typeof Pieces === "undefined") { zone.innerHTML = ""; return; }
+        zone.innerHTML = Pieces.htmlBloc(inst.pieces, { editable: true, erreur: inst.erreurPieces,
+            reference: modeDocuments(inst) ? { id: inst.prefixe + "-noteclient", valeur: inst.noteClient } : null });
+        Pieces.hydrater(zone);
+        majResume(inst);
+    }
+
+    async function ajouterFichiers(inst, fichiers) {
+        inst.erreurPieces = "";
+        for (const f of fichiers) {
+            if (inst.pieces.length >= Pieces.NB_MAX) { inst.erreurPieces = "Dix fichiers au maximum par contrôle."; break; }
+            try { inst.pieces.push(await Pieces.ajouter(f)); } catch (e) { inst.erreurPieces = Pieces.messageErreur(e); }
+        }
+        if (instances[inst.prefixe] === inst && inst.racine.isConnected) majPieces(inst);
+    }
+
+    /* Retirer un fichier ne le détruit pas tout de suite : la fiche quitte le contrôle, « Annuler » la remet ; le fichier lui-même est
+       nettoyé plus tard par Pieces.nettoyer s'il n'est plus utilisé. */
+    function retirerPiece(inst, id) {
+        const i = inst.pieces.findIndex(p => p.id === id);
+        if (i === -1) return;
+        const retiree = inst.pieces.splice(i, 1)[0];
+        majPieces(inst);
+        AppLayout.toastAction("Fichier retiré du contrôle", "Annuler", () => {
+            if (instances[inst.prefixe] === inst && inst.racine.isConnected) { inst.pieces.splice(i, 0, retiree); majPieces(inst); }
+        });
     }
 
     /* ---------- Événements ---------- */
 
     function brancher(inst) {
         const z = inst.racine;
+        z.addEventListener("change", (e) => {
+            if (!e.target.matches || !e.target.matches("[data-pieces-fichier]")) return;
+            const fichiers = Array.from(e.target.files || []);          // copie AVANT de vider le champ (la liste est « vivante »)
+            e.target.value = "";
+            ajouterFichiers(inst, fichiers);
+        });
+        z.addEventListener("click", (e) => {
+            const b = e.target.closest ? e.target.closest("[data-piece-retirer]") : null;
+            if (b && z.contains(b)) retirerPiece(inst, b.getAttribute("data-piece-retirer"));
+        });
         z.addEventListener("input", (e) => {
             const el = e.target;
             if (el.matches("[data-serti-champ]")) {
@@ -342,9 +408,9 @@ const FicheSerti = (() => {
                 tout(inst);
             } else if (b.hasAttribute("data-serti-effacer")) {
                 /* Rien n'est détruit sans retour : l'état est gardé 10 secondes pour « Annuler ». */
-                const copie = { valeurs: inst.valeurs, validation: inst.validation, note: inst.note, noteClient: inst.noteClient, tete: inst.tete, serie: inst.serie };
-                const avait = Object.keys(inst.valeurs.mes).length || Object.keys(inst.valeurs.client).length || inst.validation || inst.note || inst.noteClient;
-                inst.valeurs = { mes: {}, client: {} }; inst.validation = ""; inst.note = ""; inst.noteClient = ""; tout(inst);
+                const copie = { valeurs: inst.valeurs, validation: inst.validation, note: inst.note, noteClient: inst.noteClient, pieces: inst.pieces, tete: inst.tete, serie: inst.serie };
+                const avait = Object.keys(inst.valeurs.mes).length || Object.keys(inst.valeurs.client).length || inst.validation || inst.note || inst.noteClient || inst.pieces.length;
+                inst.valeurs = { mes: {}, client: {} }; inst.validation = ""; inst.note = ""; inst.noteClient = ""; inst.pieces = []; tout(inst);
                 if (avait) AppLayout.toastAction("Contrôle effacé", "Annuler", () => { if (instances[inst.prefixe] === inst && inst.racine.isConnected) { Object.assign(inst, copie); tout(inst); } }, 10000);
             }
             else if (b.hasAttribute("data-serti-auto")) { inst.validation = ""; inst.note = ""; z.querySelector("[data-serti-validation]").innerHTML = ""; majBilan(inst); }
@@ -365,7 +431,7 @@ const FicheSerti = (() => {
         const inst = instances[prefixe];
         if (!inst) return null;
         const brut = Object.assign(etatMesures(inst, "mes"), {
-            client: { tetes: convertir(inst.valeurs.client).map(t => ({ n: t.n, v: t.v })), note: inst.noteClient },
+            client: { tetes: convertir(inst.valeurs.client).map(t => ({ n: t.n, v: t.v })), note: inst.noteClient, pieces: inst.pieces },
             validation: inst.validation, note: inst.note });
         return brut;
     }

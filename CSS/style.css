@@ -14,6 +14,20 @@
     --rayon-grand: var(--rayon);
     --rayon-xl: calc(var(--rayon) + 4px);
 
+    /* Échelle typographique UNIQUE : 9 tailles de texte (au lieu de 26 valeurs voisines), 3 interlignes. Ne pas inventer d'autres valeurs. */
+    --texte-micro: 0.68rem;      /* pastilles, libellés de la barre du bas */
+    --texte-petit: 0.75rem;      /* légendes, détails, étiquettes */
+    --texte-compact: 0.85rem;    /* texte courant des cartes et listes (la taille la plus employée) */
+    --texte-courant: 0.95rem;    /* texte principal, boutons, champs de lecture */
+    --texte-base: 1rem;          /* champs de saisie (16 px minimum : iOS zoomerait en dessous), corps de page */
+    --titre-s: 1.1rem;
+    --titre-m: 1.2rem;
+    --titre-l: 1.4rem;
+    --titre-xl: 1.6rem;          /* grands chiffres, titres de page */
+    --interligne-serre: 1.25;    /* titres, chiffres */
+    --interligne: 1.4;           /* texte compact */
+    --interligne-aere: 1.5;      /* paragraphes */
+
     --fond: oklch(0.99 0.002 20);
     --texte: oklch(0.18 0.02 25);
 
@@ -147,7 +161,7 @@ img { max-width: 100%; display: block; }
     gap: 10px;
     padding: 9px 10px;
     border-radius: var(--rayon-moyen);
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     font-weight: 500;
     color: var(--attenue-texte);
     border-left: 3px solid transparent;
@@ -162,7 +176,7 @@ img { max-width: 100%; display: block; }
     border-left-color: var(--primaire);
 }
 
-.rail-lateral-icone { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+.rail-lateral-icone { font-size: var(--texte-base); width: 20px; text-align: center; flex-shrink: 0; }
 
 .rail-lateral-utilisateur {
     display: flex;
@@ -178,10 +192,10 @@ img { max-width: 100%; display: block; }
     border-bottom: 1px solid var(--bordure);
 }
 
-.rail-lateral-utilisateur-nom { font-size: 0.82rem; font-weight: 700; }
+.rail-lateral-utilisateur-nom { font-size: var(--texte-compact); font-weight: 700; }
 
 .rail-lateral-utilisateur-role {
-    font-size: 0.72rem;
+    font-size: var(--texte-petit);
     color: var(--attenue-texte);
     display: flex;
     align-items: center;
@@ -256,17 +270,17 @@ img { max-width: 100%; display: block; }
 }
 
 .entete-logo-texte {
-    line-height: 1.15;
+    line-height: var(--interligne-serre);
 }
 
 .entete-logo-titre {
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     font-weight: 700;
     letter-spacing: -0.01em;
 }
 
 .entete-logo-sous-titre {
-    font-size: 0.6rem;
+    font-size: var(--texte-micro);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -296,7 +310,7 @@ img { max-width: 100%; display: block; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     font-weight: 700;
     border: none;
     cursor: pointer;
@@ -327,8 +341,8 @@ img { max-width: 100%; display: block; }
     border-bottom: 1px solid var(--bordure);
 }
 
-.menu-avatar-nom { font-size: 0.85rem; font-weight: 700; }
-.menu-avatar-role { font-size: 0.72rem; color: var(--attenue-texte); }
+.menu-avatar-nom { font-size: var(--texte-compact); font-weight: 700; }
+.menu-avatar-role { font-size: var(--texte-petit); color: var(--attenue-texte); }
 
 .menu-avatar-item {
     display: block;
@@ -337,7 +351,7 @@ img { max-width: 100%; display: block; }
     background: none;
     border: none;
     text-align: left;
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     color: var(--texte);
     text-decoration: none;
 }
@@ -356,7 +370,7 @@ img { max-width: 100%; display: block; }
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: var(--titre-s);
 }
 
 .bouton-icone:hover {
@@ -374,7 +388,7 @@ img { max-width: 100%; display: block; }
     border-radius: 999px;
     background: var(--primaire);
     color: var(--primaire-texte);
-    font-size: 0.6rem;
+    font-size: var(--texte-micro);
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -390,7 +404,7 @@ img { max-width: 100%; display: block; }
     justify-content: center;
     gap: 8px;
     padding: 8px 12px;
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     font-weight: 600;
     color: #fff;
 }
@@ -433,14 +447,14 @@ img { max-width: 100%; display: block; }
     gap: 2px;
     padding: 8px 2px;
     min-height: 56px;
-    font-size: 0.6rem;
+    font-size: var(--texte-micro);
     font-weight: 600;
     color: var(--attenue-texte);
 }
 
 .nav-basse-lien.actif { color: var(--primaire); }
 
-.nav-basse-icone { font-size: 1.15rem; line-height: 1; }
+.nav-basse-icone { font-size: var(--titre-s); line-height: 1; }
 
 .nav-basse-lien .badge-nombre { right: 6px; top: 2px; }
 
@@ -460,7 +474,7 @@ img { max-width: 100%; display: block; }
     border: 4px solid var(--fond);
     background: var(--primaire);
     color: var(--primaire-texte);
-    font-size: 1.5rem;
+    font-size: var(--titre-xl);
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -511,7 +525,7 @@ img { max-width: 100%; display: block; }
 }
 
 .feuille-titre {
-    font-size: 1.05rem;
+    font-size: var(--titre-s);
     font-weight: 700;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--bordure);
@@ -529,7 +543,7 @@ img { max-width: 100%; display: block; }
     border: none;
     background: var(--secondaire);
     color: var(--texte);
-    font-size: 0.9rem;
+    font-size: var(--texte-courant);
     flex-shrink: 0;
 }
 
@@ -544,7 +558,7 @@ img { max-width: 100%; display: block; }
     border: 1px solid var(--bordure);
     border-radius: var(--rayon-moyen);
     background: var(--carte);
-    font-size: 0.9rem;
+    font-size: var(--texte-courant);
     font-weight: 500;
     text-align: left;
     margin-bottom: 8px;
@@ -575,7 +589,7 @@ img { max-width: 100%; display: block; }
     padding: 0 16px;
     border-radius: var(--rayon-moyen);
     border: 1px solid transparent;
-    font-size: 0.875rem;
+    font-size: var(--texte-compact);
     font-weight: 600;
     background: var(--primaire);
     color: var(--primaire-texte);
@@ -599,7 +613,7 @@ img { max-width: 100%; display: block; }
 
 .bouton--fantome:hover { background: var(--secondaire); color: var(--texte); }
 
-.bouton--petit { height: 32px; padding: 0 12px; font-size: 0.8rem; }
+.bouton--petit { height: 32px; padding: 0 12px; font-size: var(--texte-compact); }
 
 /* ---------- Cartes ---------- */
 
@@ -613,7 +627,7 @@ img { max-width: 100%; display: block; }
 }
 
 .carte-titre {
-    font-size: 0.95rem;
+    font-size: var(--texte-courant);
     font-weight: 700;
     margin-bottom: 4px;
 }
@@ -623,10 +637,10 @@ img { max-width: 100%; display: block; }
 .badge-statut {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     padding: 3px 9px;
     border-radius: 999px;
-    font-size: 0.7rem;
+    font-size: var(--texte-micro);
     font-weight: 700;
     color: #fff;
 }
@@ -683,7 +697,7 @@ img { max-width: 100%; display: block; }
     background: var(--carte);
     border: none;
     color: var(--attenue-texte);
-    font-size: 0.82rem;
+    font-size: var(--texte-compact);
     font-weight: 600;
 }
 
@@ -701,7 +715,7 @@ img { max-width: 100%; display: block; }
     border: 1px solid var(--bordure);
     background: var(--carte);
     color: var(--texte);
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     font-weight: 600;
     white-space: nowrap;
 }
@@ -721,7 +735,7 @@ img { max-width: 100%; display: block; }
     padding: 0 5px;
     border-radius: 999px;
     background: color-mix(in oklch, currentColor 16%, transparent);
-    font-size: 0.72rem;
+    font-size: var(--texte-petit);
 }
 
 /* Le badge garde sa taille mais ne pousse jamais le nom hors de la fiche :
@@ -741,7 +755,7 @@ img { max-width: 100%; display: block; }
 
 label {
     display: block;
-    font-size: 0.8rem;
+    font-size: var(--texte-compact);
     font-weight: 600;
     margin: 10px 0 4px;
     color: var(--attenue-texte);
@@ -754,7 +768,7 @@ input, select, textarea {
     border-radius: var(--rayon-moyen);
     background: var(--carte);
     color: var(--texte);
-    font-size: 0.9rem;
+    font-size: var(--texte-courant);
     font-family: inherit;
 }
 
@@ -803,14 +817,14 @@ input:focus, select:focus, textarea:focus {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 0.95rem;
+    font-size: var(--texte-courant);
 }
 
-.metrique-valeur { font-size: 1.1rem; font-weight: 700; line-height: 1; }
+.metrique-valeur { font-size: var(--titre-s); font-weight: 700; line-height: 1; }
 
 .metrique-libelle {
     margin-top: 4px;
-    font-size: 0.68rem;
+    font-size: var(--texte-micro);
     font-weight: 500;
     color: var(--attenue-texte);
     white-space: nowrap;
@@ -829,14 +843,14 @@ input:focus, select:focus, textarea:focus {
 }
 
 .section-titre {
-    font-size: 0.8rem;
+    font-size: var(--texte-compact);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
 
 .texte-lien {
-    font-size: 0.75rem;
+    font-size: var(--texte-petit);
     font-weight: 700;
     color: var(--primaire);
 }
@@ -850,7 +864,7 @@ input:focus, select:focus, textarea:focus {
     align-items: center;
     gap: 4px;
     color: var(--attenue-texte);
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     font-weight: 600;
     padding: 8px 4px;
 }
@@ -871,7 +885,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .fiche-titre {
-    font-size: 1.2rem;
+    font-size: var(--titre-m);
     font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -879,7 +893,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .fiche-adresse {
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
     color: var(--attenue-texte);
     margin-top: 2px;
 }
@@ -887,7 +901,7 @@ input:focus, select:focus, textarea:focus {
 .fiche-badges {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
     margin-top: 8px;
 }
 
@@ -900,7 +914,7 @@ input:focus, select:focus, textarea:focus {
     border: 1px solid;
     border-radius: var(--rayon-moyen);
     padding: 9px 12px;
-    font-size: 0.85rem;
+    font-size: var(--texte-compact);
 }
 
 /* ---------- Onglets de la fiche client ---------- */
@@ -919,10 +933,10 @@ input:focus, select:focus, textarea:focus {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     padding: 8px 12px;
     border-radius: var(--rayon-petit);
-    font-size: 0.78rem;
+    font-size: var(--texte-petit);
     font-weight: 600;
     color: var(--attenue-texte);
     white-space: nowrap;
@@ -935,7 +949,7 @@ input:focus, select:focus, textarea:focus {
     color: var(--primaire);
     border-radius: 999px;
     padding: 0 6px;
-    font-size: 0.66rem;
+    font-size: var(--texte-micro);
     font-weight: 700;
 }
 
@@ -957,13 +971,13 @@ input:focus, select:focus, textarea:focus {
 }
 
 .kpi-mini-libelle {
-    font-size: 0.62rem;
+    font-size: var(--texte-micro);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--attenue-texte);
 }
 
-.kpi-mini-valeur { font-size: 1rem; font-weight: 700; margin-top: 2px; }
+.kpi-mini-valeur { font-size: var(--texte-base); font-weight: 700; margin-top: 2px; }
 
 /* ---------- Page Réglages (v2 : 2 colonnes) ---------- */
 
@@ -994,9 +1008,9 @@ input:focus, select:focus, textarea:focus {
     background: var(--carte);
 }
 
-.carte-apparence-icone { font-size: 1.2rem; flex-shrink: 0; }
-.carte-apparence-titre { display: block; font-size: 0.85rem; font-weight: 700; }
-.carte-apparence-sous-titre { display: block; font-size: 0.72rem; color: var(--attenue-texte); margin-top: 1px; }
+.carte-apparence-icone { font-size: var(--titre-m); flex-shrink: 0; }
+.carte-apparence-titre { display: block; font-size: var(--texte-compact); font-weight: 700; }
+.carte-apparence-sous-titre { display: block; font-size: var(--texte-petit); color: var(--attenue-texte); margin-top: 1px; }
 
 .carte-apparence-radio {
     width: 18px;

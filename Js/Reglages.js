@@ -525,6 +525,12 @@
             '<p class="info-aide" style="margin:6px 0 0;">' + esc(aide) + '</p></div>';
     }
 
+    /* Présentation de première connexion, rejouable (Presentation.js). */
+    function cartePresentation() {
+        return '<div class="carte"><h2 class="carte-titre">🎬 Présentation</h2><p class="info-aide" style="margin:6px 0 0;">Les pages de la barre du bas et le geste « glisser vers le haut » qui ouvre Serti et Documents.</p>' +
+            '<div class="info-actions"><button type="button" class="bouton bouton--contour" data-presentation-revoir>▶ Revoir la présentation</button></div></div>';
+    }
+
     /* Journal d'erreurs de CET appareil (Erreurs.js) : rien n'est envoyé nulle part. */
     function carteDiagnostic() {
         const n = Erreurs.nombre();
@@ -550,7 +556,7 @@
             '<div class="info-ligne"><dt>État</dt><dd><span id="info-etat" role="status" aria-live="polite">Vérification en cours…</span><span class="info-aide" id="info-maj-nouv" hidden></span></dd></div>' +
             '</dl><div class="info-actions"><button type="button" class="bouton bouton--contour" data-verifier-maj>🔄 Vérifier les mises à jour</button>' +
             '<button type="button" class="bouton" data-recharger hidden>Mettre à jour maintenant</button></div></div>' +
-            carteNouveaute() + carteNotifications() + carteDiagnostic() + '</div>';
+            carteNouveaute() + cartePresentation() + carteNotifications() + carteDiagnostic() + '</div>';
         brancherInfos();
         verifierMaj();
     }
@@ -574,6 +580,8 @@
 
     function brancherInfos() {
         const p = document.getElementById("panneau-reglages-informations");
+        const bPres = p.querySelector("[data-presentation-revoir]");
+        if (bPres) bPres.addEventListener("click", () => Presentation.afficher());
         const bDiag = p.querySelector("[data-diag-verifier]");
         if (bDiag) bDiag.addEventListener("click", async () => {
             const zone = p.querySelector("[data-diag-resultats]");

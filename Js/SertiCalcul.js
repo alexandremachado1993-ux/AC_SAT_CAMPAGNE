@@ -164,6 +164,14 @@ const SertiCalcul = (() => {
 
     const texte = (t, max) => (typeof t === "string" ? t.trim().replace(/\s+/g, " ").slice(0, max) : "");
 
+    /* Fiches des fichiers joints (le fichier lui-même est dans IndexedDB, voir Pieces.js) : 10 au maximum, champs typés. */
+    function nettoyerPieces(liste) {
+        const vus = new Set();
+        return (Array.isArray(liste) ? liste : []).filter(p => p && typeof p === "object" && typeof p.id === "string" && /^[\w-]{4,60}$/.test(p.id) && !vus.has(p.id) && vus.add(p.id))
+            .slice(0, 10).map(p => ({ id: p.id, nom: texte(p.nom, 120) || "Fichier", type: typeof p.type === "string" ? p.type.slice(0, 60) : "",
+                taille: Number.isFinite(Number(p.taille)) ? Math.max(0, Math.round(Number(p.taille))) : 0, le: typeof p.le === "string" ? p.le.slice(0, 30) : "" }));
+    }
+
     function nettoyerSerie(liste, nbTetes) {
         const par = new Map();
         (Array.isArray(liste) ? liste : []).forEach(t => {
@@ -190,11 +198,13 @@ const SertiCalcul = (() => {
         const tetes = nettoyerSerie(src.tetes, nb);
         const clientTetes = src.client && typeof src.client === "object" ? nettoyerSerie(src.client.tetes, nb) : [];
         const clientNote = src.client && typeof src.client === "object" ? texte(src.client.note, 200) : "";
+        const clientPieces = src.client && typeof src.client === "object" ? nettoyerPieces(src.client.pieces) : [];
         const choix = src.validation === "oui" || src.validation === "non" ? src.validation : "";
-        if (!tetes.length && !clientTetes.length && !choix) return null;
+        if (!tetes.length && !clientTetes.length && !choix && !clientPieces.length) return null;
         const m = { ref: R.REFERENCE.id + " rév. " + R.REFERENCE.revision + " du " + R.REFERENCE.date, colonne: colonneId,
             format: texte(src.format, 40), nbTetes: nb === null ? "" : nb, tetes };
-        if (clientTetes.length || clientNote) m.client = { source: "Seametal", note: clientNote, tetes: clientTetes };
+        if (clientTetes.length || clientNote || clientPieces.length) m.client = { source: "Seametal", note: clientNote, tetes: clientTetes };
+        if (clientPieces.length) m.client.pieces = clientPieces;
         const a = analyser(m);
         m.verdict = a.pire === "vide" ? "" : a.pire;
         m.validationAuto = a.validationAuto;

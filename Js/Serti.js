@@ -21,6 +21,8 @@
     const conteneur = document.getElementById("contenu-page");
 
     const filtres = { q: "", client: "", ligne: "", format: "", validation: "tous", sea: false };
+    const piecesDe = (l) => (l && l.m && l.m.client && l.m.client.pieces) || [];
+    const aClient = (l) => l.sea || piecesDe(l).length > 0;      // un contrôle client = ses valeurs OU sa feuille jointe
     let selection = null;
     let mode = "mes";
 
@@ -51,7 +53,7 @@
             if (filtres.client && l.v.clientId !== filtres.client) return false;
             if (filtres.ligne && l.v.ligneId !== filtres.ligne) return false;
             if (filtres.format && l.format !== filtres.format) return false;
-            if (filtres.sea && !l.sea) return false;
+            if (filtres.sea && !aClient(l)) return false;
             if (sansValidation) return true;
             const f = filtres.validation;
             return f === "tous" || (f === "oui" && l.validation === "oui") || (f === "non" && l.validation === "non") ||
@@ -108,7 +110,7 @@
             '<span class="serti-ligne-qui"><strong>' + esc(l.nomClient) + '</strong><span class="texte-attenue">' + esc(l.nomLigne) + ' · ' + esc(l.format) + '</span></span>' +
             '<span class="serti-ligne-tetes texte-attenue">' + (l.m.nbTetes > 0 ? l.a.mesurees + " / " + l.m.nbTetes + " têtes" : (l.a.mesurees ? "1 série" : "—")) + '</span>' +
             '<span class="serti-ligne-etat">' + pastilleValidation(l) + '</span>' +
-            '<span class="serti-ligne-client texte-attenue">' + (l.sea ? "Seametal" + (l.cmp.disponible ? " · écart max " + virgule(l.cmp.ecartMax, 2) + " mm" : "") : "Pas de contrôle client") + '</span></button>').join("") + '</div>';
+            '<span class="serti-ligne-client texte-attenue">' + (aClient(l) ? "Seametal" + (l.cmp.disponible ? " · écart max " + virgule(l.cmp.ecartMax, 2) + " mm" : "") : "Pas de contrôle client") + '</span></button>').join("") + '</div>';
     }
 
     /* ---------- Détail ---------- */
@@ -152,10 +154,11 @@
 
     function htmlDetail(l) {
         if (!l) return "";
-        const onglets = [["mes", "Mes mesures", true], ["client", "Contrôle client (Seametal)", l.sea], ["cmp", "Comparaison", l.cmp.disponible]];
+        const onglets = [["mes", "Mes mesures", true], ["client", "Contrôle client (Seametal)", l.sea || piecesDe(l).length > 0], ["cmp", "Comparaison", l.cmp.disponible]];
         if (!onglets.find(o => o[0] === mode && o[2])) mode = "mes";
         let corps;
-        if (mode === "client") corps = (l.m.client && l.m.client.note ? '<p class="aide-champ">Feuille du client : <strong>' + esc(l.m.client.note) + '</strong></p>' : "") + matrice(l.a.client, l.m);
+        if (mode === "client") corps = (l.m.client && l.m.client.note ? '<p class="aide-champ">Feuille du client : <strong>' + esc(l.m.client.note) + '</strong></p>' : "") + (l.sea ? matrice(l.a.client, l.m) : '<div class="etat-vide">Aucune valeur du client saisie : seule sa feuille est jointe.</div>') +
+            (typeof Pieces !== "undefined" ? Pieces.htmlBloc(piecesDe(l), { editable: false }) : "");
         else if (mode === "cmp") corps = comparaison(l);
         else corps = (l.m.tetes.length ? matrice(l.a.tetes, l.m) : '<div class="etat-vide">Aucune mesure : seule la validation a été notée.</div>') +
             (l.m.forcee ? '<p class="bandeau-info" role="status">Décision manuelle : proposé <strong>' + (l.m.validationAuto === "oui" ? "OUI" : "NON") + '</strong>, retenu <strong>' + (l.m.validation === "oui" ? "OUI" : "NON") + '</strong>' + (l.m.note ? " — " + esc(l.m.note) : "") + '.</p>' : "");
@@ -165,7 +168,7 @@
             '<div class="puces-filtre" role="tablist">' + onglets.map(o => '<button type="button" role="tab" class="puce-filtre puce--defaut' + (mode === o[0] ? " actif" : "") + '" data-serti-mode="' + o[0] + '" aria-selected="' + (mode === o[0]) + '"' + (o[2] ? "" : " disabled") + '>' + esc(o[1]) + '</button>').join("") + '</div>' +
             corps +
             (l.recalcule ? '<div class="bandeau-info" role="status">Verdict recalculé avec le référentiel actuel (enregistré à l\'époque : <strong>' + (l.m.validation === "oui" ? "OUI" : "NON") + '</strong>). Une décision manuelle, elle, n\'est jamais recalculée.</div>' : "") +
-            (!l.sea ? '<div class="bandeau-info" role="status">Pas de contrôle client pour ce contrôle. Pour l\'ajouter : modifie la visite, ouvre « Contrôle de serti » et choisis « Contrôle client (Seametal) ».</div>' : "") +
+            (!l.sea && !piecesDe(l).length ? '<div class="bandeau-info" role="status">Pas de contrôle client pour ce contrôle. Pour l\'ajouter : modifie la visite, ouvre « Contrôle de serti » et choisis « Contrôle client (Seametal) ».</div>' : "") +
             (l.v.remarques ? '<div class="carte-ligne-notes">' + esc(l.v.remarques) + '</div>' : "") +
             '<div class="serti-actions"><button type="button" class="bouton bouton--petit" data-serti-modifier="' + esc(l.v.id) + '">✏️ Modifier la visite</button>' +
             (l.client ? '<a class="bouton bouton--petit bouton--contour" href="Client.html?id=' + encodeURIComponent(l.client.id) + '">Voir le client</a>' : "") + '</div></div>';
@@ -179,7 +182,9 @@
         const liste = filtrer(toutes, false);
         if (!liste.some(l => l.v.id === selection)) selection = liste.length ? liste[0].v.id : null;
         document.getElementById("serti-liste").innerHTML = htmlListe(liste);
-        document.getElementById("serti-detail-zone").innerHTML = htmlDetail(liste.find(l => l.v.id === selection));
+        const zoneDetail = document.getElementById("serti-detail-zone");
+        zoneDetail.innerHTML = htmlDetail(liste.find(l => l.v.id === selection));
+        if (typeof Pieces !== "undefined") Pieces.hydrater(zoneDetail);
     }
 
     function rendre() {
