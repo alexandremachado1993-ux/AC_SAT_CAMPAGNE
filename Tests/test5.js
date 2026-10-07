@@ -2,7 +2,7 @@ module.exports = async function ({ page, t, P, fs }) {
   const w = page("Documents.html");
   const d = w.document;
   t("documents : lien actif dans la navigation", !!d.querySelector('.rail-lateral-lien.actif[href="Documents.html"]'));
-  t("documents : hors barre du bas (dans le menu du profil)", ![...d.querySelectorAll(".nav-basse-lien")].some(a => a.textContent.includes("Docs")) && !![...d.querySelectorAll(".menu-avatar-item")].length || true);
+  t("documents : hors barre du bas et hors menu du profil, dans le menu étendu « Plus d'outils »", ![...d.querySelectorAll(".nav-basse-lien")].some(a => a.textContent.includes("Docs")) && ![...d.querySelectorAll(".menu-avatar-item")].some(a => /Documents|Serti/.test(a.textContent)) && [...d.querySelectorAll(".nav-tiroir-carte")].some(a => /Documents/.test(a.textContent)));
   t("documents : une fiche", d.querySelectorAll(".carte-document").length === 1);
   const liens = [...d.querySelectorAll(".carte-document-actions a")].map(a => a.getAttribute("href"));
   t("documents : versions FR et ES", liens.join() === "Documents/aide-memoire-serti-fr.html,Documents/aide-memoire-serti-es.html");

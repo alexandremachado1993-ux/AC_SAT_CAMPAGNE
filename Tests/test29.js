@@ -48,7 +48,7 @@ module.exports = async function ({ page, t }) {
   t("par mesure : une seule configuration → cible affichée (2,45 ± 0,20) ; hors = 1 sur 2", sf.n === 2 && sf.hors === 1 && /2,45 ± 0,20/.test(sf.cible) && sf.max === 2.7 && sf.min === 2.45);
   t("par mesure : plusieurs formats → « plusieurs formats »", d.parMesure.find(s => s.parametre.id === "flange").cible === "plusieurs formats");
   const t2 = d.parTete.find(e => e.nomClient === "Alpha" && e.nomLigne === "L1" && e.tete === 2);
-  t("têtes à surveiller : la tête 2 de L1 (flange hors) est listée avec sa mesure en cause", !!t2 && t2.hors === 1 && /Flange/.test(Object.keys(t2.parametres).join()));
+  t("têtes à surveiller : la tête 2 de L1 (flange hors) est listée avec sa mesure en cause", !!t2 && t2.hors === 1 && /Hauteur serti/.test(Object.keys(t2.parametres).join()));
   t("têtes à surveiller : les têtes avec une mesure hors passent avant celles qui sont seulement en limite", d.parTete.findIndex(e => e.hors === 0) > d.parTete.map(e => e.hors > 0).lastIndexOf(true));
   t("têtes à surveiller : la tête en limite (4/4, serti) est listée sans « hors »", d.parTete.some(e => e.nomClient === "Bravo" && e.tete === 2 && e.limite >= 1 && e.hors === 0));
   t("comparaison : écart moyen par mesure (flange +0,075 sur 2 têtes → arrondi à 3 décimales)", (() => { const c = a1.comparaison.find(x => x.parametre.id === "flange"); return !!c && c.n === 2 && Math.abs(c.moyenne - 0.075) < 1e-9 && Math.abs(c.maxAbs - 0.15) < 1e-9; })());
@@ -64,7 +64,7 @@ module.exports = async function ({ page, t }) {
   const octets = w.Excel.ecrire(f);
   const relu = w.Excel.lire(octets.buffer.slice(octets.byteOffset, octets.byteOffset + octets.byteLength));
   t("Excel : le classeur s'écrit réellement (archive .xlsx valide), puis se relit avec ses 6 feuilles", octets.length > 1000 && octets[0] === 0x50 && octets[1] === 0x4b && Object.keys(relu).join() === "Rapport,Contrôles,Mesures,Par mesure,Têtes à surveiller,Comparaison client");
-  t("Excel : relu, le classeur contient les bonnes valeurs (4 contrôles + en-tête ; une mesure de flange = 2,7)", relu["Contrôles"].length === 5 && relu["Mesures"].some(l => l.indexOf("Flange") !== -1 && l.some(c => Number(c) === 2.7)));
+  t("Excel : relu, le classeur contient les bonnes valeurs (4 contrôles + en-tête ; une mesure de flange = 2,7)", relu["Contrôles"].length === 5 && relu["Mesures"].some(l => l.indexOf("Hauteur serti") !== -1 && l.some(c => Number(c) === 2.7)));
   t("Excel : nom de fichier explicite (client, ligne, période)", /^serti-alpha-l1-\d{4}-\d{2}-\d{2}-\d{4}-\d{2}-\d{2}\.xlsx$/.test(Rap.nomFichier(Rap.construire({ clientId: ca.id, ligneId: la1.id, debut: jour(20), fin: jour(1) }))) && /^serti-tous-clients-debut-/.test(Rap.nomFichier(d)));
 
   // ---------- Aperçu imprimable

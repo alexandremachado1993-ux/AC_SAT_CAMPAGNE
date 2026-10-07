@@ -83,21 +83,23 @@ module.exports = async function ({ page, t }) {
   saisir(w, bloc.querySelector("[data-serti-note]"), "mesure refaite à la main");
   t("visite : le résumé replié annonce OUI", /OUI/.test(bloc.querySelector("[data-serti-court]").textContent));
 
-  // Seametal : la même grille pour le client
+  // Seametal : le côté client ne demande AUCUNE valeur, seulement sa feuille jointe
   clic(bloc.querySelector('[data-serti-serie="client"]'));
-  t("visite : onglet « Contrôle client (Seametal) » : même grille, texte d'explication", /relevées par le client/.test(bloc.textContent) && bloc.querySelectorAll("[data-serti-champ]").length === 10 && champ("flange").value === "");
-  saisir(w, champ("flange"), "2,62"); saisir(w, champ("hauteurSerti"), "2,90"); saisir(w, champ("croisure"), "1,0");
-  t("visite : les valeurs du client sont jugées avec les mêmes tolérances (2,62 → limite)", /Limite/.test(pastille("flange").textContent) || /Conforme/.test(pastille("flange").textContent));
-  t("visite : champ « feuille du client » (référence du PDF) proposé", !!bloc.querySelector("[data-serti-noteclient]"));
+  t("visite : onglet « Contrôle client (Seametal) » : plus de grille de mesures, ni têtes, ni verdict, ni validation — seulement l'ajout de la feuille", bloc.querySelectorAll("[data-serti-champ]").length === 0 && bloc.querySelectorAll("[data-serti-tete]").length === 0 && !bloc.querySelector(".serti-validation") && !!bloc.querySelector("[data-pieces-fichier]") && /aucune valeur à saisir/.test(bloc.textContent));
+  t("visite : un champ « Référence de la feuille » (facultatif) est proposé", !!bloc.querySelector("[data-serti-noteclient]") && /Référence de la feuille/.test(bloc.textContent));
   saisir(w, bloc.querySelector("[data-serti-noteclient]"), "Seametal 02/10 — ligne 1");
   clic(bloc.querySelector('[data-serti-serie="mes"]'));
-  t("visite : comparaison résumée dès que les deux séries ont une tête en commun", /Contrôle client : \d+ cases comparées/.test(bloc.querySelector(".serti-bilan").textContent));
+  t("visite : revenir à « Mes mesures » rend la grille, le verdict et la validation (rien n'a été perdu)", bloc.querySelectorAll("[data-serti-champ]").length === 10 && !!bloc.querySelector(".serti-validation") && /OUI/.test(bloc.querySelector("[data-serti-court]").textContent));
 
   // enregistrement
   soumettre(w, "form-visite");
   let v = w.Donnees.visitesAvecMesures()[0];
   t("visite : enregistrée avec son contrôle (4 têtes, ø83, validation OUI forcée avec motif)", !!v && v.mesures.nbTetes === 4 && v.mesures.colonne === "ø83" && v.mesures.validation === "oui" && v.mesures.forcee === true && v.mesures.note === "mesure refaite à la main");
-  t("visite : mesures des deux têtes et du client enregistrées", v.mesures.tetes.length === 2 && v.mesures.tetes[0].v.flange === 2.7 && v.mesures.client.tetes[0].v.flange === 2.62 && v.mesures.client.note === "Seametal 02/10 — ligne 1");
+  t("visite : mesures des deux têtes enregistrées, avec la référence de la feuille du client (et AUCUNE valeur client)", v.mesures.tetes.length === 2 && v.mesures.tetes[0].v.flange === 2.7 && v.mesures.client.note === "Seametal 02/10 — ligne 1" && v.mesures.client.tetes.length === 0);
+  /* Contrôles ANTÉRIEURS où des valeurs client avaient été saisies : ils sont conservés tels quels (les tests suivants s'en servent : comparaison, matrice). */
+  w.Donnees.modifierVisite(v.id, Object.assign({}, v, { mesures: Object.assign({}, v.mesures, { client: { source: "Seametal", note: "Seametal 02/10 — ligne 1", tetes: [{ n: 1, v: { flange: 2.62, hauteurSerti: 2.9, croisure: 1.0 } }] } }) }));
+  v = w.Donnees.visitesAvecMesures()[0];
+  t("anciens contrôles : les valeurs client déjà saisies sont conservées (la comparaison reste disponible)", v.mesures.client.tetes.length === 1 && v.mesures.client.tetes[0].v.flange === 2.62);
   t("visite : le nombre de têtes choisi est retenu sur la ligne (colonne non figée)", w.Donnees.getLigne(l1.id).nbTetes === 4 && !w.Donnees.getLigne(l1.id).colonneSerti);
   stock = donnees(w);
 
@@ -233,7 +235,7 @@ module.exports = async function ({ page, t }) {
   clic(lignes()[0]);
   t("page Serti : le détail s'ouvre sous la liste (client · ligne, date, format, référentiel)", /Alpha · L1/.test(d.getElementById("serti-detail").textContent) && /SQ\/EMB\/067 rév\. C/.test(d.getElementById("serti-detail").textContent));
   t("page Serti : matrice têtes × mesures (2 têtes × 10 mesures)", d.querySelectorAll(".serti-matrice-ligne").length === 3 && d.querySelectorAll(".serti-case").length === 20);
-  t("page Serti : la flange hors tolérance de T2 est visible (trait rouge) avec un libellé accessible", !!d.querySelector('.serti-case--hors[aria-label*="Tête 2, Flange"]'));
+  t("page Serti : la flange hors tolérance de T2 est visible (trait rouge) avec un libellé accessible", !!d.querySelector('.serti-case--hors[aria-label*="Tête 2, Hauteur serti"]'));
   const onglet = (m) => d.querySelector('[data-serti-mode="' + m + '"]');
   t("page Serti : onglets Mes mesures · Contrôle client (Seametal) · Comparaison, tous actifs ici", !onglet("mes").disabled && !onglet("client").disabled && !onglet("cmp").disabled);
   clic(onglet("client"));
@@ -251,5 +253,5 @@ module.exports = async function ({ page, t }) {
   t("menu (ordinateur) : « Serti » est dans la barre latérale, page active", !!d.querySelector('#rail-lateral a[href="Serti.html"]') && /actif/.test(d.querySelector('#rail-lateral a[href="Serti.html"]').className));
   t("menu (téléphone) : la barre du bas garde ses 4 liens ; Serti est dans le menu du profil", d.querySelectorAll(".nav-basse-lien").length === 4 && !d.querySelector('.nav-basse-lien[href="Serti.html"]'));
   clic(d.querySelector(".entete-avatar"));
-  t("menu du profil : lien « Serti » avant Documents", /📏 Serti/.test(d.querySelector(".menu-avatar-panneau").textContent) && d.querySelector(".menu-avatar-panneau").textContent.indexOf("Serti") < d.querySelector(".menu-avatar-panneau").textContent.indexOf("Documents"));
+  t("menu du profil : Serti et Documents n'y sont PLUS (ils sont dans le menu étendu « Plus d'outils »)", !/Serti|Documents/.test(d.querySelector(".menu-avatar-panneau").textContent) && /Réglages/.test(d.querySelector(".menu-avatar-panneau").textContent));
 };

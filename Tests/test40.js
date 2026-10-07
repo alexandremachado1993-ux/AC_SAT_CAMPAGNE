@@ -10,7 +10,7 @@ module.exports = async function ({ page, t }) {
 
   // ---------- CSP
   t("CSP : script-src 'self' SANS 'unsafe-inline' ni 'unsafe-eval' (un script injecté ne s'exécute pas)", directive("script-src").join(" ") === "'self'");
-  t("CSP : object-src 'none', base-uri 'self', frame-ancestors 'none', form-action 'self'", directive("object-src")[0] === "'none'" && directive("base-uri")[0] === "'self'" && directive("frame-ancestors")[0] === "'none'" && directive("form-action")[0] === "'self'");
+  t("CSP : object-src 'none', base-uri 'self', frame-ancestors 'none', form-action 'self'", directive("object-src").join(" ") === "'self' blob:" && directive("base-uri")[0] === "'self'" && directive("frame-ancestors")[0] === "'none'" && directive("form-action")[0] === "'self'");
   const autorises = directive("connect-src");
   t("CSP : connect-src = le site, Supabase (https + wss) et geo.api.gouv.fr — rien d'autre", autorises.sort().join(" ") === ["'self'", "https://btzqjbmfkzhdtltgtrob.supabase.co", "wss://btzqjbmfkzhdtltgtrob.supabase.co", "https://geo.api.gouv.fr"].sort().join(" "));
   const hotes = new Set(); fs.readdirSync(path.join(racine, "Js")).forEach(f => { for (const m of lire("Js/" + f).matchAll(/https?:\/\/([a-z0-9.-]+)/gi)) if (!/^(www\.w3\.org|schemas\.openxmlformats\.org)$/.test(m[1])) hotes.add(m[1]); });

@@ -8,10 +8,10 @@ module.exports = async function ({ page, t }) {
 
   // ---------- Structure
   const w = page("Index.html"); const L = w.Nouveautes.LISTE;
-  w.Nouveautes.ouvrir({ derniere: true });
+  w.Nouveautes.ouvrir({ id: "planning-tableau-de-bord" });
   let f = feuille(w), g = f.querySelector(".nouv-galerie"), pts = f.querySelector(".nouv-points");
   const pt = () => Array.from(f.querySelectorAll(".nouv-point"));
-  t("points : autant de points que de photos (" + L[0].images.length + "), dans un groupe nommé, sous la galerie", pt().length === L[0].images.length && pts.getAttribute("role") === "group" && pts.getAttribute("aria-label") === "Choisir une photo" && g.compareDocumentPosition(pts) & 4);
+  t("points : autant de points que de photos (" + L.find(x => x.id === "planning-tableau-de-bord").images.length + "), dans un groupe nommé, sous la galerie", pt().length === L.find(x => x.id === "planning-tableau-de-bord").images.length && pts.getAttribute("role") === "group" && pts.getAttribute("aria-label") === "Choisir une photo" && g.compareDocumentPosition(pts) & 4);
   t("points : vrais boutons, libellés « Photo i sur N », le premier est actif (aria-current)", pt().every((b, i) => b.tagName === "BUTTON" && b.type === "button" && b.getAttribute("aria-label") === "Photo " + (i + 1) + " sur " + pt().length) && pt()[0].getAttribute("aria-current") === "true" && pt().filter(b => b.getAttribute("aria-current") === "true").length === 1 && pt()[0].classList.contains("nouv-point--actif"));
 
   // ---------- Dimensions fictives : galerie 300 px de large, 900 px de contenu, trois photos de 280 px
@@ -89,7 +89,7 @@ module.exports = async function ({ page, t }) {
   t("changer de nouveauté : les points sont reconstruits (autant que de photos de cette nouveauté, premier actif)", f.querySelectorAll(".nouv-point").length === w2.Nouveautes.LISTE[1].images.length && f.querySelector(".nouv-point--actif") === f.querySelector(".nouv-point"));
 
   // ---------- Une seule photo : ni points ni texte « glisser »
-  const w3 = page("Index.html"); w3.Nouveautes.LISTE[0].images = w3.Nouveautes.LISTE[0].images.slice(0, 1); w3.Nouveautes.ouvrir({ derniere: true }); f = feuille(w3);
+  const w3 = page("Index.html"); { const e = w3.Nouveautes.LISTE.find(x => x.id === "planning-tableau-de-bord"); e.images = e.images.slice(0, 1); } w3.Nouveautes.ouvrir({ id: "planning-tableau-de-bord" }); f = feuille(w3);
   t("une seule photo : pas de points, juste « Touche une photo pour l'agrandir »", !f.querySelector(".nouv-points") && f.querySelector(".nouv-astuce").textContent === "Touche une photo pour l'agrandir.");
 
   // ---------- Style (le simulateur ne charge pas la feuille de style : on contrôle les règles)
