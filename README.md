@@ -445,11 +445,6 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     cycle de facturation (ou à une montée de forfait). `build.ignore` (netlify.toml) empêche désormais de publier quand SEULS Tests/, supabase/, .github/, README, .editorconfig ou
     .gitignore changent (Lot 2 : aucun crédit dépensé). Au moindre doute (référence absente ou vide) on publie : les variables sont entre guillemets, sinon une référence vide
     ferait conclure « rien n'a changé » et le site ne serait jamais publié (défaut trouvé en testant). Bonne pratique : UN seul envoi du site par version. Tests : `test49.js`.
-8u. ✅ Historique de la base alignée sur GitHub : l'intégration GitHub de Supabase échouait depuis le 2 octobre avec « Remote migration versions not found in local migrations directory » :
-    la base avait 7 migrations, le dépôt une seule, sous une AUTRE version (`20261006_…`). `supabase/migrations/` est maintenant le miroir exact des 7 migrations (mêmes versions, mêmes
-    noms ; contenu vérifié caractère par caractère par empreinte md5 côté base). **Une seule différence volontaire** : `20260928075856_notifications_push.sql` contenait en clair la clé
-    PRIVÉE VAPID et le secret de la tâche planifiée ; le dépôt étant public, ils sont remplacés par `A_RENSEIGNER__…` (les vraies valeurs ne vivent que dans `prive.config` et les secrets
-    de la fonction). Règles dans `supabase/README.md`. Tests : `test50.js` (versions exactes, aucun secret).
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)
