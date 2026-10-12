@@ -11,6 +11,11 @@
   # Aucune compilation : le projet est du HTML/CSS/JS servi tel quel.
   publish = "."
   command = ""
+  # Économie de crédits : une publication coûte des crédits Netlify (environ 15). Si RIEN du site publié n'a changé depuis la dernière
+  # publication (seulement Tests/, supabase/, .github/, README…), la commande ci-dessous sort avec le code 0 et Netlify NE PUBLIE PAS.
+  # Au moindre doute (référence absente ou vide : les variables sont entre guillemets pour que git échoue au lieu de conclure « rien n'a changé »)
+  # elle sort avec un code non nul : on publie. Testée par Tests/test49.js.
+  ignore = "git diff --quiet \"$CACHED_COMMIT_REF\" \"$COMMIT_REF\" -- . ':!Tests' ':!supabase' ':!.github' ':!README.md' ':!.editorconfig' ':!.gitignore'"
 
 # L'adresse racine sert la page d'accueil.
 [[redirects]]
