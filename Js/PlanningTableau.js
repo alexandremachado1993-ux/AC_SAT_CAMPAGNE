@@ -207,7 +207,7 @@ const PlanningTableau = (() => {
             graphique("Visites réalisées", "realisees", serie, annee, a, prec) +
             graphique("En retard / pas encore vues", "retard", serie, annee, a, prec) +
             graphique("Prochaines échéances", "echeances", serie, annee, a, prec) +
-            '<div class="pt-colonne-droite">' + '<div class="carte pt-carte pt-carte--periode"><div class="pt-carte-corps"><span class="pt-carte-libelle">Période affichée</span><strong class="pt-periode-texte">' + esc(C.libelle(a.periode)) + ' <span aria-hidden="true">📅</span></strong></div></div>' + prochaineAction(a) + '</div>' +
+            '<div class="pt-colonne-droite"><div class="carte pt-carte pt-carte--periode"><div class="pt-carte-corps"><span class="pt-carte-libelle">Période affichée</span><strong class="pt-periode-texte">' + esc(C.libelle(a.periode)) + ' <span aria-hidden="true">📅</span></strong></div></div>' + prochaineAction(a) + '</div>' +
             '</div></section>';
     }
 

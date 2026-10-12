@@ -457,6 +457,12 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
 8w. ✅ Incident du 12/10/2026 (migration appliquée par l'intégration) : l'intégration GitHub de Supabase EXÉCUTE sur la production tout nouveau fichier de migration poussé sur `main`. L'ancien fichier
     `20261006_securite_equipes.sql` (laissé dans le dépôt un instant, puis renvoyé avec un ancien ZIP) a été appliqué (10 instructions, rejouable sans dégât : base, droits et données vérifiés
     inchangés) et figure dans l'historique de la base : le dépôt compte donc **8 migrations** et ce fichier doit y rester (`Tests/test50.js`). Voir `supabase/README.md`.
+8x. ✅ Audit complet et contrôleurs automatiques (2026.10.12-a) : revue du code (aucun changement de comportement, prouvé : la fonction de couleur refactorisée a été comparée à l'ancienne sur 350 entrées, 0 écart).
+    Corrigé : bloc de 7 lignes recopié dans `couleurTexte` / `couleurClaire` (désormais `lireRvb`, `luminance`, `versHex` partagés), règle CSS `.feuille` écrite deux fois, règle morte `.pt-sr`
+    (jamais utilisée), concaténation inutile (`PlanningTableau.js`). Analyse statique durcie (`eqeqeq` sauf `== null`, `no-var`, `prefer-const`, `no-unused-vars`, `no-console`, `no-useless-concat`… en ERREUR ;
+    `no-alert` et `no-shadow` volontairement non activés, voir `Tests/eslint.config.js`). **Contrôleurs automatiques** (`Tests/agents/`, exécutés à chaque envoi par `npm test` donc par l'intégration continue, et à la
+    demande par `npm run audit`) : `doublons.js` (blocs de code recopiés), `css.js` (règles identiques répétées, classes jamais utilisées), `references.js` (fichiers cités mais absents), `comparer-depots.js`
+    (livraison : à envoyer / à supprimer / à renommer / fichiers « à point » à créer à la main). Chaque contrôleur est aussi testé sur des défauts plantés (`test53.js`). Valeurs de référence des couleurs : `test52.js`.
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)

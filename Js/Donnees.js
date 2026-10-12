@@ -237,23 +237,31 @@ const Donnees = (() => {
         return r;
     }
 
+    /* Outils de couleur partagés par couleurTexte et couleurClaire : lecture « #rrggbb » → [r, g, b] (null si le format n'est pas respecté),
+       luminance relative (WCAG) d'un triplet, et conversion inverse. */
+    function lireRvb(hex) {
+        const m = /^#([0-9a-f]{6})$/i.exec(hex || "");
+        if (!m) return null;
+        const n = parseInt(m[1], 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+    function luminance(c) {
+        const f = (x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+        return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+    }
+    const versHex = (c) => "#" + c.map(v => v.toString(16).padStart(2, "0")).join("");
+
     /* Variante assombrie d'une couleur, assez foncée pour du texte lisible
        (contraste d'au moins 4,6:1) sur fond clair ou sur sa propre teinte à
        10 %. Les couleurs vives des pastilles restent trop pâles en texte
        (orange, vert, bleu clair, or…). */
     function couleurTexte(hex) {
-        const m = /^#([0-9a-f]{6})$/i.exec(hex || "");
-        if (!m) return hex;
-        const n = parseInt(m[1], 16);
-        const base = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-        const lum = (c) => {
-            const f = (x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
-            return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
-        };
-        const lumFond = lum(base.map(v => Math.round(255 * 0.9 + v * 0.1)));
+        const base = lireRvb(hex);
+        if (!base) return hex;
+        const lumFond = luminance(base.map(v => Math.round(255 * 0.9 + v * 0.1)));
         for (let k = 0; k <= 22; k++) {
             const c = base.map(v => Math.round(v * (1 - k * 0.04)));
-            if ((lumFond + 0.05) / (lum(c) + 0.05) >= 4.6) return "#" + c.map(v => v.toString(16).padStart(2, "0")).join("");
+            if ((lumFond + 0.05) / (luminance(c) + 0.05) >= 4.6) return versHex(c);
         }
         return "#1a0e0d";
     }
@@ -261,19 +269,13 @@ const Donnees = (() => {
     /* Variante éclaircie, pour du texte sur les fonds sombres du thème sombre
        (carte ≈ #2b2223 teintée à 12 %). */
     function couleurClaire(hex) {
-        const m = /^#([0-9a-f]{6})$/i.exec(hex || "");
-        if (!m) return hex;
-        const n = parseInt(m[1], 16);
-        const base = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-        const lum = (c) => {
-            const f = (x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
-            return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
-        };
+        const base = lireRvb(hex);
+        if (!base) return hex;
         const carte = [43, 34, 35];
-        const lumFond = lum(carte.map((v, i) => Math.round(v * 0.88 + base[i] * 0.12)));
+        const lumFond = luminance(carte.map((v, i) => Math.round(v * 0.88 + base[i] * 0.12)));
         for (let k = 0; k <= 25; k++) {
             const c = base.map(v => Math.round(v + (255 - v) * k * 0.04));
-            if ((lum(c) + 0.05) / (lumFond + 0.05) >= 5.4) return "#" + c.map(v => v.toString(16).padStart(2, "0")).join("");
+            if ((luminance(c) + 0.05) / (lumFond + 0.05) >= 5.4) return versHex(c);
         }
         return "#ffffff";
     }
