@@ -19,19 +19,34 @@ modulesApplication.Splash = "readonly";      // Splash.js l'expose sur window
 const regles = {
     "no-undef": "error",
     "no-redeclare": ["error", { builtinGlobals: false }],      // les noms de modules sont déclarés dans leur fichier ET connus comme globaux ici
-    "no-unused-vars": ["warn", { vars: "local", args: "none", caughtErrors: "none" }],   // « local » : un module global est utilisé par les autres fichiers
+    "no-unused-vars": ["error", { vars: "local", args: "none", caughtErrors: "none" }],   // « local » : un module global est utilisé par les autres fichiers
     "no-empty": ["error", { allowEmptyCatch: false }],
-    "eqeqeq": ["warn", "always", { null: "ignore" }],
-    "no-var": "warn",
-    "prefer-const": "warn",
+    "eqeqeq": ["error", "always", { null: "ignore" }],         // « x == null » (null OU indéfini) reste permis ; partout ailleurs : ===
+    "no-var": "error",
+    "prefer-const": "error",
     "no-useless-catch": "error",
-    "no-shadow-restricted-names": "error"
+    "no-shadow-restricted-names": "error",
+    "no-useless-concat": "error",
+    "no-useless-return": "error",
+    "no-unused-expressions": "error",
+    "no-lonely-if": "error",
+    "no-self-compare": "error",
+    "no-extra-bind": "error",
+    "no-throw-literal": "error",
+    "default-case-last": "error",
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "no-console": "error"                                        // pas de trace de débogage dans l'application (le journal d'erreurs passe par Erreurs.js)
+    /* Volontairement NON activés : « no-alert » (les confirm() protègent des actions destructrices) et « no-shadow » (variables locales
+       qui en masquent une plus haute : inoffensif ici, 19 cas, les renommer toucherait 4 gros fichiers sans bénéfice de comportement). */
 };
+const reglesNode = Object.assign({}, regles, { "no-console": "off" });      // outils en ligne de commande : ils écrivent dans la console
 
 module.exports = [
     js.configs.recommended,
     { files: ["Js/**/*.js"], languageOptions: { ecmaVersion: 2022, sourceType: "script", globals: { ...globals.browser, ...modulesApplication } }, rules: regles },
     { files: ["sw.js"], languageOptions: { ecmaVersion: 2022, sourceType: "script", globals: { ...globals.serviceworker } }, rules: regles },
     { files: ["supabase/functions/rappels/logique.js"], languageOptions: { ecmaVersion: 2022, sourceType: "module" }, rules: regles },
-    { files: ["Tests/maj-version.js"], languageOptions: { ecmaVersion: 2022, sourceType: "commonjs", globals: { ...globals.node } }, rules: regles }
+    { files: ["Tests/maj-version.js", "Tests/agents/**/*.js"], languageOptions: { ecmaVersion: 2022, sourceType: "commonjs", globals: { ...globals.node } }, rules: reglesNode }
 ];
