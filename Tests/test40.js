@@ -82,6 +82,6 @@ module.exports = async function ({ page, t }) {
   t("mouvement réduit : un filet de sécurité global neutralise toutes les animations et transitions", /prefers-reduced-motion: reduce\)\s*\{\s*\*, \*::before, \*::after \{[^}]*animation-duration: 0\.01ms !important[^}]*transition-duration: 0\.01ms !important[^}]*scroll-behavior: auto !important/.test(lire("CSS/campagne.css")));
 
   // ---------- Migration versionnée
-  const sql = lire("supabase/migrations/20261006_securite_equipes.sql");
+  const sql = lire("supabase/migrations/20261006190607_securite_anon_limite_tentatives_equipe_et_correction_rejoindre.sql");
   t("base : la migration est versionnée dans le dépôt (anon révoqué, journal des tentatives, limite 5/15 min, paramètre qualifié)", /revoke all on all tables in schema public from anon/.test(sql) && /tentatives_equipe/.test(sql) && />= 5/.test(sql) && /rejoindre_equipe\.code/.test(sql));
 };
