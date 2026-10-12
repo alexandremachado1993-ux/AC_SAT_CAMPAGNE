@@ -454,6 +454,9 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     « Add file › Create new file ». GitHub crée le fichier dans le dossier où l'on SE TROUVE : toujours cliquer d'abord sur le nom du dépôt (fil d'Ariane) pour partir de la racine. Ce
     placement est contrôlé par `Tests/test51.js` (un seul `.editorconfig`, à la racine ; `.github` ne contient que `workflows/tests.yml`). Netlify : les envois qui ne touchent que Tests/,
     supabase/, .github/, README ou ces fichiers de configuration sont ANNULÉS (« Canceled ») par la règle `build.ignore`, sans dépenser de crédits (constaté le 12/10/2026).
+8w. ✅ Incident du 12/10/2026 (migration appliquée par l'intégration) : l'intégration GitHub de Supabase EXÉCUTE sur la production tout nouveau fichier de migration poussé sur `main`. L'ancien fichier
+    `20261006_securite_equipes.sql` (laissé dans le dépôt un instant, puis renvoyé avec un ancien ZIP) a été appliqué (10 instructions, rejouable sans dégât : base, droits et données vérifiés
+    inchangés) et figure dans l'historique de la base : le dépôt compte donc **8 migrations** et ce fichier doit y rester (`Tests/test50.js`). Voir `supabase/README.md`.
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)
