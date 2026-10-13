@@ -475,6 +475,13 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     « Version installée », redémarrage ; Réglages › Informations › « 🧹 Réparer l'installation » (efface les copies et le service worker, pas les données). Données : modifier une visite conserve les champs inconnus d'une version
     plus récente (`CHAMPS_VISITE`). Tests : `test54.js` (simulateur de service worker), `test55.js` (installation), `test56.js` (politique, réparation, diagnostic, visites). **Passage unique** : au premier chargement avec ce service
     worker, chaque appareil prend la version publiée sans validation (c'est le dernier). Validé dans un vrai Chromium (`Tests/navigateur/maj-*.mjs`, 48 vérifications, dont le passage depuis l'ancien service worker) ; reste à confirmer sur un téléphone réel (protocole : `Tests/LISEZ-MOI.md`) ; iPhone/Safari jamais testé.
+8z. ✅ Incident du 13/10/2026 : « ERR_FAILED » sur ordinateur ET téléphone (2026.10.13-a). Reproduit dans un vrai Chromium : le service worker de `2026.10.12-b` déclarait « active » une copie VIDE quand l'installation échouait en partie
+    (« tolérant »), SUPPRIMAIT l'ancienne copie qui fonctionnait, et n'avait aucun plan B : un site injoignable (panne, pause Netlify, réseau) rendait donc l'application MORTE au lieu de l'ouvrir depuis sa copie. Corrigé dans `sw.js` :
+    (1) installation TOUT OU RIEN (un seul fichier en échec : copie supprimée, rien activé, l'ancienne copie reste en service, le navigateur réessaiera) ; (2) l'ancienne copie n'est supprimée que quand la nouvelle est COMPLÈTE (taille attendue
+    retenue dans `acsc-meta`) ; (3) l'activation est vérifiée par le service worker lui-même (la page envoie le nombre de fichiers attendu) ; (4) plan B sur n'importe quelle autre copie, puis page de secours claire (« Impossible de joindre le serveur,
+    tes données sont conservées ») au lieu de l'erreur du navigateur ; (5) un nouveau service worker qui trouve une copie active vide la REFAIT depuis la version publiée (les appareils déjà touchés se réparent). Tests : `test54.js` (36 vérifications,
+    dont 7 qui échouent avec l'ancien `sw.js`) et `Tests/navigateur/maj-5-site-injoignable.mjs`. **Leçon** : `page.setOfflineMode` ne coupe PAS le réseau du service worker ; mes premiers tests « hors ligne » ne coupaient donc pas vraiment le site
+    (le serveur d'essai a maintenant un mode `mort`, qui coupe tout).
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)

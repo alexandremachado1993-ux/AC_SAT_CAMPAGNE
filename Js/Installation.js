@@ -84,8 +84,8 @@ const Installation = (() => {
         return nom;
     }
 
-    /* Demande au service worker d'activer la copie (il répond sur un canal dédié). */
-    function activer(nom, outils) {
+    /* Demande au service worker d'activer la copie, en lui disant combien de fichiers elle doit contenir : il vérifie lui-même qu'elle est complète (réponse sur un canal dédié). */
+    function activer(nom, outils, attendu) {
         const o = outils || {};
         const nav = o.navigator || navigator;
         const sw = nav.serviceWorker && nav.serviceWorker.controller;
@@ -98,7 +98,7 @@ const Installation = (() => {
                 clearTimeout(minuteur);
                 if (e.data && e.data.ok) resolve(); else reject(new Error("activation refusée"));
             };
-            sw.postMessage({ type: "ACTIVER", nom }, [canal.port2]);
+            sw.postMessage({ type: "ACTIVER", nom, n: attendu }, [canal.port2]);
         });
     }
 
@@ -222,7 +222,7 @@ const Installation = (() => {
             finally { clearTimeout(minuteur); }
             scene.etape("verification"); scene.progres(99); await pause(500);
             scene.etape("installation");
-            if (figee) await activer(nom, o.outils);
+            if (figee) await activer(nom, o.outils, listeValide(infos.fichiers).length);
             await pause(500);
             scene.progres(100); scene.etape("fin");
             scene.etat("ok"); scene.badge("✓"); scene.titre("Version " + infos.version + " installée");
