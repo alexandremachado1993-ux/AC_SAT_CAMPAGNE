@@ -9,17 +9,18 @@ module.exports = async function ({ page, t }) {
 
   // ---------- Service worker
   const sw = lire("sw.js");
-  const precache = [...(sw.match(/const PRECACHE = \[([\s\S]*?)\];/) || [, ""])[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  const infosVersion = JSON.parse(lire("version.json"));
+  const precache = infosVersion.fichiers.map(f => f.u);
   const pages = fs.readdirSync(racine).filter(f => /\.html$/.test(f) && f !== "404.html");
   const attendu = [].concat(pages, ["manifest.webmanifest"], fs.readdirSync(path.join(racine, "CSS")).map(f => "CSS/" + f), fs.readdirSync(path.join(racine, "Js")).filter(f => /\.js$/.test(f)).map(f => "Js/" + f),
     fs.readdirSync(path.join(racine, "Vendor")).map(d => fs.readdirSync(path.join(racine, "Vendor", d)).filter(f => /\.js$/.test(f)).map(f => "Vendor/" + d + "/" + f)).reduce((a, b) => a.concat(b), []), ["Images/logo.png", "Images/icone-192.png", "Images/icone-512.png", "Images/apple-touch-icon.png"]);
   const manquants = attendu.filter(f => precache.indexOf(f) === -1), inconnus = precache.filter(f => !fs.existsSync(path.join(racine, f)));
-  t("service worker : la liste de préchargement correspond EXACTEMENT aux fichiers du projet (pages, CSS, scripts, bibliothèques, icônes)" + (manquants.length ? " — MANQUE : " + manquants.slice(0, 3).join(", ") : "") + (inconnus.length ? " — INEXISTANT : " + inconnus.slice(0, 3).join(", ") : ""), manquants.length === 0 && inconnus.length === 0);
+  t("version.json : la liste des fichiers correspond EXACTEMENT aux fichiers du projet (pages, CSS, scripts, bibliothèques, icônes)" + (manquants.length ? " — MANQUE : " + manquants.slice(0, 3).join(", ") : "") + (inconnus.length ? " — INEXISTANT : " + inconnus.slice(0, 3).join(", ") : ""), manquants.length === 0 && inconnus.length === 0);
   const scriptsPages = new Set(); pages.forEach(f => { for (const m of lire(f).matchAll(/(?:src|href)="((?:Js|CSS|Vendor)\/[^"]+)"/g)) scriptsPages.add(m[1]); });
-  t("service worker : chaque script et feuille de style chargé par une page est préchargé (la page s'ouvre complète hors ligne)", [...scriptsPages].every(f => precache.indexOf(f) > -1));
-  t("service worker : sw.js est à jour avec les fichiers du projet (node Tests/maj-version.js régénère la liste à chaque livraison)", require("./maj-version.js").swAttendu() === sw);
-  t("service worker : le nom du cache a changé (les anciennes copies sont purgées) et l'installation attend le préchargement avant d'activer", !/"acsc-v5"/.test(sw) && /const VERSION = "acsc-v\d+"/.test(sw) && /Promise\.allSettled\(PRECACHE[\s\S]*?\.then\(\(\) => self\.skipWaiting\(\)\)/.test(sw));
-  t("service worker : réseau d'abord avec délai de 3 s, puis copie locale ; mode « copie d'abord » d'une minute après un rabattement", /DELAI_RESEAU_MS = 3000/.test(sw) && /DUREE_MODE_LENT_MS = 60000/.test(sw) && /copieExacte/.test(sw));
+  t("version.json : chaque script et feuille de style chargé par une page est dans la liste (la page s'ouvre complète hors ligne)", [...scriptsPages].every(f => precache.indexOf(f) > -1));
+  t("version.json : la liste ET les tailles sont à jour avec le projet (node Tests/maj-version.js les régénère à chaque livraison ; les tailles alimentent la barre de pourcentage)", JSON.stringify(infosVersion.fichiers) === JSON.stringify(JSON.parse(require("./maj-version.js").attendu().json).fichiers) && infosVersion.fichiers.every(f => f.t === fs.statSync(path.join(racine, f.u)).size));
+  t("service worker : un seul script FIXE (plus de liste ni de numéro de cache dedans), une copie par version, activation sur ordre — le comportement est prouvé par le simulateur (test54.js)", /const PREFIXE = "acsc-"/.test(sw) && !/PRECACHE|const VERSION = "acsc-v/.test(sw) && /m\.type !== "ACTIVER"/.test(sw) && /async function servir/.test(sw) && /cacheName: nom/.test(sw));
+  t("service worker : un téléchargement « cache: reload » ou « no-store » atteint le réseau (sinon la mise à jour recevrait l'ancienne version)", /requete\.cache === "reload" \|\| requete\.cache === "no-store"/.test(sw));
   t("service worker : version.json et version.txt ne sont JAMAIS servis depuis le cache (un numéro périmé ferait croire que tout est à jour)", /TOUJOURS_FRAIS = \/\\\/version\\\.\(json\|txt\)\$\//.test(sw) && /if \(TOUJOURS_FRAIS\.test\(url\.pathname\)\) return;/.test(sw) && precache.every(f => !/version\./.test(f)));
   t("service worker : les vidéos et requêtes partielles restent hors du cache (lecture sur iPhone)", /\.\(mp4\|webm\)/.test(sw) && /headers\.has\("range"\)/.test(sw));
 
