@@ -1,31 +1,37 @@
 /* Passage depuis l'ancien service worker (V0 requise), réparation, grand et petit écran. Prérequis : npm install, puis node maj-preparer.mjs. */
-import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture } from "./maj-lib.mjs";
+import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture, versionDe, v0EstAncien } from "./maj-lib.mjs";
+const V0v = versionDe(0), V1v = versionDe(1), V2v = versionDe(2);
 const S = await serveur(); const nav = await navigateur(); let ko = 0;
 const t = (nom, ok, detail) => { if (!ok) ko++; console.log((ok ? "✅ " : "❌ ") + nom + (detail !== undefined ? "  → " + detail : "")); };
 const version = (p) => p.evaluate(() => AppLayout.VERSION).catch(() => null);
 const attendre = async (fn, ms) => { const fin = Date.now() + (ms || 20000); while (Date.now() < fin) { const r = await fn().catch(() => null); if (r) return r; await pause(300); } return null; };
+let ctx, p;
 try {
+  if (!v0EstAncien()) console.log("ℹ️  S10 ignoré : la version « ancienne » fournie n'a pas l'ancien service worker (utiliser un clone de GitHub d'AVANT 2026.10.12-b)");
+  else {
   // ======== S10 : PASSAGE depuis l'ancien service worker (celui de ton téléphone aujourd'hui : 2026.10.12-a, « réseau d'abord »)
-  let ctx = await nav.createBrowserContext(); S.publier(VERS(0));
-  let p = await pageTel(ctx); await p.goto(S.url + "/", { waitUntil: "load" });
+  ctx = await nav.createBrowserContext(); S.publier(VERS(0));
+  p = await pageTel(ctx); await p.goto(S.url + "/", { waitUntil: "load" });
   const ancien = await attendre(() => p.evaluate(async () => navigator.serviceWorker.controller && (await caches.keys()).includes("acsc-v6")), 25000);
-  t("S10 point de départ : l'ANCIEN service worker contrôle la page (cache « acsc-v6 ») en version 2026.10.12-a", !!ancien && (await version(p)) === "2026.10.12-a", await version(p));
+  t("S10 point de départ : l'ANCIEN service worker contrôle la page (cache « acsc-v6 ») en version 2026.10.12-a", !!ancien && (await version(p)) === V0v, await version(p));
   S.publier(VERS(1));
   await p.goto(S.url + "/Index.html", { waitUntil: "load" });
-  t("S10 PASSAGE : à l'ouverture suivante, la version 2026.10.12-b est prise (c'est le dernier passage SANS validation, annoncé)", (await version(p)) === "2026.10.12-b", await version(p));
-  const fait = await attendre(() => p.evaluate(async () => { const k = await caches.keys(); return k.includes("acsc-2026.10.12-b") && !k.includes("acsc-v6") && k.includes("acsc-meta"); }), 30000);
+  t("S10 PASSAGE : à l'ouverture suivante, la version 2026.10.12-b est prise (c'est le dernier passage SANS validation, annoncé)", (await version(p)) === V1v, await version(p));
+  const fait = await attendre(() => p.evaluate(async (nom) => { const k = await caches.keys(); return k.includes(nom) && !k.includes("acsc-v6") && k.includes("acsc-meta"); }, "acsc-" + V1v), 30000);
   const c = await etatCaches(p);
-  t("S10 le NOUVEAU service worker s'installe, copie la version et SUPPRIME l'ancien cache « acsc-v6 »", !!fait && c.cles.join() === "acsc-2026.10.12-b,acsc-meta" && c.actif === "acsc-2026.10.12-b" && c.fichiersDansActif === 48, JSON.stringify(c));
+  t("S10 le NOUVEAU service worker s'installe, copie la version et SUPPRIME l'ancien cache « acsc-v6 »", !!fait && c.cles.join() === "acsc-" + V1v + ",acsc-meta" && c.actif === "acsc-" + V1v && c.fichiersDansActif === 48, JSON.stringify(c));
   const sw = await p.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return { actif: !!r.active, attente: !!r.waiting, installation: !!r.installing, controle: !!navigator.serviceWorker.controller }; });
   t("S10 aucun service worker « en attente » : le nouveau est actif et contrôle la page", sw.actif && !sw.attente && !sw.installation && sw.controle, JSON.stringify(sw));
-  await p.setOfflineMode(true); await p.reload({ waitUntil: "load" });
-  t("S10 hors connexion juste après le passage : l'application s'ouvre depuis la nouvelle copie, en 2026.10.12-b", (await version(p)) === "2026.10.12-b" && await p.evaluate(() => !!document.getElementById("rail-lateral")));
-  await p.setOfflineMode(false);
+  S.mort = true; await p.reload({ waitUntil: "load" });
+  t("S10 hors connexion juste après le passage : l'application s'ouvre depuis la nouvelle copie, en 2026.10.12-b", (await version(p)) === V1v && await p.evaluate(() => !!document.getElementById("rail-lateral")));
+  S.mort = false;
   S.publier(VERS(2)); S.journal.length = 0;
   await p.goto(S.url + "/Planning.html", { waitUntil: "load" });
-  t("S10 dès le passage fait, la version est FIGÉE : le serveur publie « c », l'application reste en « b » (0 script redemandé)", (await version(p)) === "2026.10.12-b" && S.journal.filter(j => /^\/(Js|CSS)\//.test(j.chemin)).length === 0);
+  t("S10 dès le passage fait, la version est FIGÉE : le serveur publie « c », l'application reste en « b » (0 script redemandé)", (await version(p)) === V1v && S.journal.filter(j => /^\/(Js|CSS)\//.test(j.chemin)).length === 0);
   t("S10 aucune erreur JavaScript ni violation de sécurité pendant tout le passage", p.erreurs.length === 0 && (await lireCsp(p)).length === 0, p.erreurs.join(" | ") || "0");
   await ctx.close();
+
+  }
 
   // ======== S11 : RÉPARER l'installation, données conservées
   ctx = await nav.createBrowserContext(); S.publier(VERS(1));
@@ -36,9 +42,9 @@ try {
   await p.waitForSelector("[data-reparer-installation]", { timeout: 8000 });
   await p.click("[data-reparer-installation]");
   await pause(2500);
-  const rep = await attendre(() => p.evaluate(async () => { const k = await caches.keys(); return !!navigator.serviceWorker.controller && k.includes("acsc-2026.10.12-b") && k.includes("acsc-meta"); }), 30000);
+  const rep = await attendre(() => p.evaluate(async (nom) => { const k = await caches.keys(); return !!navigator.serviceWorker.controller && k.includes(nom) && k.includes("acsc-meta"); }, "acsc-" + V1v), 30000);
   const c2 = await etatCaches(p); const clients = await p.evaluate(() => Donnees.listerClients().map(x => x.nom));
-  t("S11 « Réparer l'installation » : les copies et le service worker sont effacés puis RÉINSTALLÉS proprement (48 fichiers)", !!rep && c2.cles.join() === "acsc-2026.10.12-b,acsc-meta" && c2.fichiersDansActif === 48, JSON.stringify(c2));
+  t("S11 « Réparer l'installation » : les copies et le service worker sont effacés puis RÉINSTALLÉS proprement (48 fichiers)", !!rep && c2.cles.join() === "acsc-" + V1v + ",acsc-meta" && c2.fichiersDansActif === 48, JSON.stringify(c2));
   t("S11 … les DONNÉES de l'utilisateur sont intactes (le client créé avant la réparation est toujours là)", clients.join() === "Client de test", clients.join());
   await ctx.close();
 

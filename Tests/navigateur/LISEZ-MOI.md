@@ -22,12 +22,12 @@ Génère les photos de présentation de la fenêtre « Nouveautés » (`Media/no
 
 
 ## Mises à jour (`maj-*.mjs`) : le parcours complet, dans un vrai Chromium
-Un faux « Netlify » local sert trois versions du site (installée, suivante, suivante marquée obligatoire) et, si on la fournit, l'ancienne version avec l'ancien service worker. Il rejoue les en-têtes de sécurité de `netlify.toml` (CSP comprise). Les scénarios pilotent un vrai Chromium :
+**Attention : `page.setOfflineMode` ne coupe PAS le réseau du service worker** (il ne coupe que la page) ; pour simuler une vraie panne du site, utiliser `S.mort = true` (le faux serveur coupe toutes les connexions). Un faux « Netlify » local sert trois versions du site (installée, suivante, suivante marquée obligatoire) et, si on la fournit, l'ancienne version avec l'ancien service worker. Il rejoue les en-têtes de sécurité de `netlify.toml` (CSP comprise). Les scénarios pilotent un vrai Chromium :
 
     cd Tests/navigateur
     npm install
     node maj-preparer.mjs --ancien <clone GitHub AVANT la livraison>   # sans --ancien : le passage depuis l'ancien service worker n'est pas testé
-    node maj-tout.mjs                                                  # ≈ 6 minutes, code de sortie 1 s'il reste un écart
+    node maj-tout.mjs                                                  # ≈ 8 minutes, code de sortie 1 s'il reste un écart
 
 | Scénario | Ce qu'il prouve |
 |---|---|
@@ -35,5 +35,6 @@ Un faux « Netlify » local sert trois versions du site (installée, suivante, s
 | `maj-2-echecs-et-blocage.mjs` | échec en cours de route (rien ne change), « Continuer », dernier rappel, blocage à l'ouverture suivante, jamais hors connexion, version obligatoire |
 | `maj-3-passage-et-reparation.mjs` | passage depuis l'ancien service worker, réparation (données conservées), grand et petit écran |
 | `maj-4-theme-sombre.mjs` | écran obligatoire, progression et fin en thème sombre, contrastes ≥ 4,5:1 |
+| `maj-5-site-injoignable.mjs` | site mort, site en pause (503), copie locale vide, passage raté : l'application s'ouvre depuis sa copie, ou affiche une page de secours claire (jamais « ERR_FAILED ») |
 
 Captures dans `sortie/`. Outil de contrôle manuel : GitHub ne le lance pas (il télécharge un Chromium de 70 Mo). **Ne jamais conclure « pas de navigateur disponible » sans avoir lancé `npm install` ici** : le paquet `@sparticuz/chromium` embarque son propre Chromium (sans lui, `--single-process` empêche les contextes isolés : `audit-lib.mjs` et `maj-lib.mjs` le retirent).

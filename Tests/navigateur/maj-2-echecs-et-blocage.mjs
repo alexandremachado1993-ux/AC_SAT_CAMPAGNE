@@ -1,5 +1,6 @@
 /* Échec, Continuer, dernier rappel, blocage, hors connexion, version obligatoire. Prérequis : npm install, puis node maj-preparer.mjs. */
-import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture } from "./maj-lib.mjs";
+import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture, versionDe } from "./maj-lib.mjs";
+const V0v = versionDe(0), V1v = versionDe(1), V2v = versionDe(2);
 const S = await serveur(); const nav = await navigateur(); let ko = 0;
 const t = (nom, ok, detail) => { if (!ok) ko++; console.log((ok ? "✅ " : "❌ ") + nom + (detail !== undefined ? "  → " + detail : "")); };
 const version = (p) => p.evaluate(() => AppLayout.VERSION).catch(() => null);
@@ -16,12 +17,12 @@ try {
   const cl = await attendreClasse(p, "maj-scene--echec", 15000);
   const c1 = await etatCaches(p);
   t("S5 ÉCHEC (un fichier répond 500) : la scène passe en « échec » avec un message clair", /echec/.test(cl || ""), cl);
-  t("S5 … la version installée n'a PAS bougé, aucune copie à moitié faite ne traîne (seulement « b » et la méta)", (await version(p)) === "2026.10.12-b" && c1.cles.join() === "acsc-2026.10.12-b,acsc-meta" && c1.actif === "acsc-2026.10.12-b", JSON.stringify(c1));
+  t("S5 … la version installée n'a PAS bougé, aucune copie à moitié faite ne traîne (seulement « b » et la méta)", (await version(p)) === V1v && c1.cles.join() === "acsc-" + V1v + ",acsc-meta" && c1.actif === "acsc-" + V1v, JSON.stringify(c1));
   const txt = await p.evaluate(() => ({ titre: document.querySelector(".maj-titre").textContent, texte: document.querySelector(".maj-texte").textContent, boutons: Array.from(document.querySelectorAll(".maj-actions button")).map(b => b.textContent) }));
   t("S5 … deux choix : « Réessayer » et « Continuer avec l'ancienne version »", txt.boutons.join("|") === "Réessayer|Continuer avec l'ancienne version" && /pas abouti/.test(txt.titre), JSON.stringify(txt));
   await capturer(p, cheminCapture("img-4-echec.png"));
   S.pannes.clear(); await p.click(".maj-actions button");
-  t("S5 « Réessayer » avec le serveur rétabli : la mise à jour réussit et l'application passe en 2026.10.12-c", (await attendreVersion(p, "2026.10.12-c", 20000)) === "2026.10.12-c");
+  t("S5 « Réessayer » avec le serveur rétabli : la mise à jour réussit et l'application passe en 2026.10.12-c", (await attendreVersion(p, V2v, 20000)) === V2v);
   t("S5 aucune violation de sécurité ni erreur JavaScript", (await lireCsp(p)).length === 0 && p.erreurs.length === 0, (await lireCsp(p)).concat(p.erreurs).join(" | ") || "0");
   await ctx.close();
 
@@ -31,7 +32,7 @@ try {
   p = await pageTel(ctx); await p.goto(S.url + "/Index.html", { waitUntil: "load" });
   await p.waitForSelector(".feuille:not([hidden]) [data-maj-maintenant]", { timeout: 8000 }); await p.click("[data-maj-maintenant]"); await attendreClasse(p, "maj-scene--echec", 15000);
   await p.click(".maj-actions button:nth-child(2)"); await pause(300);
-  t("S6 « Continuer avec l'ancienne version » : la scène disparaît, l'application est utilisable et reste en 2026.10.12-b", (await classes(p)) === null && (await p.evaluate(() => !document.documentElement.classList.contains("maj-en-cours"))) && (await version(p)) === "2026.10.12-b");
+  t("S6 « Continuer avec l'ancienne version » : la scène disparaît, l'application est utilisable et reste en 2026.10.12-b", (await classes(p)) === null && (await p.evaluate(() => !document.documentElement.classList.contains("maj-en-cours"))) && (await version(p)) === V1v);
   S.pannes.clear(); await ctx.close();
 
   // ======== S7 : DERNIER RAPPEL, puis blocage à l'ouverture suivante (pas dans la même session)
@@ -56,16 +57,16 @@ try {
   const focus = await p.evaluate(() => document.activeElement && document.activeElement.textContent);
   t("S7 … le focus est sur le bouton (clavier et lecteurs d'écran)", /Mettre à jour maintenant/.test(focus || ""), focus);
   await p.click(".maj-actions button");
-  t("S7 … le bouton installe : l'application passe en 2026.10.12-c", (await attendreVersion(p, "2026.10.12-c", 25000)) === "2026.10.12-c");
+  t("S7 … le bouton installe : l'application passe en 2026.10.12-c", (await attendreVersion(p, V2v, 25000)) === V2v);
   await ctx.close();
 
   // ======== S8 : HORS CONNEXION, jamais de blocage
   ctx = await nav.createBrowserContext(); await installer(ctx, VERS(1)); S.publier(VERS(2));
   q = await pageTel(ctx); await q.goto(S.url + "/Index.html", { waitUntil: "load" });
   await q.evaluate(() => localStorage.setItem("acsc_maj_rappels", JSON.stringify({ base: AppLayout.VERSION, n: 3, t: 0 }))); await q.close();
-  p = await pageTel(ctx); await p.setOfflineMode(true); await p.goto(S.url + "/Index.html", { waitUntil: "load" }); await pause(4000);
-  t("S8 HORS CONNEXION avec les 3 rappels épuisés : AUCUN blocage, l'application s'ouvre et fonctionne", (await classes(p)) === null && (await version(p)) === "2026.10.12-b" && await p.evaluate(() => !!document.getElementById("rail-lateral")));
-  await p.setOfflineMode(false); await ctx.close();
+  p = await pageTel(ctx); S.mort = true; await p.goto(S.url + "/Index.html", { waitUntil: "load" }); await pause(4000);
+  t("S8 HORS CONNEXION avec les 3 rappels épuisés : AUCUN blocage, l'application s'ouvre et fonctionne", (await classes(p)) === null && (await version(p)) === V1v && await p.evaluate(() => !!document.getElementById("rail-lateral")));
+  S.mort = false; await ctx.close();
 
   // ======== S9 : version marquée « obligatoire » par le serveur
   ctx = await nav.createBrowserContext(); await installer(ctx, VERS(1)); S.publier(VERS(3));

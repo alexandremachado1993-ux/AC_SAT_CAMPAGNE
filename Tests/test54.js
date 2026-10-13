@@ -48,7 +48,12 @@ function nouveauNavigateur(serveur) {
     async has(nom) { return stock.has(nom); },
     async keys() { return Array.from(stock.keys()); },
     async delete(nom) { return stock.delete(nom); },
-    async match(req, opts) { const m = opts && opts.cacheName ? stock.get(opts.cacheName) : null; if (!m) return undefined; const r = m.get(sansRecherche(urlDe(req))); return r ? r.clone() : undefined; }
+    async match(req, opts) {
+      const cherche = (m) => { const r = m && m.get(sansRecherche(urlDe(req))); return r ? r.clone() : undefined; };
+      if (opts && opts.cacheName) return cherche(stock.get(opts.cacheName));
+      for (const m of stock.values()) { const r = cherche(m); if (r) return r; }      // sans nom de copie : toutes les copies, comme le vrai CacheStorage
+      return undefined;
+    }
   };
   /* Démarre un service worker (nouvelle exécution du script) sur ce navigateur. */
   function demarrerSW() {
@@ -136,7 +141,9 @@ module.exports = async function ({ t }) {
   t("avant validation : la version 2 est téléchargée mais l'application sert TOUJOURS la version 1", (await texte(await swV2.chercher("Index.html"))) === "accueil v1");
   const refus = [await swV2.message({ type: "ACTIVER", nom: "acsc-meta" }), await swV2.message({ type: "ACTIVER", nom: "autre-chose" }), await swV2.message({ type: "ACTIVER", nom: "acsc-2026.99.99-z" }), await swV2.message({ type: "ACTIVER" }), await swV2.message({ type: "AUTRE", nom: "acsc-2026.10.12-b" })];
   t("activation refusée pour un cache inexistant, pour le cache de méta, un nom étranger, ou un message mal formé", refus.slice(0, 4).every(a => a.length === 1 && a[0].ok === false) && refus[4].length === 0 && (await texte(await swV2.chercher("Index.html"))) === "accueil v1");
-  const ack = await swV2.message({ type: "ACTIVER", nom: "acsc-2026.10.12-b" });
+  const incomplet = await swV2.message({ type: "ACTIVER", nom: "acsc-2026.10.12-b", n: 99 });
+  t("activation REFUSÉE si la copie contient moins de fichiers que prévu : le service worker vérifie lui-même, il ne se contente pas de la parole de la page", incomplet.length === 1 && incomplet[0].ok === false && (await texte(await swV2.chercher("Index.html"))) === "accueil v1");
+  const ack = await swV2.message({ type: "ACTIVER", nom: "acsc-2026.10.12-b", n: 4 });
   t("validation : l'activation de la version 2 est acquittée, et la page suivante vient de la version 2", ack.length === 1 && ack[0].ok === true && (await texte(await swV2.chercher("Index.html"))) === "accueil v2" && (await texte(await swV2.chercher("Js/App.js"))) === "code v2");
   t("validation : l'ancienne copie est supprimée, la copie de méta reste", (await navV2.caches.keys()).sort().join() === "acsc-2026.10.12-b,acsc-meta");
   const swRedemarre = navV2.demarrerSW();
@@ -156,8 +163,33 @@ module.exports = async function ({ t }) {
   let echec = null; try { await horsLigne.demarrerSW().installer(); } catch (e) { echec = e.message; }
   t("première installation hors ligne : elle échoue proprement (le navigateur réessaiera), sans copie à moitié faite", echec === "hors ligne" && (await horsLigne.caches.keys()).filter(n => n !== "acsc-meta").length === 0 && (await horsLigne.cacheTest("acsc-meta").keys()).length === 0);
   const partiel = nouveauNavigateur({ version: "2026.10.12-a", fichiers: V1 }); partiel.reseau.pannes.add("Js/App.js");
-  await partiel.demarrerSW().installer();
-  t("première installation : un fichier en panne n'empêche pas l'installation (il ira au réseau), les autres sont copiés", (await partiel.cacheTest("acsc-2026.10.12-a").keys()).length === 3);
+  let incompletMsg = null; try { await partiel.demarrerSW().installer(); } catch (e) { incompletMsg = e.message; }
+  t("première installation : UN SEUL fichier en panne fait échouer l'installation (tout ou rien) — jamais de copie « active » à moitié faite ; le navigateur réessaiera", /incomplète/.test(incompletMsg || "") && (await partiel.caches.keys()).filter(n => n !== "acsc-meta").length === 0 && (await partiel.cacheTest("acsc-meta").keys()).length === 0);
+
+  // ---------- Défaut constaté le 13/10/2026 : copie VIDE + site injoignable = « ERR_FAILED » (application morte)
+  const secours = nouveauNavigateur({ version: "2026.10.12-a", fichiers: V1 }); const swS = secours.demarrerSW(); await swS.installer(); await swS.activer();
+  secours.stock.get("acsc-2026.10.12-a").clear(); secours.reseau.enLigne = false;
+  const rien = await swS.chercher("/", { mode: "navigate" });
+  t("copie VIDE + site injoignable : une page de secours CLAIRE (503, « Impossible de joindre le serveur », données conservées) au lieu de l'erreur du navigateur", !!rien.reponse && rien.reponse.status === 503 && /Impossible de joindre le serveur/.test(rien.reponse.corps) && /conservées/.test(rien.reponse.corps));
+  t("… une ressource (script, image) sans copie échoue proprement, sans fausse réponse", (await texte(await swS.chercher("Js/App.js"))) === "hors ligne");
+  const dernier = nouveauNavigateur({ version: "2026.10.12-b", fichiers: V2 });
+  await (await dernier.caches.open("acsc-v6")).put("Index.html", new ReponseTest("vieille copie"));
+  await (await dernier.caches.open("acsc-2026.10.12-b")).put("Js/App.js", new ReponseTest("code v2"));
+  const metaD = await dernier.caches.open("acsc-meta"); await metaD.put("actif", new ReponseTest("acsc-2026.10.12-b")); await metaD.put("attendu", new ReponseTest("4"));
+  const swD = dernier.demarrerSW(); await swD.activer();
+  t("copie active INCOMPLÈTE (1 fichier sur 4) : l'ancienne copie qui fonctionne n'est PAS supprimée à l'activation", (await dernier.caches.keys()).indexOf("acsc-v6") !== -1);
+  dernier.reseau.enLigne = false;
+  t("… et site injoignable, l'accueil est servi par l'ancienne copie (dernier recours) plutôt qu'une erreur", (await texte(await swD.chercher("/", { mode: "navigate" }))) === "vieille copie");
+  const cN = await dernier.caches.open("acsc-2026.10.12-b"); for (const f of Object.keys(V2)) await cN.put(f, new ReponseTest(V2[f]));
+  await dernier.demarrerSW().activer();
+  t("copie active COMPLÈTE : l'ancienne copie est alors supprimée (la méta est conservée)", (await dernier.caches.keys()).sort().join() === "acsc-2026.10.12-b,acsc-meta");
+  const repar = nouveauNavigateur({ version: "2026.10.12-b", fichiers: V2 }); const metaR = await repar.caches.open("acsc-meta");
+  await metaR.put("actif", new ReponseTest("acsc-2026.10.12-a")); await metaR.put("attendu", new ReponseTest("4")); await repar.caches.open("acsc-2026.10.12-a");
+  await repar.demarrerSW().installer();
+  t("un nouveau service worker qui trouve une copie active VIDE la REFAIT depuis la version publiée (les appareils déjà touchés se réparent)", (await repar.cacheTest("acsc-2026.10.12-b").keys()).length === Object.keys(V2).length && (await (await repar.cacheTest("acsc-meta").match("actif")).text()) === "acsc-2026.10.12-b");
+  const echecPassage = nouveauNavigateur({ version: "2026.10.12-b", fichiers: V2 }); await (await echecPassage.caches.open("acsc-v6")).put("Index.html", new ReponseTest("vieux")); echecPassage.reseau.pannes.add("Js/App.js");
+  let passageMsg = null; try { await echecPassage.demarrerSW().installer(); } catch (e) { passageMsg = e.message; }
+  t("passage depuis l'ancien service worker avec un fichier en panne : l'installation échoue et l'ancienne copie « acsc-v6 » reste EN SERVICE (rien n'est supprimé)", /incomplète/.test(passageMsg || "") && (await echecPassage.caches.keys()).indexOf("acsc-v6") !== -1);
 
   // ---------- Notifications conservées, aucune liste de fichiers dans le script
   const swNotif = nav.demarrerSW();

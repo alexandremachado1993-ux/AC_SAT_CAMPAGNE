@@ -1,5 +1,6 @@
 /* Thème sombre : écran obligatoire, progression, version installée. Prérequis : npm install, puis node maj-preparer.mjs. */
-import { serveur, navigateur, pause, pageTel, attendreControle, capturer, VERS, cheminCapture } from "./maj-lib.mjs";
+import { serveur, navigateur, pause, pageTel, attendreControle, capturer, VERS, cheminCapture, versionDe } from "./maj-lib.mjs";
+const V0v = versionDe(0), V1v = versionDe(1), V2v = versionDe(2);
 const S = await serveur(); const nav = await navigateur(); let ko = 0;
 const t = (nom, ok, detail) => { if (!ok) ko++; console.log((ok ? "✅ " : "❌ ") + nom + (detail !== undefined ? "  → " + detail : "")); };
 try {

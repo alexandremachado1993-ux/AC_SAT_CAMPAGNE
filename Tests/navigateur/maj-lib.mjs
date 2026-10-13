@@ -8,6 +8,10 @@ export const PROJET = path.resolve(ICI, "..", "..");
 export const TRAVAIL = process.env.ACSC_MAJ_DIR || path.join(os.tmpdir(), "acsc-maj");
 export const SORTIE = path.join(ICI, "sortie");
 export const VERS = (n) => path.join(TRAVAIL, "V" + n);
+/* Numéro de version d'une version simulée (V0 ancienne, V1 installée, V2 suivante) : les scénarios ne contiennent aucun numéro écrit en dur. */
+/* V0 a-t-elle l'ANCIEN service worker (liste de fichiers dans sw.js, copie « acsc-v6 ») ? Les scénarios du passage ne s'appliquent qu'à une V0 de ce type (clone d'avant 2026.10.12-b). */
+export const v0EstAncien = () => { try { return /const PRECACHE/.test(fs.readFileSync(path.join(VERS(0), "sw.js"), "utf8")); } catch (e) { return false; } };
+export const versionDe = (n) => { try { return fs.readFileSync(path.join(VERS(n), "version.txt"), "utf8").trim(); } catch (e) { return "(version " + n + " non préparée)"; } };
 export const cheminCapture = (nom) => { fs.mkdirSync(SORTIE, { recursive: true }); return path.join(SORTIE, nom); };
 /* En-têtes de sécurité du bloc « for = "/*" » de netlify.toml : le faux serveur rejoue exactement ceux de la production (CSP comprise). */
 function lireEntetes() {
@@ -22,9 +26,10 @@ function lireEntetes() {
 const ENTETES = lireEntetes();
 /* Faux « Netlify » : sert un dossier, rejoue les en-têtes de sécurité du netlify.toml, redirige « / » vers Index.html, et peut changer de dossier (= publier une version). */
 export function serveur() {
-  const etat = { racine: null, journal: [], pannes: new Set(), delai: 0 };
+  const etat = { racine: null, journal: [], pannes: new Set(), delai: 0, mort: false };      // mort : le site coupe TOUTES les connexions (page ET service worker), contrairement à page.setOfflineMode qui ne coupe que la page
   const srv = http.createServer((req, rep) => {
     const url = new URL(req.url, "http://x"); let chemin = decodeURIComponent(url.pathname);
+    if (etat.mort) { req.socket.destroy(); return; }
     etat.journal.push({ chemin, cache: req.headers["cache-control"] || "" });
     const repondre = () => {
       if (etat.pannes.has(chemin)) { rep.writeHead(500, ENTETES); return rep.end("panne simulée"); }
