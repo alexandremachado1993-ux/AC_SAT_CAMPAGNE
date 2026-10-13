@@ -36,5 +36,6 @@ Génère les photos de présentation de la fenêtre « Nouveautés » (`Media/no
 | `maj-3-passage-et-reparation.mjs` | passage depuis l'ancien service worker, réparation (données conservées), grand et petit écran |
 | `maj-4-theme-sombre.mjs` | écran obligatoire, progression et fin en thème sombre, contrastes ≥ 4,5:1 |
 | `maj-5-site-injoignable.mjs` | site mort, site en pause (503), copie locale vide, passage raté : l'application s'ouvre depuis sa copie, ou affiche une page de secours claire (jamais « ERR_FAILED ») |
+| `maj-6-redirections.mjs` | serveur qui REDIRIGE les pages (comme « Pretty URLs » de Netlify) : ouverture en ligne et hors ligne, mise à jour validée, appareil déjà cassé qui se répare (option `--casse <clone GitHub du 13/10 matin>` de `maj-preparer.mjs`) |
 
 Captures dans `sortie/`. Outil de contrôle manuel : GitHub ne le lance pas (il télécharge un Chromium de 70 Mo). **Ne jamais conclure « pas de navigateur disponible » sans avoir lancé `npm install` ici** : le paquet `@sparticuz/chromium` embarque son propre Chromium (sans lui, `--single-process` empêche les contextes isolés : `audit-lib.mjs` et `maj-lib.mjs` le retirent).

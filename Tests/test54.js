@@ -8,21 +8,23 @@ const BASE = "https://site.test/";
 const CODE = fs.readFileSync(path.join(__dirname, "..", "sw.js"), "utf8");
 const urlDe = (r) => (typeof r === "string" ? new URL(r, BASE).href : r.url);
 const sansRecherche = (u) => u.split("?")[0].split("#")[0];
+const pause = (ms) => new Promise(r => setTimeout(r, ms));
 
 class RequeteTest {
   constructor(u, init) { this.url = urlDe(u); this.method = (init && init.method) || "GET"; this.mode = (init && init.mode) || "no-cors"; this.cache = (init && init.cache) || "default"; this.entetes = (init && init.entetes) || {}; this.headers = { has: (k) => k.toLowerCase() in this.entetes }; }
 }
 class ReponseTest {
-  constructor(corps, init) { this.corps = String(corps); this.status = (init && init.status) || 200; this.ok = this.status >= 200 && this.status < 300; }
+  constructor(corps, init) { this.corps = String(corps); this.status = (init && init.status) || 200; this.ok = this.status >= 200 && this.status < 300; this.redirected = !!(init && init.redirected); this.statusText = ""; this.headers = {}; }
   text() { return Promise.resolve(this.corps); }
   json() { return Promise.resolve(JSON.parse(this.corps)); }
-  clone() { return new ReponseTest(this.corps, { status: this.status }); }
+  blob() { return Promise.resolve(this.corps); }
+  clone() { return new ReponseTest(this.corps, { status: this.status, redirected: this.redirected }); }
 }
 
 /* Un « navigateur » : le stockage des caches survit aux redémarrages du service worker (comme en vrai). */
 function nouveauNavigateur(serveur) {
   const stock = new Map();
-  const reseau = { appels: [], enLigne: true, pannes: new Set() };
+  const reseau = { appels: [], enLigne: true, pannes: new Set(), redirige: new Set() };      // redirige : pages que le serveur REDIRIGE (301) avant de les servir (« Pretty URLs »)
   const chemin = (u) => new URL(u).pathname.slice(1);
   async function fetchTest(req) {
     const u = urlDe(req); reseau.appels.push(chemin(u));
@@ -30,7 +32,7 @@ function nouveauNavigateur(serveur) {
     const c = chemin(u);
     if (reseau.pannes.has(c)) return new ReponseTest("erreur", { status: 500 });
     if (c === "version.json") return new ReponseTest(JSON.stringify({ version: serveur.version, fichiers: Object.keys(serveur.fichiers).map(f => ({ u: f, t: serveur.fichiers[f].length })) }));
-    if (c in serveur.fichiers) return new ReponseTest(serveur.fichiers[c]);
+    if (c in serveur.fichiers) return new ReponseTest(serveur.fichiers[c], { redirected: reseau.redirige.has(c) });
     return new ReponseTest("introuvable", { status: 404 });
   }
   function cacheTest(nom) {
@@ -190,6 +192,19 @@ module.exports = async function ({ t }) {
   const echecPassage = nouveauNavigateur({ version: "2026.10.12-b", fichiers: V2 }); await (await echecPassage.caches.open("acsc-v6")).put("Index.html", new ReponseTest("vieux")); echecPassage.reseau.pannes.add("Js/App.js");
   let passageMsg = null; try { await echecPassage.demarrerSW().installer(); } catch (e) { passageMsg = e.message; }
   t("passage depuis l'ancien service worker avec un fichier en panne : l'installation échoue et l'ancienne copie « acsc-v6 » reste EN SERVICE (rien n'est supprimé)", /incomplète/.test(passageMsg || "") && (await echecPassage.caches.keys()).indexOf("acsc-v6") !== -1);
+
+  // ---------- Défaut constaté le 13/10/2026 : pages REDIRIGÉES par le serveur (« Pretty URLs ») = « ERR_FAILED » MÊME EN LIGNE
+  const jolies = nouveauNavigateur({ version: "2026.10.12-a", fichiers: V1 }); jolies.reseau.redirige = new Set(["Index.html", "Planning.html"]);
+  const swJ = jolies.demarrerSW(); await swJ.installer(); await swJ.activer();
+  const copiesJ = await Promise.all(["Index.html", "Planning.html"].map(f => jolies.cacheTest("acsc-2026.10.12-a").match(f)));
+  t("pages redirigées par le serveur : la copie est enregistrée SANS la marque de redirection (Chrome refuse de servir une réponse redirigée à une navigation)", copiesJ.every(c => c && c.redirected === false));
+  const navJ = await swJ.chercher("/", { mode: "navigate" });
+  t("… et l'accueil servi à une navigation n'est pas une réponse redirigée (sinon « ERR_FAILED », site en ligne ou non)", !!navJ.reponse && navJ.reponse.redirected === false && navJ.reponse.corps === "accueil v1");
+  jolies.stock.get("acsc-2026.10.12-a").set("https://site.test/Planning.html", new ReponseTest("planning ancien", { redirected: true }));      // copie déjà abîmée (installée par la version précédente)
+  const gueri = await swJ.chercher("Planning.html", { mode: "navigate" });
+  t("une copie DÉJÀ enregistrée avec la marque de redirection est assainie à la lecture : les appareils déjà touchés sont réparés dès que ce service worker s'installe", !!gueri.reponse && gueri.reponse.redirected === false && gueri.reponse.corps === "planning ancien");
+  serveurV2.fichiers["Images/redir.png"] = "image"; navV2.reseau.redirige.add("Images/redir.png"); await swV2.chercher("Images/redir.png"); await pause(10);
+  t("un fichier rapporté par le réseau (absent de la copie) est lui aussi enregistré SANS la marque de redirection", (await (navV2.cacheTest("acsc-2026.10.12-b").match("Images/redir.png"))).redirected === false);
 
   // ---------- Notifications conservées, aucune liste de fichiers dans le script
   const swNotif = nav.demarrerSW();

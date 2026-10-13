@@ -26,14 +26,19 @@ function lireEntetes() {
 const ENTETES = lireEntetes();
 /* Faux « Netlify » : sert un dossier, rejoue les en-têtes de sécurité du netlify.toml, redirige « / » vers Index.html, et peut changer de dossier (= publier une version). */
 export function serveur() {
-  const etat = { racine: null, journal: [], pannes: new Set(), delai: 0, mort: false };      // mort : le site coupe TOUTES les connexions (page ET service worker), contrairement à page.setOfflineMode qui ne coupe que la page
+  const etat = { racine: null, journal: [], pannes: new Set(), delai: 0, mort: false, jolies: false };      // jolies : comme l'option « Pretty URLs » de Netlify, /Page.html est REDIRIGÉ (301) vers /Page      // mort : le site coupe TOUTES les connexions (page ET service worker), contrairement à page.setOfflineMode qui ne coupe que la page
   const srv = http.createServer((req, rep) => {
     const url = new URL(req.url, "http://x"); let chemin = decodeURIComponent(url.pathname);
     if (etat.mort) { req.socket.destroy(); return; }
     etat.journal.push({ chemin, cache: req.headers["cache-control"] || "" });
     const repondre = () => {
       if (etat.pannes.has(chemin)) { rep.writeHead(500, ENTETES); return rep.end("panne simulée"); }
+      const origine = chemin;
       if (chemin === "/") chemin = "/Index.html";
+      if (etat.jolies && origine !== "/") {
+        if (/\.html$/.test(origine) && origine !== "/404.html") { rep.writeHead(301, Object.assign({}, ENTETES, { Location: origine.slice(0, -5) })); return rep.end(); }
+        if (!path.extname(origine) && fs.existsSync(path.join(etat.racine, origine + ".html"))) chemin = origine + ".html";
+      }
       let f = path.join(etat.racine, chemin); const ok = f.startsWith(etat.racine) && fs.existsSync(f) && fs.statSync(f).isFile();
       const h = Object.assign({}, ENTETES, { "Cache-Control": /version\.(json|txt)$/.test(chemin) ? "no-store" : "public, max-age=0, must-revalidate" });
       if (!ok) { const nf = path.join(etat.racine, "404.html"); rep.writeHead(404, Object.assign({}, h, { "Content-Type": MIME[".html"] })); return rep.end(fs.existsSync(nf) ? fs.readFileSync(nf) : "404"); }

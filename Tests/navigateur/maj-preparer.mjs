@@ -13,5 +13,6 @@ if (src.split('const VERSION = "' + v1 + '";').length !== 2) throw new Error("Ap
 fs.writeFileSync(appli, src.replace('const VERSION = "' + v1 + '";', 'const VERSION = "' + suivante + '";'));
 execFileSync("node", [path.join("Tests", "maj-version.js")], { cwd: VERS(2), stdio: "pipe" });
 copier(VERS(2), VERS(3)); const j = JSON.parse(fs.readFileSync(path.join(VERS(3), "version.json"), "utf8")); j.obligatoire = true; fs.writeFileSync(path.join(VERS(3), "version.json"), JSON.stringify(j, null, 2));
+const c = process.argv.indexOf("--casse"); if (c > 0) copier(path.resolve(process.argv[c + 1]), VERS("C"));      // VC = la version PUBLIÉE qui cassait les appareils (service worker sans l'assainissement des redirections)
 const i = process.argv.indexOf("--ancien"); if (i > 0) copier(path.resolve(process.argv[i + 1]), VERS(0));
 console.log("versions préparées dans " + TRAVAIL + " : V1 " + v1 + " | V2/V3 " + suivante + (i > 0 ? " | V0 " + fs.readFileSync(path.join(VERS(0), "version.txt"), "utf8").trim() + (/const PRECACHE/.test(fs.readFileSync(path.join(VERS(0), "sw.js"), "utf8")) ? " (ancien service worker : OK pour les scénarios de passage)" : " (service worker À COPIE FIGÉE : les scénarios de passage seront ignorés, il faut un clone d'AVANT 2026.10.12-b)") : " | V0 non fournie (le passage depuis l'ancien service worker ne sera pas testé)"));

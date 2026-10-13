@@ -41,6 +41,12 @@ module.exports = async function ({ page, t }) {
   let sansListe = null; try { await I.telecharger({ version: "2026.10.20-a", fichiers: [{ u: "../x" }] }, null, { caches: fauxCaches(), fetch: async () => reponse(200) }); } catch (x) { sansListe = x; }
   t("une version dont la liste est invalide n'est PAS téléchargée", !!sansListe && /invalide/.test(sansListe.message));
 
+  // ---------- Une réponse REDIRIGÉE (serveur qui répond 301 puis sert la page) ne doit pas être enregistrée telle quelle : « ERR_FAILED » à la navigation suivante
+  class FauxResponse { constructor(corps, init) { this.corps = corps; this.status = init.status; this.redirected = false; } }
+  const enregistrees = []; const cRed = { async delete() { return true; }, async open() { return { async put(u, r) { enregistrees.push(r); }, async keys() { return fichiers.map(f => f.u); } }; } };
+  await I.telecharger(infos, null, { caches: cRed, Response: FauxResponse, fetch: async () => ({ ok: true, status: 200, statusText: "OK", headers: {}, redirected: true, blob: async () => "corps", arrayBuffer: async () => new ArrayBuffer(0) }) });
+  t("téléchargement d'une mise à jour : une réponse redirigée par le serveur est enregistrée SANS la marque de redirection", enregistrees.length === 3 && enregistrees.every(r => r instanceof FauxResponse && r.redirected === false));
+
   // ---------- Sans service worker qui contrôle la page : on recharge les fichiers (barre réelle), sans copie
   c = fauxCaches(); let lus = 0;
   await I.telecharger(infos, null, { caches: c, sansCopie: true, fetch: async () => { lus++; return reponse(200); } });
