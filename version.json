@@ -1,5 +1,200 @@
 {
-  "version": "2026.10.12-a",
+  "version": "2026.10.12-b",
   "date": "2026-10-12",
-  "nouveaute": null
+  "nouveaute": null,
+  "obligatoire": false,
+  "fichiers": [
+    {
+      "u": "Client.html",
+      "t": 1851
+    },
+    {
+      "u": "Clients.html",
+      "t": 1974
+    },
+    {
+      "u": "Documents.html",
+      "t": 1848
+    },
+    {
+      "u": "Index.html",
+      "t": 1849
+    },
+    {
+      "u": "Planning.html",
+      "t": 2024
+    },
+    {
+      "u": "Reglages.html",
+      "t": 1935
+    },
+    {
+      "u": "Serti.html",
+      "t": 1967
+    },
+    {
+      "u": "Tournee.html",
+      "t": 1843
+    },
+    {
+      "u": "manifest.webmanifest",
+      "t": 1562
+    },
+    {
+      "u": "CSS/campagne.css",
+      "t": 113198
+    },
+    {
+      "u": "CSS/style.css",
+      "t": 26004
+    },
+    {
+      "u": "Js/Amorce.js",
+      "t": 1810
+    },
+    {
+      "u": "Js/AppLayout.js",
+      "t": 50415
+    },
+    {
+      "u": "Js/AutoDiagnostic.js",
+      "t": 10028
+    },
+    {
+      "u": "Js/ClientFiche.js",
+      "t": 21358
+    },
+    {
+      "u": "Js/Clients.js",
+      "t": 13772
+    },
+    {
+      "u": "Js/Demarrage.js",
+      "t": 573
+    },
+    {
+      "u": "Js/Departements.js",
+      "t": 5092
+    },
+    {
+      "u": "Js/Documents.js",
+      "t": 2694
+    },
+    {
+      "u": "Js/Donnees.js",
+      "t": 76807
+    },
+    {
+      "u": "Js/EchangesExcel.js",
+      "t": 21084
+    },
+    {
+      "u": "Js/Erreurs.js",
+      "t": 4741
+    },
+    {
+      "u": "Js/Excel.js",
+      "t": 13491
+    },
+    {
+      "u": "Js/FicheSerti.js",
+      "t": 34047
+    },
+    {
+      "u": "Js/Formulaires.js",
+      "t": 92750
+    },
+    {
+      "u": "Js/Installation.js",
+      "t": 17465
+    },
+    {
+      "u": "Js/Notifications.js",
+      "t": 4676
+    },
+    {
+      "u": "Js/Nouveautes.js",
+      "t": 24715
+    },
+    {
+      "u": "Js/Pieces.js",
+      "t": 15957
+    },
+    {
+      "u": "Js/Planning.js",
+      "t": 60945
+    },
+    {
+      "u": "Js/PlanningCalcul.js",
+      "t": 10134
+    },
+    {
+      "u": "Js/PlanningTableau.js",
+      "t": 21074
+    },
+    {
+      "u": "Js/Presentation.js",
+      "t": 9441
+    },
+    {
+      "u": "Js/ReferentielSerti.js",
+      "t": 11413
+    },
+    {
+      "u": "Js/Reglages.js",
+      "t": 46779
+    },
+    {
+      "u": "Js/Serti.js",
+      "t": 19956
+    },
+    {
+      "u": "Js/SertiCalcul.js",
+      "t": 13813
+    },
+    {
+      "u": "Js/SertiRapport.js",
+      "t": 24486
+    },
+    {
+      "u": "Js/Splash.js",
+      "t": 9639
+    },
+    {
+      "u": "Js/Synchro.js",
+      "t": 20914
+    },
+    {
+      "u": "Js/TableauBord.js",
+      "t": 19655
+    },
+    {
+      "u": "Js/Tournee.js",
+      "t": 9462
+    },
+    {
+      "u": "Vendor/fflate/fflate.min.js",
+      "t": 32665
+    },
+    {
+      "u": "Vendor/supabase/supabase.min.js",
+      "t": 217945
+    },
+    {
+      "u": "Images/logo.png",
+      "t": 55038
+    },
+    {
+      "u": "Images/icone-192.png",
+      "t": 35440
+    },
+    {
+      "u": "Images/icone-512.png",
+      "t": 167990
+    },
+    {
+      "u": "Images/apple-touch-icon.png",
+      "t": 24096
+    }
+  ]
 }

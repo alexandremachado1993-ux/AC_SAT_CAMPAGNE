@@ -1,93 +1,67 @@
 /* =============================================================
-   sw.js — Service worker (application installable, ouverture hors ligne)
+   sw.js — Service worker (application installable, ouverture hors ligne, mises à jour VALIDÉES par l'utilisateur)
 
-   Stratégie « réseau d'abord, avec délai » : en ligne, on sert la dernière
-   version (aucun risque de rester bloqué sur une ancienne version après
-   une mise à jour) et on en garde une copie ; hors ligne, ou si le réseau
-   met plus de 3 s à répondre, on sert la copie. Toute l'application est
-   préchargée à l'installation. Les appels à Supabase (autre domaine) ne sont jamais touchés.
-   Changer VERSION purge les anciennes copies.
+   Ce fichier ne change PLUS à chaque version : l'application n'a plus de liste de fichiers ici.
+   - Chaque version installée est une copie complète de l'application dans un cache « acsc-<version> ».
+   - Un petit cache « acsc-meta » retient la version ACTIVE : celle que l'utilisateur a installée. L'application est servie
+     depuis cette copie (même en ligne) : elle ne change donc JAMAIS toute seule, d'un appareil à l'autre.
+   - Une nouvelle version se télécharge dans un AUTRE cache (par l'application, avec une barre de progression), et n'est activée que
+     par le message { type: "ACTIVER", nom } envoyé quand l'utilisateur valide. Si le téléchargement échoue, rien ne change.
+   - La toute première installation (ou la reprise après une mise à jour de CE fichier) copie la version publiée par le serveur
+     (version.json, qui donne la liste des fichiers). version.json et version.txt ne sont jamais servis depuis le cache.
+   Les appels à d'autres domaines (Supabase) ne sont jamais touchés.
 
-   Notifications push : affichées à réception (résumé du matin, rappel
-   1 h avant un rendez-vous), un clic ouvre ou ramène l'application.
+   Notifications push : affichées à réception (résumé du matin, rappel 1 h avant un rendez-vous, mise à jour disponible),
+   un clic ouvre ou ramène l'application. Testé par Tests/test54.js (simulateur de service worker).
    ============================================================= */
 
-const VERSION = "acsc-v6";
-/* Au-delà de ce délai sans réponse du réseau, on sert la copie locale (s'il y en a une) : sur une connexion faible, l'application
-   s'ouvre tout de suite au lieu de rester figée. La réponse du réseau, quand elle arrive, met la copie à jour pour la fois suivante. */
-const DELAI_RESEAU_MS = 3000;
-/* Après un premier rabattement sur la copie (réseau lent), les fichiers SUIVANTS de la page sont servis aussitôt depuis la copie pendant
-   une minute : sinon chacun attendrait ses propres 3 s. La page reste aussi cohérente (tout vient de la même copie, pas un mélange). */
-const DUREE_MODE_LENT_MS = 60000;
-let modeLentJusqua = 0;
+const PREFIXE = "acsc-";
+const META = "acsc-meta";
+const CLE_ACTIF = "actif";
 /* Jamais servis depuis le cache : un numéro de version périmé ferait croire à tort que tout est à jour (voir AppLayout, mise à jour). */
 const TOUJOURS_FRAIS = /\/version\.(json|txt)$/;
-/* Application complète préchargée à l'installation : toutes les pages s'ouvrent hors ligne, même celles jamais visitées.
-   Un test (test42.js) vérifie que cette liste correspond aux fichiers du projet. */
-const PRECACHE = [
-    "Client.html",
-    "Clients.html",
-    "Documents.html",
-    "Index.html",
-    "Planning.html",
-    "Reglages.html",
-    "Serti.html",
-    "Tournee.html",
-    "manifest.webmanifest",
-    "CSS/campagne.css",
-    "CSS/style.css",
-    "Js/Amorce.js",
-    "Js/AppLayout.js",
-    "Js/AutoDiagnostic.js",
-    "Js/ClientFiche.js",
-    "Js/Clients.js",
-    "Js/Demarrage.js",
-    "Js/Departements.js",
-    "Js/Documents.js",
-    "Js/Donnees.js",
-    "Js/EchangesExcel.js",
-    "Js/Erreurs.js",
-    "Js/Excel.js",
-    "Js/FicheSerti.js",
-    "Js/Formulaires.js",
-    "Js/Notifications.js",
-    "Js/Nouveautes.js",
-    "Js/Pieces.js",
-    "Js/Planning.js",
-    "Js/PlanningCalcul.js",
-    "Js/PlanningTableau.js",
-    "Js/Presentation.js",
-    "Js/ReferentielSerti.js",
-    "Js/Reglages.js",
-    "Js/Serti.js",
-    "Js/SertiCalcul.js",
-    "Js/SertiRapport.js",
-    "Js/Splash.js",
-    "Js/Synchro.js",
-    "Js/TableauBord.js",
-    "Js/Tournee.js",
-    "Vendor/fflate/fflate.min.js",
-    "Vendor/supabase/supabase.min.js",
-    "Images/logo.png",
-    "Images/icone-192.png",
-    "Images/icone-512.png",
-    "Images/apple-touch-icon.png"
-];
+
+let actif = null;       // nom du cache actif, gardé en mémoire (relu depuis acsc-meta quand le service worker redémarre)
+
+async function lireActif() {
+    const meta = await caches.open(META);
+    const reponse = await meta.match(CLE_ACTIF);
+    actif = reponse ? await reponse.text() : null;
+    return actif;
+}
+
+async function ecrireActif(nom) {
+    const meta = await caches.open(META);
+    await meta.put(CLE_ACTIF, new Response(nom));
+    actif = nom;
+}
+
+/* Supprime les copies des anciennes versions (et l'ancien cache « acsc-v6 » de l'époque du réseau d'abord). */
+async function nettoyer() {
+    const noms = await caches.keys();
+    await Promise.all(noms.filter(n => n.startsWith(PREFIXE) && n !== META && n !== actif).map(n => caches.delete(n)));
+}
+
+/* Première installation : copie la version publiée. Une mise à jour de CE fichier (version déjà installée) ne change PAS la version de l'application. */
+async function premiereInstallation() {
+    await lireActif();
+    if (actif && await caches.has(actif)) return;
+    const reponse = await fetch("version.json", { cache: "no-store" });
+    if (!reponse.ok) throw new Error("version.json : " + reponse.status);
+    const infos = await reponse.json();
+    const nom = PREFIXE + infos.version;
+    const cache = await caches.open(nom);
+    const liste = (Array.isArray(infos.fichiers) ? infos.fichiers : []).map(f => f && f.u).filter(u => typeof u === "string" && !/^[a-z]+:|^\/\//i.test(u));
+    await Promise.allSettled(liste.map(u => cache.add(new Request(u, { cache: "reload" }))));
+    await ecrireActif(nom);
+}
 
 self.addEventListener("install", (event) => {
-    event.waitUntil(
-        caches.open(VERSION)
-            .then(cache => Promise.allSettled(PRECACHE.map(u => cache.add(new Request(u, { cache: "reload" })))))
-            .then(() => self.skipWaiting())
-    );
+    event.waitUntil(premiereInstallation().then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (event) => {
-    event.waitUntil(
-        caches.keys()
-            .then(cles => Promise.all(cles.filter(c => c !== VERSION).map(c => caches.delete(c))))
-            .then(() => self.clients.claim())
-    );
+    event.waitUntil(lireActif().then(nettoyer).then(() => self.clients.claim()));
 });
 
 self.addEventListener("fetch", (event) => {
@@ -99,35 +73,48 @@ self.addEventListener("fetch", (event) => {
        provoque des erreurs (réponses 206 refusées) et empêche la lecture sur iPhone. */
     if (requete.headers.has("range") || /\.(mp4|webm)$/i.test(url.pathname)) return;
     if (TOUJOURS_FRAIS.test(url.pathname)) return;
-    event.respondWith(reseauPuisCopie(event, requete));
+    /* « cache: reload » / « no-store » = « va chercher sur le réseau » : c'est le signal du TÉLÉCHARGEMENT d'une nouvelle version par l'application
+       (sans lui, ce téléchargement recevrait la copie de l'ancienne version) et d'une demande volontaire de fraîcheur. */
+    if (requete.cache === "reload" || requete.cache === "no-store") return;
+    event.respondWith(servir(event, requete));
 });
 
-function reseauPuisCopie(event, requete) {
-    const reseau = fetch(requete).then(reponse => {
-        if (reponse.ok) {
-            const copie = reponse.clone();
-            caches.open(VERSION).then(cache => cache.put(requete, copie));
-        }
+/* Copie figée d'abord. Un fichier absent de la copie va au réseau (et rejoint la copie, tant qu'elle existe). Hors ligne : une page
+   inconnue retombe sur l'accueil de la copie. */
+async function servir(event, requete) {
+    const nom = actif || await lireActif();
+    if (nom) {
+        /* L'adresse racine « / » est redirigée vers Index.html par le serveur : la copie ne connaît que Index.html. */
+        const cherche = new URL(requete.url).pathname === "/" ? "Index.html" : requete;
+        const copie = await caches.match(cherche, { cacheName: nom, ignoreSearch: true });
+        if (copie) return copie;
+    }
+    try {
+        const reponse = await fetch(requete);
+        if (reponse.ok && nom) event.waitUntil(caches.has(nom).then(existe => (existe ? caches.open(nom).then(c => c.put(requete, reponse.clone())) : null)));
         return reponse;
-    });
-    event.waitUntil(reseau.catch(() => { /* la mise à jour de la copie se termine même si l'on a déjà répondu */ }));
-    const copieExacte = () => caches.match(requete, { ignoreSearch: true });
-    /* Hors ligne (le réseau a échoué) : à défaut de copie exacte, une page de navigation retombe sur l'accueil. */
-    const copieOuAccueil = () => copieExacte().then(r => r || (requete.mode === "navigate" ? caches.match("Index.html") : undefined));
-    const debut = Date.now();
-    return new Promise((resolve, reject) => {
-        let repondu = false;
-        const repondre = (r) => { if (!repondu && r) { repondu = true; resolve(r); } };
-        const delai = debut < modeLentJusqua ? 0 : DELAI_RESEAU_MS;
-        const minuteur = setTimeout(() => {
-            copieExacte().then(r => { if (r && !repondu) modeLentJusqua = Date.now() + DUREE_MODE_LENT_MS; repondre(r); });
-        }, delai);
-        reseau.then(
-            (r) => { clearTimeout(minuteur); if (!repondu && Date.now() - debut < 1500) modeLentJusqua = 0; repondre(r); },
-            (e) => { clearTimeout(minuteur); copieOuAccueil().then(r => { if (r) repondre(r); else if (!repondu) { repondu = true; reject(e); } }); }
-        );
-    });
+    } catch (e) {
+        if (requete.mode === "navigate" && nom) {
+            const accueil = await caches.match("Index.html", { cacheName: nom });
+            if (accueil) return accueil;
+        }
+        throw e;
+    }
 }
+
+/* L'application a téléchargé une version complète dans « acsc-<version> » et l'utilisateur a validé : on la rend active. */
+self.addEventListener("message", (event) => {
+    const m = event.data || {};
+    if (m.type !== "ACTIVER") return;
+    const reponse = (ok) => { if (event.ports && event.ports[0]) event.ports[0].postMessage({ ok }); };
+    if (typeof m.nom !== "string" || !m.nom.startsWith(PREFIXE) || m.nom === META) { reponse(false); return; }
+    event.waitUntil((async () => {
+        if (!(await caches.has(m.nom))) { reponse(false); return; }
+        await ecrireActif(m.nom);
+        await nettoyer();
+        reponse(true);
+    })());
+});
 
 self.addEventListener("push", (event) => {
     let charge = {};

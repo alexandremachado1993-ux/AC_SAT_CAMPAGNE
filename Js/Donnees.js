@@ -933,6 +933,12 @@ const Donnees = (() => {
        sauf pour les types « ligneFacultative » (réunion, formation, audit) ; une visite reportée,
        non effectuée ou annulée peut ne concerner que le client. Pour ces dernières, le statut, le
        motif et la nouvelle date (reportée) sont gardés ; format, produit et détails ne le sont pas. */
+    /* Champs d'une visite connus de CETTE version. Une visite reçue d'un appareil plus RÉCENT peut en porter d'autres : la modifier ne doit pas les effacer
+       (la synchronisation renverrait la visite amputée à l'autre appareil). Un test (test56.js) vérifie que cette liste couvre tout ce que construireVisite produit.
+       « majLe » (horodatage posé par le suivi de synchronisation, HORS empreinte) n'est pas un champ métier : il est recopié comme les champs inconnus, et le suivi le
+       remplace par « maintenant » dès que le contenu a réellement changé (voir detecterChangements) : il ne peut donc pas masquer une modification. */
+    const CHAMPS_VISITE = ["id", "clientId", "ligneId", "date", "type", "format", "produit", "remarques", "references", "details", "mesures", "statut", "motif", "reporteLe"];
+
     function construireVisite(source, clientImpose) {
         if (!estDateIso(source.date)) return null;
         const type = normaliserType(source.type);
@@ -976,6 +982,7 @@ const Donnees = (() => {
         const v = construireVisite(source);
         if (!v) return null;
         v.id = id;
+        Object.keys(d.visites[i]).forEach(k => { if (CHAMPS_VISITE.indexOf(k) === -1 && !(k in v)) v[k] = d.visites[i][k]; });      // champs d'une version plus récente : conservés
         d.visites[i] = v;
         sauvegarder();
         return v;
@@ -1472,7 +1479,7 @@ const Donnees = (() => {
 
     return {
         ROLES_CONTACT, MOIS, OUTILS,
-        TYPES_VISITE, REFERENCES, typeVisite, styleCouleur,
+        TYPES_VISITE, REFERENCES, typeVisite, styleCouleur, CHAMPS_VISITE,
         valeursConnues, choixPour, contactsPourChoix, machinesDuClient,
         init, getDonnees, ecouter, surErreurStockage, stockageOk,
         definirTheme, definirNomProfil,

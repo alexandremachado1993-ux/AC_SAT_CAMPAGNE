@@ -13,7 +13,7 @@ const AutoDiagnostic = (() => {
     "use strict";
 
     const ICONES = { ok: "✅", attention: "⚠️", erreur: "❌" };
-    const SEUIL_FICHIERS_HORS_LIGNE = 40;     // l'application préchargée compte une quarantaine de fichiers (sw.js, PRECACHE)
+    const SEUIL_FICHIERS_HORS_LIGNE = 40;     // l'application installée compte une quarantaine de fichiers (version.json, liste « fichiers »)
     const SEUIL_STOCKAGE = 0.7;               // au-delà de 70 % du quota du navigateur : à surveiller
 
     const ligne = (nom, etat, detail) => ({ nom, etat, detail });
@@ -27,7 +27,14 @@ const AutoDiagnostic = (() => {
             installee: () => !!((window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true),
             enLigne: () => window.navigator.onLine !== false,
             enregistrementSW: () => ("serviceWorker" in window.navigator) ? window.navigator.serviceWorker.getRegistration() : Promise.resolve(null),
-            fichiersHorsLigne: () => (window.caches ? window.caches.keys().then(noms => noms.length ? window.caches.open(noms[noms.length - 1]).then(c => c.keys()).then(k => k.length) : 0) : Promise.resolve(null)),
+            /* Fichiers de la copie ACTIVE (« acsc-meta » en retient le nom). À défaut (ancien service worker) : la dernière copie qui n'est pas la méta. */
+            fichiersHorsLigne: () => {
+                if (!window.caches) return Promise.resolve(null);
+                const compter = (nom) => window.caches.open(nom).then(c => c.keys()).then(k => k.length);
+                return window.caches.has("acsc-meta")
+                    .then(a => (a ? window.caches.open("acsc-meta").then(m => m.match("actif")).then(r => (r ? r.text() : null)) : null))
+                    .then(actif => actif ? compter(actif) : window.caches.keys().then(noms => { const copies = noms.filter(n => n !== "acsc-meta"); return copies.length ? compter(copies[copies.length - 1]) : 0; }));
+            },
             testerStockage: () => { const cle = "acsc_test_stockage"; window.localStorage.setItem(cle, "1"); const ok = window.localStorage.getItem(cle) === "1"; window.localStorage.removeItem(cle); return ok; },
             estimerStockage: () => (window.navigator.storage && window.navigator.storage.estimate) ? window.navigator.storage.estimate() : Promise.resolve(null),
             synchro: () => (typeof Synchro !== "undefined" ? Synchro.etat() : null),

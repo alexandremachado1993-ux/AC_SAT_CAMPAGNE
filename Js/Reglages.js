@@ -538,7 +538,8 @@
             (n ? n + (n > 1 ? " problèmes enregistrés" : " problème enregistré") + " sur cet appareil. Rien n'est envoyé nulle part : copie le rapport si tu veux me le transmettre."
                : "Aucun problème enregistré sur cet appareil.") + '</p>' +
             (n ? '<div class="info-actions"><button type="button" class="bouton bouton--contour" data-diag-copier>Copier le rapport</button><button type="button" class="bouton bouton--contour" data-diag-effacer>Effacer le journal</button></div>' : "") +
-            '<div class="info-actions"><button type="button" class="bouton bouton--contour" data-diag-verifier>🩺 Vérifier mon installation</button></div>' +
+            '<div class="info-actions"><button type="button" class="bouton bouton--contour" data-diag-verifier>🩺 Vérifier mon installation</button>' +
+            '<button type="button" class="bouton bouton--contour" data-reparer-installation>🧹 Réparer l\'installation</button></div>' +
             '<ul class="liste-journal" data-diag-resultats aria-live="polite"></ul></div>';
     }
 
@@ -582,6 +583,10 @@
         const p = document.getElementById("panneau-reglages-informations");
         const bPres = p.querySelector("[data-presentation-revoir]");
         if (bPres) bPres.addEventListener("click", () => Presentation.afficher());
+        const bRep = p.querySelector("[data-reparer-installation]");
+        if (bRep) bRep.addEventListener("click", () => {
+            if (window.confirm("Réparer l'installation ? Les copies de l'application sont effacées, puis réinstallées depuis la dernière version publiée (connexion nécessaire). Tes données ne sont pas touchées.")) Installation.reparer();
+        });
         const bDiag = p.querySelector("[data-diag-verifier]");
         if (bDiag) bDiag.addEventListener("click", async () => {
             const zone = p.querySelector("[data-diag-resultats]");

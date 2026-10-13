@@ -2128,3 +2128,50 @@ a, button, [role="button"], input, select, textarea, label, summary { touch-acti
 .pieces-bouton { position: relative; min-height: 48px; justify-content: center; text-align: center; cursor: pointer; }
 .pieces-fichier { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
 .pieces-bouton:focus-within { outline: 2px solid var(--primaire); outline-offset: 2px; }
+
+/* =============================================================
+   Mise à jour (Installation.js) : scène plein écran — logo, barre de pourcentage réelle, étapes, écran obligatoire
+   Couleurs en rgb() ou en variables du thème (pas de bloc de secours à régénérer). Avec « moins de mouvement » : une seule itération, état final.
+   ============================================================= */
+html.maj-en-cours { overflow: hidden; }
+.maj-scene { position: fixed; inset: 0; z-index: 350; display: flex; align-items: center; justify-content: center; padding: calc(16px + env(safe-area-inset-top)) 22px calc(16px + env(safe-area-inset-bottom)); overflow-y: auto; outline: none; background-color: var(--fond); background-image: radial-gradient(120% 60% at 50% -10%, rgb(220 38 38 / 0.18), transparent 70%); animation: maj-entree 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.maj-scene [hidden] { display: none !important; }
+.maj-centre { width: min(100%, 420px); display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.maj-logo { position: relative; width: 132px; height: 132px; display: flex; align-items: center; justify-content: center; }
+.maj-logo-halo { position: absolute; inset: -14px; border-radius: 36px; background: radial-gradient(closest-side, rgb(220 38 38 / 0.35), transparent); animation: maj-halo 2.4s ease-in-out infinite; }
+.maj-logo-carte { position: relative; width: 112px; height: 112px; display: flex; align-items: center; justify-content: center; border-radius: 28px; background: var(--carte); box-shadow: var(--ombre-elevee); animation: maj-logo 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.maj-logo-carte img { width: 80px; height: 80px; border-radius: var(--rayon-xl); }
+.maj-logo-badge { position: absolute; right: -4px; bottom: -4px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; border: 3px solid var(--fond); border-radius: 50%; background: var(--primaire); color: var(--primaire-texte); font-size: var(--titre-m); font-weight: 800; box-shadow: var(--ombre-elevee); }
+.maj-scene--ok .maj-logo-badge { background: #16a34a; animation: maj-tampon 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.maj-scene--echec .maj-logo-badge { background: #dc2626; }
+.maj-scene--ok .maj-logo-halo { background: radial-gradient(closest-side, rgb(22 163 74 / 0.4), transparent); }
+.maj-titre { margin: 4px 0 0; font-size: var(--titre-l); line-height: var(--interligne-serre); font-weight: 800; }
+.maj-texte { max-width: 34ch; margin: 0; font-size: var(--texte-courant); line-height: var(--interligne-aere); color: var(--attenue-texte); }
+.maj-progression { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.maj-pourcent { font-size: var(--titre-xl); font-weight: 800; line-height: var(--interligne-serre); font-variant-numeric: tabular-nums; }
+.maj-barre { position: relative; width: 100%; height: 14px; overflow: hidden; border: 1px solid var(--bordure); border-radius: 7px; background: var(--secondaire); }
+.maj-barre-remplie { position: relative; height: 100%; width: calc(var(--p, 0) * 1%); overflow: hidden; border-radius: 7px; background: var(--primaire); transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
+.maj-barre-remplie::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent); transform: translateX(-100%); animation: maj-brillance 1.4s ease-in-out infinite; }
+.maj-fichier { min-height: 1.2em; max-width: 100%; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--texte-petit); color: var(--attenue-texte); }
+.maj-etapes { width: 100%; margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; text-align: left; }
+.maj-etape { display: flex; align-items: center; gap: 10px; font-size: var(--texte-compact); color: var(--attenue-texte); }
+.maj-etape-puce { flex: 0 0 auto; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--bordure); border-radius: 50%; font-size: var(--texte-petit); font-weight: 800; }
+.maj-etape--active { color: var(--texte); font-weight: 700; }
+.maj-etape--active .maj-etape-puce { border-color: var(--primaire); animation: maj-puce 1s ease-in-out infinite; }
+.maj-etape--fait { color: var(--texte); }
+.maj-etape--fait .maj-etape-puce { border-color: var(--primaire); background: var(--primaire); color: var(--primaire-texte); }
+.maj-programme { width: 100%; padding: 12px 14px; border: 1px solid var(--bordure); border-radius: var(--rayon-grand); background: var(--carte); text-align: left; font-size: var(--texte-compact); line-height: var(--interligne); }
+.maj-actions { width: 100%; display: grid; gap: 8px; }
+.maj-actions .bouton { min-height: 48px; }
+.maj-vocal { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.maj-etincelles { position: absolute; inset: 0; pointer-events: none; }
+.maj-etincelle { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; border-radius: 50%; background: var(--primaire); animation: maj-etincelle 1.1s ease-out both; animation-delay: calc(var(--i, 0) * 40ms); transform: rotate(calc(var(--i, 0) * 36deg)) translateY(-40px); opacity: 0; }
+@keyframes maj-entree { from { opacity: 0; transform: scale(1.03); } to { opacity: 1; transform: none; } }
+@keyframes maj-halo { 0%, 100% { opacity: 0.55; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes maj-logo { from { opacity: 0; transform: translateY(14px) scale(0.7); } to { opacity: 1; transform: none; } }
+@keyframes maj-tampon { from { opacity: 0; transform: scale(2.4) rotate(-18deg); } to { opacity: 1; transform: none; } }
+@keyframes maj-brillance { to { transform: translateX(100%); } }
+@keyframes maj-puce { 0%, 100% { box-shadow: 0 0 0 0 rgb(220 38 38 / 0.45); } 70% { box-shadow: 0 0 0 7px rgb(220 38 38 / 0); } }
+@keyframes maj-etincelle { 0% { opacity: 1; transform: rotate(calc(var(--i, 0) * 36deg)) translateY(-40px); } 100% { opacity: 0; transform: rotate(calc(var(--i, 0) * 36deg)) translateY(-86px) scale(0.3); } }
+.maj-rappel { margin: 8px 0 0; padding: 8px 12px; border-radius: var(--rayon-moyen); background: var(--secondaire); font-size: var(--texte-compact); line-height: var(--interligne); }
+.maj-rappel--dernier { border: 1px solid rgb(220 38 38 / 0.5); background: rgb(220 38 38 / 0.12); }

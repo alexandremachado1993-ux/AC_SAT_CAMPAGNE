@@ -17,7 +17,7 @@ const AppLayout = (() => {
     /* Version livrée : la même valeur figure dans version.txt à la racine.
        Après une mise en ligne, ouvrir <site>/version.txt permet de vérifier
        que c'est bien cette version qui est en ligne. */
-    const VERSION = "2026.10.12-a";
+    const VERSION = "2026.10.12-b";
 
     /* Barre latérale ET navigation mobile se construisent depuis cette liste. */
     const ELEMENTS_NAV = [
@@ -593,8 +593,14 @@ const AppLayout = (() => {
     const CLE_MAJ_REPORT = "acsc_maj_reportee";        // localStorage : pas de nouvelle fenêtre avant cet instant (ms)
     const CLE_MAJ_NOTIFIEE = "acsc_maj_notifiee";      // localStorage : dernière version pour laquelle une notification système est partie
     const REPORT_MS = 6 * 3600 * 1000, INTERVALLE_MS = 30 * 60 * 1000, MIN_ENTRE_MS = 10 * 60 * 1000;
+    /* Rappels : à chaque fois que l'application PROPOSE la mise à jour (fenêtre « Mise à jour disponible »), un rappel est compté. Après RAPPELS_MAX rappels,
+       l'ouverture suivante (ou, dans la même session, une heure plus tard) affiche l'écran OBLIGATOIRE. Le compteur est propre à l'appareil (jamais synchronisé)
+       et repart de zéro dès qu'une mise à jour est installée (la version « base » change). Hors connexion, jamais de blocage : on ne peut pas mettre à jour. */
+    const CLE_MAJ_RAPPELS = "acsc_maj_rappels";        // localStorage : { base, n, t } — rappels déjà montrés depuis la version « base », instant du dernier
+    const RAPPELS_MAX = 3;
+    const DELAI_BLOCAGE_MS = 3600 * 1000;
     let maj = { disponible: false, version: null, infos: null };
-    let dernierControle = 0, proposeEnCours = false, boutonAvatar = null;
+    let dernierControle = 0, proposeEnCours = false, boutonAvatar = null, blocageOuvert = false;
 
     const versionValide = (v) => typeof v === "string" && /^\d{4}\.\d{2}\.\d{2}-[a-z]$/.test(v);
 
@@ -606,7 +612,8 @@ const AppLayout = (() => {
             let j = null; try { j = JSON.parse(t); } catch (e) { j = null; }
             if (j && typeof j === "object" && versionValide(j.version)) {
                 const n = j.nouveaute && typeof j.nouveaute === "object" ? { id: String(j.nouveaute.id || "").slice(0, 60), titre: String(j.nouveaute.titre || "").slice(0, 120), resume: String(j.nouveaute.resume || "").slice(0, 300) } : null;
-                return { version: j.version, date: /^\d{4}-\d{2}-\d{2}$/.test(j.date || "") ? j.date : "", nouveaute: n && n.titre ? n : null };
+                const fichiers = typeof Installation !== "undefined" ? Installation.listeValide(j.fichiers) : null;       // liste des fichiers de la version (téléchargée à la validation)
+                return { version: j.version, date: /^\d{4}-\d{2}-\d{2}$/.test(j.date || "") ? j.date : "", nouveaute: n && n.titre ? n : null, fichiers, obligatoire: j.obligatoire === true };
             }
             return lire("version.txt").then(tt => { const v = String(tt).trim(); return versionValide(v) ? { version: v, date: "", nouveaute: null } : null; });
         });
@@ -631,9 +638,15 @@ const AppLayout = (() => {
         });
     }
 
-    /* Installe : recharge l'application (le serveur ne met rien en cache pour le code). Les données locales ne sont pas touchées. */
+    /* Installe : télécharge la nouvelle version avec sa mise en scène (Installation.js), puis recharge. Les données locales ne sont pas touchées.
+       Sans liste de fichiers publiée par le serveur (ancien format) : l'ancien chemin, un simple rechargement. */
     function appliquerMiseAJour() {
         try { localStorage.removeItem(CLE_MAJ_REPORT); sessionStorage.removeItem(CLE_MAJ_SESSION); sessionStorage.removeItem(CLE_MAJ_PROPOSEE); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on recontrôlera", e); }
+        const infos = maj.infos;
+        if (typeof Installation !== "undefined" && infos && Installation.listeValide(infos.fichiers)) {
+            Installation.demarrer(infos, { surFermeture: () => { blocageOuvert = false; } });
+            return;
+        }
         const recharger = () => location.reload();
         if (typeof navigator !== "undefined" && navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
             navigator.serviceWorker.getRegistration().then(r => (r ? r.update() : null)).catch(() => null).then(recharger);
@@ -641,26 +654,75 @@ const AppLayout = (() => {
     }
 
     /* Fenêtre de suggestion : ce que la mise à jour apporte, puis « Mettre à jour maintenant » ou « Plus tard ». */
-    function ouvrirSuggestionMaj() {
+    function lireRappels() {
+        let r = null;
+        try { r = JSON.parse(localStorage.getItem(CLE_MAJ_RAPPELS) || "null"); } catch (e) { r = null; }
+        if (!r || r.base !== VERSION || !Number.isFinite(r.n)) return { base: VERSION, n: 0, t: 0 };
+        return { base: VERSION, n: Math.max(0, Math.min(RAPPELS_MAX, Math.round(r.n))), t: Number(r.t) || 0 };
+    }
+
+    function compterRappel() {
+        const r = lireRappels();
+        r.n = Math.min(RAPPELS_MAX, r.n + 1);
+        r.t = Date.now();
+        try { localStorage.setItem(CLE_MAJ_RAPPELS, JSON.stringify(r)); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : rappel de mise à jour non compté", e); }
+        return r.n;
+    }
+
+    /* « automatique » : proposée par l'application (compte comme un rappel) ; sinon ouverte par l'utilisateur depuis le menu (ne compte pas). */
+    function ouvrirSuggestionMaj(automatique) {
         if (!maj.disponible) return;
+        const rang = automatique ? compterRappel() : lireRappels().n;
+        const dernier = rang >= RAPPELS_MAX;
         const i = maj.infos || {}, n = i.nouveaute;
         const date = i.date ? i.date.slice(8, 10) + "/" + i.date.slice(5, 7) + "/" + i.date.slice(0, 4) : "";
+        const rappel = dernier ? "<strong>Dernier rappel.</strong> À ta prochaine ouverture de l'application, la mise à jour sera obligatoire."
+            : (rang > 0 ? "<strong>Rappel " + rang + " sur " + RAPPELS_MAX + ".</strong> " : "") + "Après " + RAPPELS_MAX + " rappels, la mise à jour devient obligatoire.";
         ouvrirFeuille("bas", "Mise à jour disponible",
             '<div class="nouv maj">' +
             '<div class="nouv-entete"><span class="nouv-etiquette">Mise à jour</span><span class="texte-attenue">Version ' + escapeHtml(maj.version) + (date ? " · " + escapeHtml(date) : "") + '</span></div>' +
             '<h2 class="nouv-titre">Une nouvelle version est prête</h2>' +
             '<p class="nouv-resume">Tu utilises la version ' + escapeHtml(VERSION) + '. La mise à jour prend quelques secondes et tes données restent intactes.</p>' +
             (n ? '<div class="maj-nouv"><strong>🎁 Au programme</strong><h3 class="info-nouv-titre">' + escapeHtml(n.titre) + '</h3>' + (n.resume ? '<p class="info-nouv-resume">' + escapeHtml(n.resume) + '</p>' : "") + '</div>' : "") +
+            '<p class="maj-rappel' + (dernier ? " maj-rappel--dernier" : "") + '">' + rappel + '</p>' +
             '<p class="aide-champ nouv-astuce">« Plus tard » : cette fenêtre ne reviendra pas avant quelques heures ; la pastille sur ton profil te le rappelle.</p>' +
             '<div class="nouv-actions"><button type="button" class="bouton bouton--contour" data-maj-plus-tard>Plus tard</button>' +
             '<button type="button" class="bouton" data-maj-maintenant>Mettre à jour maintenant</button></div></div>');
         elFeuille.querySelector("[data-maj-plus-tard]").addEventListener("click", fermerFeuille);
-        elFeuille.querySelector("[data-maj-maintenant]").addEventListener("click", appliquerMiseAJour);
+        elFeuille.querySelector("[data-maj-maintenant]").addEventListener("click", () => { fermerFeuille(); appliquerMiseAJour(); });
+    }
+
+    /* Écran obligatoire ? « version » : cette version est marquée obligatoire par le serveur ; « rappels » : les rappels sont épuisés et, soit c'est une nouvelle
+       session, soit le dernier rappel date d'une heure. Jamais sans liste de fichiers à télécharger, jamais hors connexion (aucune information du serveur). */
+    function raisonBlocage() {
+        if (!maj.disponible || !maj.infos || typeof Installation === "undefined" || !Installation.listeValide(maj.infos.fichiers)) return null;
+        if (maj.infos.obligatoire === true) return "version";
+        const r = lireRappels();
+        if (r.n < RAPPELS_MAX) return null;
+        let dejaMontre = false;
+        try { dejaMontre = sessionStorage.getItem(CLE_MAJ_PROPOSEE) === "1"; } catch (e) { dejaMontre = false; }
+        return !dejaMontre || Date.now() - r.t >= DELAI_BLOCAGE_MS ? "rappels" : null;
+    }
+
+    /* Ouvre l'écran obligatoire dès que rien d'autre n'est en cours (animation d'ouverture, fenêtre, présentation) : on n'écrase pas un formulaire. */
+    function bloquerMaj() {
+        if (blocageOuvert) return;
+        blocageOuvert = true;
+        let essais = 0;
+        const tenter = () => {
+            const occupe = document.documentElement.classList.contains("splash-actif") || !!document.querySelector(".feuille:not([hidden])") || !!document.querySelector(".pres");
+            if (occupe) { if (essais++ < 90) setTimeout(tenter, 1000); else blocageOuvert = false; return; }
+            const raison = raisonBlocage();
+            if (!raison) { blocageOuvert = false; return; }
+            Installation.ouvrirBlocage(maj.infos, { raison, surFermeture: () => { blocageOuvert = false; } });
+        };
+        setTimeout(tenter, 600);
     }
 
     /* Propose la suggestion quand c'est le bon moment (pas d'animation, pas d'autre fenêtre), une fois par session et pas pendant le « plus tard ». */
     function proposerMaj() {
         if (!maj.disponible || proposeEnCours) return;
+        if (raisonBlocage()) { bloquerMaj(); return; }
         try {
             if (sessionStorage.getItem(CLE_MAJ_PROPOSEE) === "1") return;
             if (Date.now() < Number(localStorage.getItem(CLE_MAJ_REPORT) || 0)) return;
@@ -674,7 +736,7 @@ const AppLayout = (() => {
             if (!maj.disponible) return;
             if (document.querySelector("#panneau-reglages-informations:not([hidden])")) return;     // déjà sous les yeux (Réglages › Informations) : pas de fenêtre par-dessus
             try { sessionStorage.setItem(CLE_MAJ_PROPOSEE, "1"); localStorage.setItem(CLE_MAJ_REPORT, String(Date.now() + REPORT_MS)); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on propose", e); }
-            ouvrirSuggestionMaj();
+            ouvrirSuggestionMaj(true);
         };
         setTimeout(tenter, 1200);       // après l'annonce « Nouveautés » éventuelle, qui s'ouvre à 0,9 s
     }
@@ -686,7 +748,7 @@ const AppLayout = (() => {
         try { if (!notifMajActive() || localStorage.getItem(CLE_MAJ_NOTIFIEE) === maj.version) return; } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on propose", e); }
         const n = maj.infos && maj.infos.nouveaute;
         navigator.serviceWorker.ready.then(reg => reg.showNotification("Mise à jour disponible", {
-            body: (n ? "Nouveau : " + n.titre + ". " : "") + "Version " + maj.version + " : ouvre l'application pour l'installer.",
+            body: (n ? "Nouveau : " + n.titre + ". " : "") + "Version " + maj.version + " : ouvre l'application et touche « Mettre à jour maintenant ».",
             icon: "Images/icone-192.png", badge: "Images/badge-96.png", tag: "acsc-maj" }))
             .then(() => { try { localStorage.setItem(CLE_MAJ_NOTIFIEE, maj.version); } catch (e) { Erreurs.consigner("AppLayout : stockage refusé : on propose", e); } })
             .catch(() => { /* notification refusée ou indisponible : la fenêtre et la pastille suffisent */ });

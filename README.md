@@ -86,6 +86,7 @@ AC-SAT-CAMPAGNE/
 | Les **notifications** | `Js/Notifications.js` (navigateur : permission, abonnement), `Js/Synchro.js` (appels serveur seulement), `sw.js` (réception), `supabase/functions/rappels/` (envoi) |
 | La **navigation mobile** (barre du bas, menu étendu « Plus d'outils », gestes) | `Js/AppLayout.js` (`construireNavBasse`, `construireTiroir`), styles `.nav-*` dans `CSS/campagne.css` |
 | La **présentation de première connexion** | `Js/Presentation.js`, styles `.pres-*` |
+| Les **mises à jour** (copie figée, rappels, écran obligatoire, scène, réparation) | `sw.js` (statique), `Js/Installation.js`, politique dans `Js/AppLayout.js` (section « Mises à jour »), liste des fichiers dans `version.json` |
 | Les **diagnostics** | `Js/Erreurs.js` (journal), `Js/AutoDiagnostic.js` (bouton « Vérifier mon installation », Réglages › Informations) |
 | La **mise à jour** de l'application et les **nouveautés** | `Js/AppLayout.js` (section mise à jour), `Js/Nouveautes.js`, `version.json` |
 | L'**authentification** | Supabase Auth, pilotée par `Js/Synchro.js` (connexion, inscription, session) |
@@ -463,6 +464,17 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     `no-alert` et `no-shadow` volontairement non activés, voir `Tests/eslint.config.js`). **Contrôleurs automatiques** (`Tests/agents/`, exécutés à chaque envoi par `npm test` donc par l'intégration continue, et à la
     demande par `npm run audit`) : `doublons.js` (blocs de code recopiés), `css.js` (règles identiques répétées, classes jamais utilisées), `references.js` (fichiers cités mais absents), `comparer-depots.js`
     (livraison : à envoyer / à supprimer / à renommer / fichiers « à point » à créer à la main). Chaque contrôleur est aussi testé sur des défauts plantés (`test53.js`). Valeurs de référence des couleurs : `test52.js`.
+8y. ✅ Mises à jour VALIDÉES par l'utilisateur (2026.10.12-b) : avant, le service worker allait toujours chercher la dernière version et l'activait aussitôt (« réseau d'abord » + `skipWaiting`) : une mise à jour
+    s'installait toute seule à l'ouverture, d'un appareil à l'autre (ce n'était PAS la synchronisation : elle ne touche ni à la version ni au rechargement). Maintenant : `sw.js` est STATIQUE (plus de liste, plus
+    de numéro de cache) et sert l'application depuis une COPIE FIGÉE de la version installée (`acsc-<version>`, la version active est retenue dans `acsc-meta`), en ligne comme hors ligne. Une nouvelle version est
+    téléchargée par l'application (`Js/Installation.js`) dans un AUTRE cache, d'après la liste des fichiers et leurs tailles publiée dans `version.json` (barre de pourcentage RÉELLE, en octets), vérifiée (copie complète),
+    puis activée par le message `ACTIVER` — tout ou rien : au moindre échec la copie en cours est supprimée et l'application reste sur sa version. **Politique** (AppLayout) : chaque fois que l'application PROPOSE la mise à jour,
+    c'est un rappel (« Rappel 1 sur 3 », « Dernier rappel ») ; après 3 rappels, l'ouverture suivante (ou une heure plus tard) affiche l'écran OBLIGATOIRE ; jamais de blocage hors connexion, sans liste de fichiers, ni quand
+    l'application est déjà à jour ; « Continuer avec l'ancienne version » après un échec évite d'enfermer l'utilisateur dehors. `version.json` peut marquer une version `obligatoire` (changement du FORMAT des données :
+    `OBLIGATOIRE` dans `Tests/maj-version.js`). Le compteur est local à l'appareil (R3) et repart de zéro quand la version installée change. **Mise en scène** : logo animé, barre et pourcentage, 4 étapes qui se cochent,
+    « Version installée », redémarrage ; Réglages › Informations › « 🧹 Réparer l'installation » (efface les copies et le service worker, pas les données). Données : modifier une visite conserve les champs inconnus d'une version
+    plus récente (`CHAMPS_VISITE`). Tests : `test54.js` (simulateur de service worker), `test55.js` (installation), `test56.js` (politique, réparation, diagnostic, visites). **Passage unique** : au premier chargement avec ce service
+    worker, chaque appareil prend la version publiée sans validation (c'est le dernier). Validé dans un vrai Chromium (`Tests/navigateur/maj-*.mjs`, 48 vérifications, dont le passage depuis l'ancien service worker) ; reste à confirmer sur un téléphone réel (protocole : `Tests/LISEZ-MOI.md`) ; iPhone/Safari jamais testé.
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)
