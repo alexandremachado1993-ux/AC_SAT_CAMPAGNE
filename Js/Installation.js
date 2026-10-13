@@ -37,6 +37,13 @@ const Installation = (() => {
         return liste;
     }
 
+    /* Une réponse REDIRIGÉE (serveur qui répond 301 puis sert la page) enregistrée telle quelle ferait afficher « ERR_FAILED » à la navigation suivante : on enregistre une copie sans la marque. */
+    async function sansRedirection(reponse, Reponse) {
+        const R = Reponse || (typeof Response === "function" ? Response : null);
+        if (!reponse.redirected || !R) return reponse;
+        return new R(await reponse.blob(), { status: reponse.status, statusText: reponse.statusText, headers: reponse.headers });
+    }
+
     /* La version est « figée » seulement si un service worker contrôle déjà cette page et que les copies (Cache API) existent. */
     function supporteVersionFigee(outils) {
         const o = outils || {};
@@ -67,7 +74,7 @@ const Installation = (() => {
                 try {
                     const reponse = await lire(f.u, { cache: "reload" });        // « cache: reload » : le service worker laisse passer vers le réseau
                     if (!reponse.ok) throw new Error(f.u + " : réponse " + reponse.status);
-                    if (cache) await cache.put(f.u, reponse);
+                    if (cache) await cache.put(f.u, await sansRedirection(reponse, o.Response));
                     else if (reponse.arrayBuffer) await reponse.arrayBuffer();    // sans copie : lire le corps pour rafraîchir le cache du navigateur
                     fait += Math.max(f.t, 1);
                     if (surProgres) surProgres(Math.min(99, Math.floor(100 * fait / total)), f.u);

@@ -482,6 +482,12 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     tes données sont conservées ») au lieu de l'erreur du navigateur ; (5) un nouveau service worker qui trouve une copie active vide la REFAIT depuis la version publiée (les appareils déjà touchés se réparent). Tests : `test54.js` (36 vérifications,
     dont 7 qui échouent avec l'ancien `sw.js`) et `Tests/navigateur/maj-5-site-injoignable.mjs`. **Leçon** : `page.setOfflineMode` ne coupe PAS le réseau du service worker ; mes premiers tests « hors ligne » ne coupaient donc pas vraiment le site
     (le serveur d'essai a maintenant un mode `mort`, qui coupe tout).
+8z2. ✅ Cause principale de l'incident du 13/10/2026 : les pages REDIRIGÉES (2026.10.13-b). Reproduit dans un vrai Chromium avec un serveur qui redirige `/Page.html` vers `/Page` (comme l'option « Pretty URLs » de Netlify, réglage de
+    l'interface que le dépôt ne montre pas) : la copie de `Index.html` était enregistrée avec la marque « redirigée » et Chrome REFUSE de servir une réponse redirigée à une navigation (`ERR_FAILED`), **même quand le site et le réseau
+    fonctionnent**. L'ancien service worker (réseau d'abord) n'était pas touché ; celui de 2026.10.12-b ET de 2026.10.13-a l'étaient. Corrigé : `propre()` dans `sw.js` (copie sans la marque, à l'enregistrement ET à la lecture, ce qui
+    répare aussi les copies déjà enregistrées) et `sansRedirection()` dans `Js/Installation.js` (téléchargement d'une mise à jour). Tests : `test54.js` (40, dont 4 qui échouent avec le `sw.js` de 13-a), `test55.js` et
+    `Tests/navigateur/maj-6-redirections.mjs` (serveur qui redirige : en ligne, hors ligne, mise à jour validée, appareil déjà cassé qui se répare). **Leçon** : le faux serveur d'essai doit imiter les particularités de la production
+    (redirections, pannes réelles) ; mon banc d'essai ne redirigeait pas les pages, d'où un défaut invisible pendant des jours.
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)

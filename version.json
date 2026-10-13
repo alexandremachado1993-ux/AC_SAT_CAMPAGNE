@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.13-a",
+  "version": "2026.10.13-b",
   "date": "2026-10-13",
   "nouveaute": null,
   "obligatoire": false,
@@ -106,7 +106,7 @@
     },
     {
       "u": "Js/Installation.js",
-      "t": 17620
+      "t": 18188
     },
     {
       "u": "Js/Notifications.js",

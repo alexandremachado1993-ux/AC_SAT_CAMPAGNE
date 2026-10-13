@@ -25,6 +25,20 @@ const TOUJOURS_FRAIS = /\/version\.(json|txt)$/;
 
 let actif = null;       // nom du cache actif, gardé en mémoire (relu depuis acsc-meta quand le service worker redémarre)
 
+/* Une réponse REDIRIGÉE (le serveur a répondu 301 puis servi la page : option « Pretty URLs » de Netlify, par exemple) ne peut PAS être servie à une navigation : Chrome affiche
+   « ERR_FAILED » même quand le site fonctionne (constaté le 13/10/2026). On en fait une copie « propre » : même contenu, sans la marque de redirection. Appliqué à l'enregistrement
+   ET à la lecture, ce qui répare aussi les copies déjà enregistrées avec la marque. */
+async function propre(reponse) {
+    if (!reponse || !reponse.redirected) return reponse;
+    return new Response(await reponse.blob(), { status: reponse.status, statusText: reponse.statusText, headers: reponse.headers });
+}
+
+async function copier(cache, u) {
+    const reponse = await fetch(new Request(u, { cache: "reload" }));
+    if (!reponse.ok) throw new Error(u + " : " + reponse.status);
+    await cache.put(u, await propre(reponse));
+}
+
 async function lireActif() {
     const meta = await caches.open(META);
     const reponse = await meta.match(CLE_ACTIF);
@@ -79,7 +93,7 @@ async function premiereInstallation() {
     if (!liste.length) throw new Error("version.json : aucune liste de fichiers");
     await caches.delete(nom);
     const cache = await caches.open(nom);
-    const resultats = await Promise.allSettled(liste.map(u => cache.add(new Request(u, { cache: "reload" }))));
+    const resultats = await Promise.allSettled(liste.map(u => copier(cache, u)));
     const echecs = resultats.filter(r => r.status === "rejected").length;
     if (echecs) { await caches.delete(nom); throw new Error("copie incomplète : " + echecs + " fichier(s) sur " + liste.length + " en échec"); }
     await ecrireActif(nom, liste.length);
@@ -122,18 +136,18 @@ async function servir(event, requete) {
     const cherche = new URL(requete.url).pathname === "/" ? "Index.html" : requete;
     if (nom) {
         const copie = await caches.match(cherche, { cacheName: nom, ignoreSearch: true });
-        if (copie) return copie;
+        if (copie) return propre(copie);
     }
     try {
         const reponse = await fetch(requete);
-        if (reponse.ok && nom) event.waitUntil(caches.has(nom).then(existe => (existe ? caches.open(nom).then(c => c.put(requete, reponse.clone())) : null)));
+        if (reponse.ok && nom) event.waitUntil(caches.has(nom).then(existe => (existe ? propre(reponse.clone()).then(p => caches.open(nom).then(c => c.put(requete, p))) : null)));
         return reponse;
     } catch (e) {
         const ailleurs = await caches.match(cherche, { ignoreSearch: true });
-        if (ailleurs) return ailleurs;
+        if (ailleurs) return propre(ailleurs);
         if (requete.mode === "navigate") {
             const accueil = await caches.match("Index.html", { ignoreSearch: true });
-            if (accueil) return accueil;
+            if (accueil) return propre(accueil);
             return new Response(PAGE_SECOURS, { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } });
         }
         throw e;
