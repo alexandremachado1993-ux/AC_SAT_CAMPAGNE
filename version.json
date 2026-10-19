@@ -1,7 +1,11 @@
 {
-  "version": "2026.10.13-b",
-  "date": "2026-10-13",
-  "nouveaute": null,
+  "version": "2026.10.19-a",
+  "date": "2026-10-19",
+  "nouveaute": {
+    "id": "nouveau-design",
+    "titre": "Nouveau look : bandeau rouge et barre du bas flottante",
+    "resume": "L'application change d'habillage, sans rien changer à son fonctionnement : un bandeau rouge en haut de chaque page, des cartes plus arrondies, une barre du bas noire qui flotte avec ses boutons ronds, et une nouvelle police (Barlow). Le thème sombre suit. Tes données, tes réglages et tes gestes sont"
+  },
   "obligatoire": false,
   "fichiers": [
     {
@@ -42,11 +46,11 @@
     },
     {
       "u": "CSS/campagne.css",
-      "t": 113198
+      "t": 120747
     },
     {
       "u": "CSS/style.css",
-      "t": 26004
+      "t": 28990
     },
     {
       "u": "Js/Amorce.js",
@@ -114,7 +118,7 @@
     },
     {
       "u": "Js/Nouveautes.js",
-      "t": 24715
+      "t": 27001
     },
     {
       "u": "Js/Pieces.js",
@@ -179,6 +183,30 @@
     {
       "u": "Vendor/supabase/supabase.min.js",
       "t": 217945
+    },
+    {
+      "u": "Polices/barlow-400.woff2",
+      "t": 22196
+    },
+    {
+      "u": "Polices/barlow-500.woff2",
+      "t": 22008
+    },
+    {
+      "u": "Polices/barlow-600.woff2",
+      "t": 22772
+    },
+    {
+      "u": "Polices/barlow-700.woff2",
+      "t": 22788
+    },
+    {
+      "u": "Polices/barlow-semi-condensed-600.woff2",
+      "t": 22984
+    },
+    {
+      "u": "Polices/barlow-semi-condensed-700.woff2",
+      "t": 23244
     },
     {
       "u": "Images/logo.png",

@@ -31,6 +31,23 @@ const Nouveautes = (() => {
        Dans les légendes, ① ② ③ renvoient aux repères dessinés sur la photo. */
     const LISTE = [
         {
+            id: "nouveau-design", version: "2026.10.19-a", date: "2026-10-19",
+            titre: "Nouveau look : bandeau rouge et barre du bas flottante",
+            resume: "L'application change d'habillage, sans rien changer à son fonctionnement : un bandeau rouge en haut de chaque page, des cartes plus arrondies, une barre du bas noire qui flotte avec ses boutons ronds, et une nouvelle police (Barlow). Le thème sombre suit. Tes données, tes réglages et tes gestes sont inchangés.",
+            etapes: [
+                "Chaque page s'ouvre sur un bandeau rouge ① avec son titre ; les chiffres, les onglets ou la recherche importants le chevauchent ②.",
+                "La barre du bas ③ est maintenant une pilule noire qui flotte : la page où tu es apparaît dans un rond rouge, le « + » dans un rond blanc. Les noms des pages ne sont plus écrits sous les icônes (ils restent lus par les lecteurs d'écran).",
+                "Le geste « glisser la barre vers le haut » et la languette ⌃ marchent comme avant pour ouvrir Serti et Documents.",
+                "Sur la fiche d'un client, le nom, l'adresse et les actions sont dans le bandeau, et les onglets juste dessous.",
+                "Le thème sombre garde le même dessin avec un rouge assombri : Réglages › Apparence."
+            ],
+            images: [
+                { src: "Media/nouveautes/design-a-visiter-v1.webp", largeur: 780, hauteur: 1688, alt: "Page À visiter : bandeau rouge avec le titre, quatre compteurs blancs qui chevauchent le bandeau, et la barre du bas noire flottante avec ses boutons ronds.", legende: "① Bandeau · ② Compteurs · ③ Barre du bas" },
+                { src: "Media/nouveautes/design-fiche-v1.webp", largeur: 780, hauteur: 1040, alt: "Fiche d'un client : le nom, l'adresse et les boutons d'action dans le bandeau rouge, et les onglets Lignes, Contacts, Historique et Infos juste en dessous.", legende: "① En-tête du client · ② Onglets" },
+                { src: "Media/nouveautes/design-sombre-v1.webp", largeur: 780, hauteur: 1688, alt: "Page À visiter en thème sombre : bandeau rouge assombri, cartes sombres sur fond noir et barre du bas flottante.", legende: "Le thème sombre suit le même dessin" }
+            ]
+        },
+        {
             id: "menu-etendu", version: "2026.10.07-a", date: "2026-10-07",
             titre: "Plus d'outils : Serti et Documents d'un geste",
             resume: "Serti et Documents ont quitté le menu du profil : glisse la barre du bas vers le haut (ou touche la languette ⌃) pour les ouvrir. La barre garde ses quatre pages principales, et l'interface est harmonisée : mêmes tailles de texte et mêmes espacements partout.",

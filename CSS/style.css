@@ -7,6 +7,17 @@
    même esprit visuel : rouge de marque, cartes, coins arrondis.
    ============================================================= */
 
+/* =============================================================
+   Polices locales (Polices/) : Barlow (texte) et Barlow Semi Condensed (titres et grands chiffres), licence SIL OFL 1.1 (voir Polices/LICENCE-*.txt).
+   Fichiers « latin » uniquement (français, espagnol) ; la CSP n'autorise que 'self' : pas de Google Fonts. Copiées dans la version hors ligne (version.json).
+   ============================================================= */
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 400; font-display: swap; src: url("../Polices/barlow-400.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 500; font-display: swap; src: url("../Polices/barlow-500.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 600; font-display: swap; src: url("../Polices/barlow-600.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 700; font-display: swap; src: url("../Polices/barlow-700.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Semi Condensed"; font-style: normal; font-weight: 600; font-display: swap; src: url("../Polices/barlow-semi-condensed-600.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Semi Condensed"; font-style: normal; font-weight: 700; font-display: swap; src: url("../Polices/barlow-semi-condensed-700.woff2") format("woff2"); }
+
 :root {
     --rayon: 0.75rem;
     --rayon-petit: calc(var(--rayon) - 4px);
@@ -28,32 +39,42 @@
     --interligne: 1.4;           /* texte compact */
     --interligne-aere: 1.5;      /* paragraphes */
 
-    --fond: oklch(0.99 0.002 20);
-    --texte: oklch(0.18 0.02 25);
+    --fond: oklch(0.961 0 0);
+    --texte: oklch(0.218 0 0);
 
     --carte: oklch(1 0 0);
-    --carte-texte: oklch(0.18 0.02 25);
+    --carte-texte: oklch(0.218 0 0);
 
     /* Rouge de marque */
-    --primaire: oklch(0.55 0.22 27);
-    --primaire-texte: oklch(0.99 0.002 20);
+    --primaire: oklch(0.566 0.229 28.5);
+    --primaire-texte: oklch(1 0 0);
 
-    --secondaire: oklch(0.96 0.005 20);
+    --secondaire: oklch(0.961 0 0);
 
-    --attenue-texte: oklch(0.48 0.015 25);
+    --attenue-texte: oklch(0.475 0 0);
 
-    --accent: oklch(0.95 0.02 27);
-    --accent-texte: oklch(0.35 0.18 27);
+    --accent: oklch(0.944 0.025 14.6);
+    --accent-texte: oklch(0.488 0.197 28.4);
 
     --succes: oklch(0.62 0.14 155);
 
     --alerte: oklch(0.72 0.16 65);
 
-    --bordure: oklch(0.92 0.005 25);
+    --bordure: oklch(0.901 0 0);
 
-    --ombre-carte: 0 1px 2px oklch(0 0 0 / 0.04), 0 4px 12px oklch(0 0 0 / 0.04);
-    --ombre-elevee: 0 8px 24px oklch(0 0 0 / 0.08);
+    --ombre-carte: 0 1px 2px oklch(0 0 0 / 0.04), 0 6px 16px oklch(0 0 0 / 0.05);
+    --ombre-elevee: 0 8px 24px oklch(0 0 0 / 0.12);
 
+    /* Design B (maquette) : bandeau rouge de page, barre du bas noire flottante, arrondis, polices. Statuts ci-dessous INCHANGÉS et distincts du rouge de marque. */
+    --primaire-fonce: oklch(0.488 0.197 28.4);      /* survol et texte rouge sur fond blanc : 7:1 */
+    --bandeau: var(--primaire);
+    --bandeau-texte: oklch(1 0 0);                  /* blanc sur le rouge : 5,1:1 */
+    --barre: oklch(0.218 0 0);
+    --barre-texte: oklch(1 0 0);
+    --rayon-carte: 1.125rem;                        /* 18 px : cartes */
+    --rayon-bandeau: 1.75rem;                       /* 28 px : coins inférieurs du bandeau */
+    --police-texte: "Barlow", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    --police-titre: "Barlow Semi Condensed", "Barlow", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     /* Statuts client (Storage.couleurStatutClient) */
     --statut-ok: #16a34a;
     --statut-warn: #f97316;
@@ -89,7 +110,7 @@ html, body {
 body {
     background: var(--fond);
     color: var(--texte);
-    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--police-texte);
     -webkit-font-smoothing: antialiased;
 }
 
@@ -103,13 +124,16 @@ img { max-width: 100%; display: block; }
     min-height: 100vh;
     min-height: 100vh;
     min-height: 100dvh;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+    padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .app-contenu {
+    --marge-h: 24px;     /* marges de la page : variables, car elles changent (petits écrans, zone sûre, paysage) */
+    --marge-g: 24px;     /* et le bandeau rouge des pages doit les annuler EXACTEMENT pour aller bord à bord */
+    --marge-d: 24px;
     max-width: 1600px;
     margin: 0 auto;
-    padding: 24px 24px 0;
+    padding: var(--marge-h) var(--marge-d) 0 var(--marge-g);
 }
 
 /* ---------- Barre latérale (ordinateur uniquement — mobile garde la nav basse) ---------- */
@@ -171,7 +195,7 @@ img { max-width: 100%; display: block; }
 
 .rail-lateral-lien.actif {
     background: color-mix(in oklch, var(--primaire) 10%, transparent);
-    color: var(--primaire);
+    color: var(--primaire-fonce);
     font-weight: 700;
     border-left-color: var(--primaire);
 }
@@ -217,10 +241,8 @@ img { max-width: 100%; display: block; }
     position: sticky;
     top: 0;
     z-index: 30;
-    background: color-mix(in oklch, var(--carte) 95%, transparent);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--bordure);
+    background: var(--bandeau);
+    color: var(--bandeau-texte);
     padding-top: env(safe-area-inset-top);
 }
 
@@ -250,16 +272,16 @@ img { max-width: 100%; display: block; }
 }
 
 .entete-logo-icone {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--rayon-moyen);
-    background: var(--primaire);
-    color: var(--primaire-texte);
+    width: 40px;
+    height: 40px;
+    border-radius: var(--rayon-grand);
+    border: 2px solid var(--bandeau-texte);
+    background: var(--bandeau);
+    color: var(--bandeau-texte);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    box-shadow: var(--ombre-carte);
     overflow: hidden;
 }
 
@@ -277,6 +299,7 @@ img { max-width: 100%; display: block; }
     font-size: var(--texte-compact);
     font-weight: 700;
     letter-spacing: -0.01em;
+    color: var(--bandeau-texte);
 }
 
 .entete-logo-sous-titre {
@@ -302,11 +325,11 @@ img { max-width: 100%; display: block; }
 }
 
 .entete-avatar {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: color-mix(in oklch, var(--primaire) 10%, transparent);
-    color: var(--primaire);
+    background: color-mix(in oklch, var(--barre) 28%, transparent);
+    color: var(--bandeau-texte);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -421,9 +444,9 @@ img { max-width: 100%; display: block; }
     right: 0;
     bottom: 0;
     z-index: 40;
-    background: var(--carte);
-    border-top: 1px solid var(--bordure);
-    padding-bottom: env(safe-area-inset-bottom);
+    /* Conteneur transparent (sa hauteur sert au tiroir : --nav-h) ; seule la pilule reçoit les touchers. */
+    padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+    pointer-events: none;
 }
 
 @media (min-width: 768px) {
@@ -434,55 +457,76 @@ img { max-width: 100%; display: block; }
     position: relative;
     max-width: 480px;
     margin: 0 auto;
+    padding: 6px;
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-items: center;
+    justify-items: center;
+    background: var(--barre);
+    border-radius: 999px;
+    box-shadow: var(--ombre-elevee);
+    pointer-events: auto;
 }
 
 .nav-basse-lien {
     position: relative;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    padding: 8px 2px;
-    min-height: 56px;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border-radius: 50%;
+    color: color-mix(in oklch, var(--barre-texte) 78%, transparent);
     font-size: var(--texte-micro);
     font-weight: 600;
-    color: var(--attenue-texte);
 }
 
-.nav-basse-lien.actif { color: var(--primaire); }
+.nav-basse-lien.actif {
+    background: var(--primaire);
+    color: var(--primaire-texte);
+}
 
-.nav-basse-icone { font-size: var(--titre-s); line-height: 1; }
+.nav-basse-icone {
+    width: 24px;
+    height: 24px;
+    font-size: 0;                 /* l'emoji reste dans le HTML ; l'icône au trait est dessinée par le masque ci-dessous */
+    background: currentColor;
+    -webkit-mask: var(--icone-nav) center / contain no-repeat;
+    mask: var(--icone-nav) center / contain no-repeat;
+}
 
-.nav-basse-lien .badge-nombre { right: 6px; top: 2px; }
+.nav-basse-lien .badge-nombre {
+    right: 2px;
+    top: 2px;
+}
 
 .badge-nombre[hidden] { display: none; }
 
 /* Bouton d'action rapide (FAB), au centre de la barre basse */
-.fab-conteneur { position: relative; }
+.fab-conteneur {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
 
 .fab-bouton {
-    position: absolute;
-    left: 50%;
-    top: -28px;
-    transform: translateX(-50%);
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
-    border: 4px solid var(--fond);
-    background: var(--primaire);
-    color: var(--primaire-texte);
+    border: 0;
+    background: var(--barre-texte);
+    color: var(--barre);
     font-size: var(--titre-xl);
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--ombre-elevee);
 }
 
-.fab-bouton:active { transform: translateX(-50%) scale(0.95); }
+.fab-bouton:active {
+    transform: scale(0.95);
+}
 
 /* ---------- Panneaux coulissants (feuilles du bas / du côté) ---------- */
 
@@ -571,7 +615,7 @@ img { max-width: 100%; display: block; }
     height: 36px;
     border-radius: 50%;
     background: color-mix(in oklch, var(--primaire) 10%, transparent);
-    color: var(--primaire);
+    color: var(--primaire-fonce);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -586,8 +630,8 @@ img { max-width: 100%; display: block; }
     justify-content: center;
     gap: 6px;
     height: 38px;
-    padding: 0 16px;
-    border-radius: var(--rayon-moyen);
+    padding: 0 18px;
+    border-radius: 999px;
     border: 1px solid transparent;
     font-size: var(--texte-compact);
     font-weight: 600;
@@ -620,8 +664,8 @@ img { max-width: 100%; display: block; }
 .carte {
     background: var(--carte);
     color: var(--carte-texte);
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon-grand);
+    border: 0;
+    border-radius: var(--rayon-carte);
     box-shadow: var(--ombre-carte);
     padding: 16px;
 }
@@ -685,24 +729,26 @@ img { max-width: 100%; display: block; }
 
 .bascule-vue {
     display: inline-flex;
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon-moyen);
+    padding: 4px;
+    background: var(--carte);
+    border-radius: 999px;
+    box-shadow: var(--ombre-carte);
     overflow: hidden;
     flex-shrink: 0;
 }
 
 .bascule-vue-bouton {
     padding: 0 14px;
-    height: 36px;
-    background: var(--carte);
+    height: 34px;
+    background: transparent;
     border: none;
+    border-radius: 999px;
     color: var(--attenue-texte);
     font-size: var(--texte-compact);
     font-weight: 600;
 }
 
-.bascule-vue-bouton + .bascule-vue-bouton { border-left: 1px solid var(--bordure); }
-.bascule-vue-bouton.actif { background: var(--primaire); color: var(--primaire-texte); }
+.bascule-vue-bouton.actif { background: var(--barre); color: var(--barre-texte); }
 
 .puce-filtre {
     flex-shrink: 0;
@@ -764,9 +810,9 @@ label {
 input, select, textarea {
     width: 100%;
     padding: 9px 11px;
-    border: 1px solid var(--bordure);
-    border-radius: var(--rayon-moyen);
-    background: var(--carte);
+    border: 1px solid transparent;          /* champs remplis de gris (maquette) : le gris suffit, le contour n'apparaît qu'au focus */
+    border-radius: var(--rayon-grand);
+    background: var(--secondaire);
     color: var(--texte);
     font-size: var(--texte-courant);
     font-family: inherit;
@@ -787,7 +833,7 @@ input:focus, select:focus, textarea:focus {
     margin-top: 12px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 12px;
 }
 
 @media (min-width: 640px) {
@@ -890,6 +936,7 @@ input:focus, select:focus, textarea:focus {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-family: var(--police-titre);
 }
 
 .fiche-adresse {
@@ -923,9 +970,10 @@ input:focus, select:focus, textarea:focus {
     display: flex;
     gap: 4px;
     overflow-x: auto;
-    padding: 4px 0;
-    background: var(--secondaire);
-    border-radius: var(--rayon-moyen);
+    padding: 4px;
+    background: var(--carte);
+    border-radius: 999px;
+    box-shadow: var(--ombre-elevee);
     margin: 4px 0;
 }
 
@@ -935,18 +983,22 @@ input:focus, select:focus, textarea:focus {
     align-items: center;
     gap: 6px;
     padding: 8px 12px;
-    border-radius: var(--rayon-petit);
+    border-radius: 999px;
     font-size: var(--texte-petit);
     font-weight: 600;
     color: var(--attenue-texte);
     white-space: nowrap;
 }
 
-.onglet-fiche.actif { background: var(--carte); color: var(--texte); box-shadow: var(--ombre-carte); }
+.onglet-fiche.actif {
+    background: var(--barre);
+    color: var(--barre-texte);
+    box-shadow: none;
+}
 
 .onglet-fiche-compteur {
     background: color-mix(in oklch, var(--primaire) 12%, transparent);
-    color: var(--primaire);
+    color: var(--primaire-fonce);
     border-radius: 999px;
     padding: 0 6px;
     font-size: var(--texte-micro);

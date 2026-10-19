@@ -59,6 +59,7 @@ AC-SAT-CAMPAGNE/
 ├── Vendor/supabase/    supabase-js 2.117.1 (MIT), version navigateur
 ├── manifest.webmanifest / sw.js   Application installable, ouverture hors ligne
 ├── Images/             Logo et icônes
+├── Polices/            Barlow (texte) et Barlow Semi Condensed (titres, chiffres) : woff2 « latin », licence SIL OFL 1.1 livrée avec
 ├── Media/              Vidéo d'ouverture (.mp4, .webm de secours) et son affiche
 ├── Media/nouveautes/   Photos de présentation des nouveautés (WebP, noms versionnés -v1)
 ├── Documents/          Fiches de référence (HTML, FR et ES)
@@ -94,6 +95,7 @@ AC-SAT-CAMPAGNE/
 | La **sécurité** | `netlify.toml` (en-têtes dont la CSP) ; base : `supabase/migrations/` (une migration = un fichier daté, appliquée puis versionnée) |
 | Les **erreurs** | `Js/Erreurs.js` (journal local, Réglages › Informations › Diagnostic) |
 | La **mise en page**, thèmes, responsive | `CSS/style.css` (base), `CSS/campagne.css` (spécifique ; l'échelle des points de rupture est en tête) |
+| Le **design « variante B »** (bandeau rouge de page, barre du bas flottante, polices) | jetons « Design B » de `:root` (`--bandeau*`, `--barre*`, `--primaire-fonce`, `--rayon-carte`, `--rayon-bandeau`, `--police-*`) dans `CSS/style.css` ; section « Design B — habillage » de `CSS/campagne.css` ; les marges de la page sont des VARIABLES (`--marge-h/g/d` sur `.app-contenu`) que le bandeau annule exactement |
 | Les **tests** | `Tests/` (`npm test`), analyse statique `npm run lint`, audits navigateur `Tests/navigateur/` |
 | Le **déploiement** | GitHub → Netlify (`netlify.toml`) ; fonction serveur : Supabase (voir « Déploiement ») |
 
@@ -245,8 +247,11 @@ n'est vérifiée que par les règles CSS (`env(safe-area-inset-*)`), pas sur un 
 Les tests ne dépendent plus du jour où on les lance (mois courant, vendredi de génération de la tournée) : un vendredi,
 la page génère elle-même la tournée à son ouverture, ce que les tests neutralisent explicitement.
 
-`Tests/` : plus de 1 400 vérifications (jsdom) ; `Tests/navigateur/` : audit des écrans dans un vrai Chromium. `cd Tests && npm install && npm test`.
+`Tests/` : plus de 1 600 vérifications (jsdom) ; `Tests/navigateur/` : audit des écrans dans un vrai Chromium. `cd Tests && npm install && npm test`.
 Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml`).
+
+⚠️ **Piège à connaître** : `Tests/navigateur/generer-compatibilite.py` COUPE tout ce qui suit le marqueur `GENERE-DEBUT` de `CSS/campagne.css` puis réécrit son bloc. Le bloc généré doit donc rester la DERNIÈRE chose du fichier (`test57.js` le vérifie) : du CSS laissé après lui était effacé en silence au prochain lancement, et échappait aux tests de style. Après tout changement de couleur : `node Tests/navigateur/jetons.mjs` puis `python3 Tests/navigateur/generer-compatibilite.py Tests/navigateur/sortie/tokens.json`.
+Et un test qui plante n'est pas un test qui passe : vérifier la ligne de total (`N ✅ 0 ❌`), pas seulement l'absence de ❌.
 
 ## Lots
 
@@ -488,6 +493,7 @@ Lancés automatiquement sur GitHub à chaque envoi (`.github/workflows/tests.yml
     répare aussi les copies déjà enregistrées) et `sansRedirection()` dans `Js/Installation.js` (téléchargement d'une mise à jour). Tests : `test54.js` (40, dont 4 qui échouent avec le `sw.js` de 13-a), `test55.js` et
     `Tests/navigateur/maj-6-redirections.mjs` (serveur qui redirige : en ligne, hors ligne, mise à jour validée, appareil déjà cassé qui se répare). **Leçon** : le faux serveur d'essai doit imiter les particularités de la production
     (redirections, pannes réelles) ; mon banc d'essai ne redirigeait pas les pages, d'où un défaut invisible pendant des jours.
+8z3. ✅ Nouveau design « variante B » (2026.10.19-a) : APPARENCE SEULEMENT, aucun HTML de page, aucune fonction ni donnée modifiés (consigne : « on ne touche pas à la structure »). Bandeau rouge `#DD090E` sur chaque page (le conteneur `.entete-page` existait déjà partout : CSS pur, `:has()` protégé par `@supports`), bloc blanc qui le chevauche (compteurs, onglets, recherche), barre du bas = pilule noire flottante à boutons ronds de 52 px (icônes au trait dessinées en CSS par des masques SVG `data:`, libellés conservés pour les lecteurs d'écran, conteneur transparent pour que le tiroir lise toujours `--nav-h`), cartes à 18 px sans bordure, boutons et onglets en pilule, champs gris, polices locales `Polices/` (CSP `font-src 'self'`), thème sombre (bandeau `#A30B10`). Statuts INCHANGÉS. Ce que les maquettes ajoutent ou retirent (anneau 70 %, bande de la semaine, statut par client, formulaire de visite en page) n'est PAS repris : ce sont des changements de contenu, à décider séparément. **Pièges découverts** : (1) le générateur de compatibilité coupait tout ce qui suit son marqueur : 230 lignes de CSS (tiroir, présentation, pièces jointes, scène de mise à jour) étaient hors de portée des tests de style, dont une colonne `1fr` sans `minmax` ; (2) la marge de la page n'est pas toujours 24 px (16 px sous 380 px, zone sûre, paysage) : un bandeau qui l'annule en dur déborderait de 8 px et ferait défiler la page. **Contrastes** : le nouveau rouge est plus clair, donc texte rouge sur fond rosé (4,3 à 4,5:1), blanc à 85 % sur le bandeau (3,9:1) et compteur rouge sur onglet noir (2,3:1) échouaient : rouge foncé `--primaire-fonce` (7:1), blanc à 95 % (4,7:1), surbrillances sombres. **Mesuré** : 141 vues sur 17 formats (aucun contraste faible hors emojis, en-tête caché ≥ 768 px = artefact), texte agrandi comparé à la version 13-b (à 130 % : 0 débordement sur l'Accueil contre 10 ; le Planning déborde à l'identique, défaut existant des cartes graphiques), thème sombre sans contraste faible. Scénarios de mise à jour `maj-*.mjs` : le nombre de fichiers attendu est lu dans `version.json` (`nbFichiers` de `maj-lib.mjs`) ; il était écrit en dur (48) et échouait dès l'ajout des polices (54) ; rejoués sur le ZIP décompressé, depuis la version `13-b` : 49 vérifications, 0 écart. Tests : `test57.js` (25 vérifications). Hors périmètre, non traité : Safari/iPhone jamais testé, Planning à 150 % sur 360 px et le bouton « +N » (28 px).
 9. ✅ Notifications push : résumé du matin et rappel 1 h avant chaque rendez-vous confirmé
 10. Documents joints aux visites
 11. Règle du mode maintenance / hiver : bilan de fin de campagne livré (8a9) ; reste le suivi hors campagne par ligne (à décider)
