@@ -1324,6 +1324,8 @@ html.dark {
     --bandeau-texte: #ffffff;
     --barre: #1c1c1f;
     --barre-texte: #ffffff;
+    --onglet-actif: #ffffff;       /* … blanc sur noir en sombre : #1c1c1f sur #171719 ne se voyait pas */
+    --onglet-actif-texte: #1a1a1a;
 }
 html.dark body { background: var(--fond); }
 html.dark .rail-lateral { background: var(--fond-barre); }
@@ -1931,17 +1933,22 @@ a.menu-avatar-version { display: flex; align-items: center; min-height: 44px; te
 .entete-page .titre-page { font-size: var(--titre-xl); line-height: var(--interligne-serre); }
 .entete .bouton-icone { color: var(--bandeau-texte); }
 /* Compteurs posés sur un fond plein (onglet actif noir, puce active rouge) : teinte sombre ou blanche, jamais « rouge sur noir » (2,3:1) ni « blanc sur rouge clair ». */
-.onglet-fiche.actif .onglet-fiche-compteur { background: color-mix(in oklch, var(--barre-texte) 22%, transparent); color: var(--barre-texte); }
+.onglet-fiche.actif .onglet-fiche-compteur { background: color-mix(in oklch, var(--onglet-actif-texte) 22%, transparent); color: var(--onglet-actif-texte); }
 .puce-filtre.actif .puce-compteur { background: color-mix(in oklch, var(--barre) 28%, transparent); }
 
 /* Le bloc blanc qui suit le bandeau le chevauche (compteurs, onglets, recherche, cartes) : le bandeau est alors plus haut pour lui faire de la place.
    « :has() » n'existe que dans les navigateurs récents ; sans lui, rien ne chevauche et le bandeau garde sa hauteur courte (aucun texte n'est recouvert). */
 @supports selector(:has(a)) {
     .entete-page:has(+ :is(.grille-metriques, .onglets-fiche, .bascule-vue, .champ-recherche-conteneur, .grille-documents, .carte)) { padding-bottom: 56px; }
-    .entete-page + :is(.grille-metriques, .onglets-fiche, .bascule-vue, .champ-recherche-conteneur, .grille-documents, .carte) { margin-top: -40px; position: relative; z-index: 1; }
+    /* « !important » : la recherche de Clients, les onglets de Réglages et ceux de la fiche portent un style="margin-top:12px" EN LIGNE dans leur gabarit ; une feuille de style ne peut pas l'emporter autrement (et on ne touche pas au HTML). */
+    .entete-page + :is(.grille-metriques, .onglets-fiche, .bascule-vue, .champ-recherche-conteneur, .grille-documents, .carte) { margin-top: -40px !important; position: relative; z-index: 1; }
 }
-.fiche-entete + .onglets-fiche { margin-top: -40px; position: relative; z-index: 1; }
+.fiche-entete + .onglets-fiche { margin-top: -40px !important; position: relative; z-index: 1; }
 .champ-recherche-conteneur input { border-radius: 999px; border-color: transparent; background: var(--carte); box-shadow: var(--ombre-carte); }
+
+/* Sur ordinateur le bandeau touche la barre latérale (à gauche) et le bord de la fenêtre (à droite) : des coins arrondis y laisseraient une encoche noire.
+   Au-delà de 1 840 px (barre 220 + contenu 1 600 + ascenseur) il flotte au centre : les coins arrondis reviennent. */
+@media (min-width: 768px) and (max-width: 1839px) { .entete-page, .fiche-entete { border-radius: 0; } }
 
 /* Fiche client : retour + en-tête forment un seul bandeau rouge. */
 .fiche-retour { display: flex; margin: calc(-1 * var(--marge-h)) calc(-1 * var(--marge-d)) 0 calc(-1 * var(--marge-g)); padding: 8px var(--marge-d) 0 var(--marge-g); background: var(--bandeau); }
@@ -1972,7 +1979,11 @@ a.menu-avatar-version { display: flex; align-items: center; min-height: 44px; te
 /* ---------- Grands écrans : largeur de lecture ----------
    Chaque page déclare <body data-page="…">. La Tournée est une liste de lignes (heure, client, actions) : à 1 600 px l'œil
    parcourt 1 500 px entre l'heure et le client. Les autres pages (grilles, tableaux de bord) utilisent bien la largeur. */
-body[data-page="tournee"] .app-contenu { max-width: 1120px; }
+body[data-page="tournee"] .app-contenu > :not(.entete-page) { max-width: calc(1120px - var(--marge-g) - var(--marge-d)); margin-left: auto; margin-right: auto; }
+body[data-page="tournee"] .entete-page {      /* le bandeau va bord à bord ; son contenu reste aligné sur la colonne de lecture */
+    padding-left: max(var(--marge-g), calc(var(--marge-g) + (100% - 1120px + var(--marge-g) + var(--marge-d)) / 2));
+    padding-right: max(var(--marge-d), calc(var(--marge-d) + (100% - 1120px + var(--marge-g) + var(--marge-d)) / 2));
+}
 
 /* ---------- Souris et trackpad : cibles à partir de 32 px (24 px minimum WCAG 2.5.8) ----------
    Les boutons gagnent en hauteur ; les petits liens et pastilles gardent leur taille visuelle mais une zone cliquable
@@ -2191,7 +2202,7 @@ html.maj-en-cours { overflow: hidden; }
 /* >>> GENERE-DEBUT : couleurs de secours (anciens navigateurs) — ne pas modifier à la main */
 /* Sans oklch() (Chrome < 111, Safari < 15.4, Samsung Internet < 22) : variables et couleurs directes en rgb. */
 @supports not (color: oklch(0.5 0.1 27)) {
-  :root { --fond: rgb(242,242,242); --texte: rgb(26,26,26); --carte: rgb(255,255,255); --carte-texte: rgb(26,26,26); --primaire: rgb(221,8,14); --primaire-texte: rgb(255,255,255); --secondaire: rgb(242,242,242); --attenue-texte: rgb(92,92,92); --accent: rgb(253,230,231); --accent-texte: rgb(181,6,11); --succes: rgb(38,158,95); --alerte: rgb(231,140,8); --bordure: rgb(222,222,222); --primaire-fonce: rgb(181,6,11); --bandeau: rgb(221,8,14); --bandeau-texte: rgb(255,255,255); --barre: rgb(26,26,26); --barre-texte: rgb(255,255,255); }
+  :root { --fond: rgb(242,242,242); --texte: rgb(26,26,26); --carte: rgb(255,255,255); --carte-texte: rgb(26,26,26); --primaire: rgb(221,8,14); --primaire-texte: rgb(255,255,255); --secondaire: rgb(242,242,242); --attenue-texte: rgb(92,92,92); --accent: rgb(253,230,231); --accent-texte: rgb(181,6,11); --succes: rgb(38,158,95); --alerte: rgb(231,140,8); --bordure: rgb(222,222,222); --primaire-fonce: rgb(181,6,11); --bandeau: rgb(221,8,14); --bandeau-texte: rgb(255,255,255); --barre: rgb(26,26,26); --barre-texte: rgb(255,255,255); --onglet-actif: rgb(26,26,26); --onglet-actif-texte: rgb(255,255,255); }
   html.dark { --succes: rgb(71,184,119); --alerte: rgb(242,149,32); --texte-rouge: rgb(255,165,157); }
   .voile { background: rgba(0,0,0,0.4); }
 }
@@ -2233,6 +2244,7 @@ html.maj-en-cours { overflow: hidden; }
   .pt-cell--aujourdhui { background: rgba(221,8,14,0.08); }
   html.dark .pt-cell--aujourdhui { background: rgba(249,66,61,0.08); }
   .onglet-fiche.actif .onglet-fiche-compteur { background: rgba(255,255,255,0.22); }
+  html.dark .onglet-fiche.actif .onglet-fiche-compteur { background: rgba(26,26,26,0.22); }
   .puce-filtre.actif .puce-compteur { background: rgba(26,26,26,0.28); }
   html.dark .puce-filtre.actif .puce-compteur { background: rgba(28,28,31,0.28); }
   .fiche-entete .badge-statut--inactif { background: rgba(26,26,26,0.7); }

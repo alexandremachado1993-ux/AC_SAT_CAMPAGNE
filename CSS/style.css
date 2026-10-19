@@ -71,6 +71,8 @@
     --bandeau-texte: oklch(1 0 0);                  /* blanc sur le rouge : 5,1:1 */
     --barre: oklch(0.218 0 0);
     --barre-texte: oklch(1 0 0);
+    --onglet-actif: var(--barre);                   /* onglet / bouton de vue actif : noir sur blanc en clair… */
+    --onglet-actif-texte: var(--barre-texte);
     --rayon-carte: 1.125rem;                        /* 18 px : cartes */
     --rayon-bandeau: 1.75rem;                       /* 28 px : coins inférieurs du bandeau */
     --police-texte: "Barlow", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -748,7 +750,7 @@ img { max-width: 100%; display: block; }
     font-weight: 600;
 }
 
-.bascule-vue-bouton.actif { background: var(--barre); color: var(--barre-texte); }
+.bascule-vue-bouton.actif { background: var(--onglet-actif); color: var(--onglet-actif-texte); }
 
 .puce-filtre {
     flex-shrink: 0;
@@ -991,8 +993,8 @@ input:focus, select:focus, textarea:focus {
 }
 
 .onglet-fiche.actif {
-    background: var(--barre);
-    color: var(--barre-texte);
+    background: var(--onglet-actif);
+    color: var(--onglet-actif-texte);
     box-shadow: none;
 }
 

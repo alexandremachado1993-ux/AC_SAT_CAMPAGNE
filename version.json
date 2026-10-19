@@ -1,11 +1,7 @@
 {
-  "version": "2026.10.19-a",
+  "version": "2026.10.19-b",
   "date": "2026-10-19",
-  "nouveaute": {
-    "id": "nouveau-design",
-    "titre": "Nouveau look : bandeau rouge et barre du bas flottante",
-    "resume": "L'application change d'habillage, sans rien changer à son fonctionnement : un bandeau rouge en haut de chaque page, des cartes plus arrondies, une barre du bas noire qui flotte avec ses boutons ronds, et une nouvelle police (Barlow). Le thème sombre suit. Tes données, tes réglages et tes gestes sont"
-  },
+  "nouveaute": null,
   "obligatoire": false,
   "fichiers": [
     {
@@ -46,11 +42,11 @@
     },
     {
       "u": "CSS/campagne.css",
-      "t": 120747
+      "t": 122193
     },
     {
       "u": "CSS/style.css",
-      "t": 28990
+      "t": 29180
     },
     {
       "u": "Js/Amorce.js",
