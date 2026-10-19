@@ -31,10 +31,10 @@ const Presentation = (() => {
     /* Illustrations (décoratives, masquées aux lecteurs d'écran : le texte porte l'information). */
     const MAQUETTE = '<div class="pres-tel" aria-hidden="true"><div class="pres-tel-ecran">' +
         '<div class="pres-tel-entete"><i></i><b></b></div><div class="pres-tel-carte"></div><div class="pres-tel-carte"></div><div class="pres-tel-carte pres-tel-carte--court"></div>' +
-        '%TIROIR%<div class="pres-barre"><span>📋</span><span>📅</span><span class="pres-fab">+</span><span>🤖</span><span>👥</span></div></div>%DOIGT%</div>';
+        '%TIROIR%<div class="pres-barre"><span>🏠</span><span>📅</span><span class="pres-fab">+</span><span>🤖</span><span>👥</span></div></div>%DOIGT%</div>';
     const SCENES = {
         1: '<div class="pres-scene pres-scene--1" aria-hidden="true"><div class="pres-logo"><img src="Images/logo.png" alt="" width="96" height="96"></div>' +
-            '<div class="pres-puces"><span style="--i:0">📋 À visiter</span><span style="--i:1">📅 Planning</span><span style="--i:2">🤖 Tournée</span><span style="--i:3">👥 Clients</span></div></div>',
+            '<div class="pres-puces"><span style="--i:0">🏠 À visiter</span><span style="--i:1">📅 Planning</span><span style="--i:2">🤖 Tournée</span><span style="--i:3">👥 Clients</span></div></div>',
         2: '<div class="pres-scene pres-scene--2" aria-hidden="true">' + MAQUETTE.replace("%TIROIR%", "").replace("%DOIGT%", "") + '</div>',
         3: '<div class="pres-scene pres-scene--3" aria-hidden="true">' + MAQUETTE.replace("%TIROIR%",
             '<div class="pres-tiroir"><div class="pres-tiroir-carte" style="--i:0"><span>📏</span><b>Contrôle de serti</b></div><div class="pres-tiroir-carte" style="--i:1"><span>📄</span><b>Documents</b></div></div>')

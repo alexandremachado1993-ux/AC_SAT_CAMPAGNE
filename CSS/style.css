@@ -301,7 +301,6 @@ img { max-width: 100%; display: block; }
     font-size: var(--texte-compact);
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: var(--bandeau-texte);
 }
 
 .entete-logo-sous-titre {
@@ -330,8 +329,8 @@ img { max-width: 100%; display: block; }
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: color-mix(in oklch, var(--barre) 28%, transparent);
-    color: var(--bandeau-texte);
+    background: color-mix(in oklch, var(--primaire) 10%, transparent);
+    color: var(--primaire-fonce);
     display: flex;
     align-items: center;
     justify-content: center;

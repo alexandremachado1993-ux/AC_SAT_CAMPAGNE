@@ -1931,6 +1931,8 @@ a.menu-avatar-version { display: flex; align-items: center; min-height: 44px; te
 }
 .entete-page .titre-page { font-size: var(--titre-xl); line-height: var(--interligne-serre); }
 .entete .bouton-icone { color: var(--bandeau-texte); }
+/* ATTENTION : la barre latérale (ordinateur, tablette) réutilise blocLogo() et .entete-avatar : ces classes ne doivent JAMAIS recevoir de couleur blanche « en dur ». Le blanc n'est posé que sur l'en-tête rouge (.entete). */
+.entete .entete-avatar { background: color-mix(in oklch, var(--barre) 28%, transparent); color: var(--bandeau-texte); }
 /* Compteurs posés sur un fond plein (onglet actif noir, puce active rouge) : teinte sombre ou blanche, jamais « rouge sur noir » (2,3:1) ni « blanc sur rouge clair ». */
 .onglet-fiche.actif .onglet-fiche-compteur { background: color-mix(in oklch, var(--onglet-actif-texte) 22%, transparent); color: var(--onglet-actif-texte); }
 .puce-filtre.actif .puce-compteur { background: color-mix(in oklch, var(--barre) 28%, transparent); }
@@ -1955,12 +1957,19 @@ a.menu-avatar-version { display: flex; align-items: center; min-height: 44px; te
 .fiche-entete .bouton--danger, html.dark .fiche-entete .bouton--danger { color: var(--bandeau-texte); }
 .fiche-entete .badge-statut--inactif { background: color-mix(in oklch, var(--barre) 70%, transparent); }       /* « Inactif » : gris sombre sur le rouge (blanc sur blanc avant) */
 
+:root {
+    /* Icônes au trait des 4 pages : définies ici une seule fois, utilisées par la barre du bas, et par la mini-barre de la présentation. */
+    --ico-accueil: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 11 12 3.5l8.5 7.5'/%3E%3Cpath d='M5.5 9.5V20h13V9.5'/%3E%3Cpath d='M10 20v-5.5h4V20'/%3E%3C/svg%3E");
+    --ico-planning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='16' rx='3'/%3E%3Cpath d='M8 3v4M16 3v4M3.5 10h17'/%3E%3C/svg%3E");
+    --ico-tournee: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s-6.5-5.4-6.5-11a6.5 6.5 0 0 1 13 0c0 5.6-6.5 11-6.5 11z'/%3E%3Ccircle cx='12' cy='10' r='2.4'/%3E%3C/svg%3E");
+    --ico-clients: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3.2'/%3E%3Cpath d='M3 20.5V20a6 6 0 0 1 12 0v.5'/%3E%3Ccircle cx='17.2' cy='9' r='2.6'/%3E%3Cpath d='M17 14.2a5 5 0 0 1 4.5 5v1.3'/%3E%3C/svg%3E");
+}
 /* Barre du bas : icônes au trait (masques SVG « data: », autorisés par la CSP), libellés conservés pour les lecteurs d'écran seulement. */
 .nav-basse-lien { --icone-nav: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E"); }
-.nav-basse-lien[href="Index.html"] { --icone-nav: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='4.5' width='14' height='17' rx='2.5'/%3E%3Cpath d='M9 4.5V4a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 4v.5'/%3E%3Cpath d='m9 13 2.2 2.2L15.5 11'/%3E%3C/svg%3E"); }
-.nav-basse-lien[href="Planning.html"] { --icone-nav: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='5' width='17' height='16' rx='3'/%3E%3Cpath d='M8 3v4M16 3v4M3.5 10h17'/%3E%3C/svg%3E"); }
-.nav-basse-lien[href="Tournee.html"] { --icone-nav: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s-6.5-5.4-6.5-11a6.5 6.5 0 0 1 13 0c0 5.6-6.5 11-6.5 11z'/%3E%3Ccircle cx='12' cy='10' r='2.4'/%3E%3C/svg%3E"); }
-.nav-basse-lien[href="Clients.html"] { --icone-nav: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 21V9l8-5.5L20 9v12'/%3E%3Cpath d='M2.5 21h19'/%3E%3Cpath d='M9.5 21v-6h5v6'/%3E%3C/svg%3E"); }
+.nav-basse-lien[href="Index.html"] { --icone-nav: var(--ico-accueil); }
+.nav-basse-lien[href="Planning.html"] { --icone-nav: var(--ico-planning); }
+.nav-basse-lien[href="Tournee.html"] { --icone-nav: var(--ico-tournee); }
+.nav-basse-lien[href="Clients.html"] { --icone-nav: var(--ico-clients); }
 .nav-basse-lien > span:not([class]) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Mouvement réduit : filet de sécurité GLOBAL ----------
@@ -2079,6 +2088,11 @@ a, button, [role="button"], input, select, textarea, label, summary { touch-acti
 .pres-tel-carte { height: 52px; border: 1px solid var(--bordure); border-radius: var(--rayon-grand); background: var(--carte); box-shadow: var(--ombre-carte); }
 .pres-tel-carte--court { width: 70%; height: 34px; }
 .pres-barre { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 42px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; justify-items: center; border-radius: 999px; background: var(--barre); color: var(--barre-texte); font-size: 15px; }
+.pres-barre span:not(.pres-fab) { width: 20px; height: 20px; font-size: 0; background: currentColor; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; }
+.pres-barre span:nth-child(1) { --ico: var(--ico-accueil); }
+.pres-barre span:nth-child(2) { --ico: var(--ico-planning); }
+.pres-barre span:nth-child(4) { --ico: var(--ico-tournee); }
+.pres-barre span:nth-child(5) { --ico: var(--ico-clients); }
 .pres-fab { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--barre-texte); color: var(--barre); font-size: var(--titre-s); font-weight: 800; }
 .pres-scene--2.actif .pres-barre span:not(.pres-fab) { animation: pres-eclat 3.2s ease-in-out infinite; }
 .pres-scene--2.actif .pres-barre span:nth-child(2) { animation-delay: 0.35s; }
@@ -2200,8 +2214,8 @@ html.maj-en-cours { overflow: hidden; }
 @supports not (color: color-mix(in srgb, red 50%, blue)) {
   .rail-lateral-lien.actif { background: rgba(221,8,14,0.1); }
   html.dark .rail-lateral-lien.actif { background: rgba(249,66,61,0.1); }
-  .entete-avatar { background: rgba(26,26,26,0.28); }
-  html.dark .entete-avatar { background: rgba(28,28,31,0.28); }
+  .entete-avatar { background: rgba(221,8,14,0.1); }
+  html.dark .entete-avatar { background: rgba(249,66,61,0.1); }
   .nav-basse-lien { color: rgba(255,255,255,0.78); }
   .feuille-action-icone { background: rgba(221,8,14,0.1); }
   html.dark .feuille-action-icone { background: rgba(249,66,61,0.1); }
@@ -2233,6 +2247,8 @@ html.maj-en-cours { overflow: hidden; }
   html.dark .pt-cell--weekend { background: rgba(38,38,41,0.55); }
   .pt-cell--aujourdhui { background: rgba(221,8,14,0.08); }
   html.dark .pt-cell--aujourdhui { background: rgba(249,66,61,0.08); }
+  .entete .entete-avatar { background: rgba(26,26,26,0.28); }
+  html.dark .entete .entete-avatar { background: rgba(28,28,31,0.28); }
   .onglet-fiche.actif .onglet-fiche-compteur { background: rgba(255,255,255,0.22); }
   html.dark .onglet-fiche.actif .onglet-fiche-compteur { background: rgba(26,26,26,0.22); }
   .puce-filtre.actif .puce-compteur { background: rgba(26,26,26,0.28); }

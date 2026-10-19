@@ -17,11 +17,11 @@ const AppLayout = (() => {
     /* Version livrée : la même valeur figure dans version.txt à la racine.
        Après une mise en ligne, ouvrir <site>/version.txt permet de vérifier
        que c'est bien cette version qui est en ligne. */
-    const VERSION = "2026.10.19-d";
+    const VERSION = "2026.10.19-e";
 
     /* Barre latérale ET navigation mobile se construisent depuis cette liste. */
     const ELEMENTS_NAV = [
-        { page: "tableau", href: "Index.html", icone: "📋", libelle: "À visiter" },
+        { page: "tableau", href: "Index.html", icone: "🏠", libelle: "À visiter" },
         { page: "planning", href: "Planning.html", icone: "📅", libelle: "Planning" },
         { page: "tournee", href: "Tournee.html", icone: "🤖", libelle: "Tournée" },
         { page: "clients", href: "Clients.html", icone: "👥", libelle: "Clients" },
