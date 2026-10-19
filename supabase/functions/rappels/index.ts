@@ -67,7 +67,7 @@ async function envoyer(admin: Client, abonnements: Client[], charge: Record<stri
     for (const a of abonnements) {
         try {
             await webpush.sendNotification({ endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } },
-                JSON.stringify(charge), { TTL: 6 * 3600 });
+                JSON.stringify(charge), { TTL: 6 * 3600, urgency: "high" });
             envoyees++;
         } catch (e) {
             const code = (e as { statusCode?: number }).statusCode;
