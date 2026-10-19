@@ -1,5 +1,5 @@
 {
-  "version": "2026.10.19-c",
+  "version": "2026.10.19-d",
   "date": "2026-10-19",
   "nouveaute": null,
   "obligatoire": false,
@@ -42,7 +42,7 @@
     },
     {
       "u": "CSS/campagne.css",
-      "t": 122017
+      "t": 121344
     },
     {
       "u": "CSS/style.css",
