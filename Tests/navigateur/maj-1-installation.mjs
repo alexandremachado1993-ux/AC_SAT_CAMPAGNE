@@ -1,5 +1,5 @@
 /* Installation, hors ligne, version figée, rappel, validation avec barre de pourcentage. Prérequis : npm install, puis node maj-preparer.mjs. */
-import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture, versionDe } from "./maj-lib.mjs";
+import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture, versionDe, nbFichiers } from "./maj-lib.mjs";
 const V0v = versionDe(0), V1v = versionDe(1), V2v = versionDe(2);
 const S = await serveur(); const nav = await navigateur(); let ko = 0;
 const t = (nom, ok, detail) => { if (!ok) ko++; console.log((ok ? "✅ " : "❌ ") + nom + (detail !== undefined ? "  → " + detail : "")); };
@@ -11,7 +11,7 @@ try {
   await attendreControle(p);
   let c = await etatCaches(p);
   t("S1 installation : un service worker contrôle la page ; une copie « acsc-2026.10.12-b » et la méta existent, la version active est la bonne", (await version(p)) === V1v && c.cles.join() === "acsc-" + V1v + ",acsc-meta" && c.actif === "acsc-" + V1v, JSON.stringify(c));
-  t("S1 la copie contient les 48 fichiers de la version", c.fichiersDansActif === 48, c.fichiersDansActif);
+  t("S1 la copie contient TOUS les fichiers publiés par la version (version.json)", c.fichiersDansActif === nbFichiers(1), c.fichiersDansActif);
   S.mort = true; await p.reload({ waitUntil: "load" });
   const horsLigne1 = (await version(p)) === V1v && await p.evaluate(() => !!document.getElementById("rail-lateral"));
   await p.goto(S.url + "/Planning.html", { waitUntil: "load" });
@@ -60,7 +60,7 @@ try {
   while (Date.now() < fin2) { v = await version(p).catch(() => null); if (v === V2v) break; await pause(300); }
   t("S4 après « Version installée », l'application redémarre sur 2026.10.12-c", v === V2v, v);
   await attendreControle(p).catch(() => null); c = await etatCaches(p);
-  t("S4 la copie de la version b est SUPPRIMÉE, celle de c est active et complète (48 fichiers)", c.cles.join() === "acsc-" + V2v + ",acsc-meta" && c.actif === "acsc-" + V2v && c.fichiersDansActif === 48, JSON.stringify(c));
+  t("S4 la copie de la version b est SUPPRIMÉE, celle de c est active et complète (tous les fichiers publiés)", c.cles.join() === "acsc-" + V2v + ",acsc-meta" && c.actif === "acsc-" + V2v && c.fichiersDansActif === nbFichiers(2), JSON.stringify(c));
   const rechargesNeuves = S.journal.filter(j => /^\/Js\/Donnees\.js$/.test(j.chemin) && /no-cache|max-age=0/.test(j.cache));
   t("S4 le téléchargement a demandé chaque fichier AU SERVEUR (« cache: reload »), pas à la copie", rechargesNeuves.length >= 1, rechargesNeuves.length + " requête(s) avec en-tête de fraîcheur");
   t("S4 aucune erreur JavaScript pendant tout le parcours", p.erreurs.length === 0, p.erreurs.join(" | ") || "0");

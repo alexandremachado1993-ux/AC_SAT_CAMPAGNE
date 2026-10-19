@@ -205,8 +205,27 @@ async function planning_telephone() {
     await enregistrer(p, "planning-telephone-v1.webp", null); await p.close();
 }
 
+async function design_a_visiter() {
+    const { p } = await ouvrir(390, 844, true, "Index.html", 2);
+    await marquer(p, [[".entete-page", 1], [".grille-metriques", 2], [".nav-basse-grille", 3]]);
+    await enregistrer(p, "design-a-visiter-v1.webp", { x: 0, y: 0, width: 390, height: 844 }); await p.close();
+}
+async function design_fiche() {
+    const { p } = await ouvrir(390, 844, true, "Index.html", 2);
+    const id = await p.evaluate(() => Donnees.listerClients().find(c => c.nom === "Conserverie Exemple").id);
+    await p.goto(`http://localhost:${PORT}/Client.html?id=${id}`, { waitUntil: "load" }); await pause(900);
+    await marquer(p, [[".fiche-entete", 1], [".onglets-fiche", 2]]);
+    await enregistrer(p, "design-fiche-v1.webp", { x: 0, y: 0, width: 390, height: 520 }); await p.close();
+}
+async function design_sombre() {
+    const { p } = await ouvrir(390, 844, true, "Index.html", 2);
+    await p.evaluate(() => Donnees.definirTheme("dark")); await p.reload({ waitUntil: "load" }); await pause(900);
+    await marquer(p, [[".nav-basse-grille", 1]]);
+    await enregistrer(p, "design-sombre-v1.webp", { x: 0, y: 0, width: 390, height: 844 }); await p.close();
+}
+
 const S = await serveur(); const B = await navigateur();
-const toutes = [serti_saisie, serti_page, serti_comparaison, rapport_choix, rapport_apercu, maj_suggestion, maj_menu, maj_informations, planning_tableau, planning_techniciens, planning_telephone];
+const toutes = [serti_saisie, serti_page, serti_comparaison, rapport_choix, rapport_apercu, maj_suggestion, maj_menu, maj_informations, planning_tableau, planning_techniciens, planning_telephone, design_a_visiter, design_fiche, design_sombre];
 for (const f of toutes) { try { await f(); } catch (e) { console.error("ÉCHEC " + f.name + " : " + e.message); process.exitCode = 1; } }
 console.log("Images écrites dans " + SORTIE);
 resultats.forEach(r => console.log(`  ${r.nom}  ${r.largeur}×${r.hauteur}  ${r.ko} Ko`));

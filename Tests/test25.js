@@ -28,7 +28,7 @@ module.exports = async function ({ page, t }) {
 
   // liste blanche : tout ce qui est à la racine est soit publié volontairement, soit bloqué
   const PUBLIE_FICHIERS = /^(Index|Client|Clients|Planning|Reglages|Documents|Tournee|Serti|404)\.html$|^(manifest\.webmanifest|sw\.js|version\.(txt|json))$/;
-  const PUBLIE_DOSSIERS = ["CSS", "Js", "Images", "Media", "Documents", "Modeles", "Vendor"];
+  const PUBLIE_DOSSIERS = ["CSS", "Js", "Images", "Media", "Documents", "Modeles", "Polices", "Vendor"];
   const BLOQUE_DOSSIERS = ["Tests", "supabase", ".github"];
   const inconnus = fs.readdirSync(racine, { withFileTypes: true }).filter(e => {
     if (e.name === "node_modules" || e.name === ".git") return false;

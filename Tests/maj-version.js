@@ -39,7 +39,7 @@ function listePrechargement() {
   const dossier = (d, ext) => fs.readdirSync(path.join(racine, d)).filter(f => ext.test(f)).sort().map(f => d + "/" + f);
   const pages = fs.readdirSync(racine).filter(f => /\.html$/.test(f) && f !== "404.html").sort();
   const vendor = fs.readdirSync(path.join(racine, "Vendor")).sort().map(d => dossier("Vendor/" + d, /\.js$/)).reduce((x, y) => x.concat(y), []);
-  return [].concat(pages, ["manifest.webmanifest"], dossier("CSS", /\.css$/), dossier("Js", /\.js$/), vendor, ["Images/logo.png", "Images/icone-192.png", "Images/icone-512.png", "Images/apple-touch-icon.png"]);
+  return [].concat(pages, ["manifest.webmanifest"], dossier("CSS", /\.css$/), dossier("Js", /\.js$/), vendor, dossier("Polices", /\.woff2$/), ["Images/logo.png", "Images/icone-192.png", "Images/icone-512.png", "Images/apple-touch-icon.png"]);
 }
 
 if (require.main === module) {

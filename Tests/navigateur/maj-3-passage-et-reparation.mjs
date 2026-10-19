@@ -1,5 +1,5 @@
 /* Passage depuis l'ancien service worker (V0 requise), réparation, grand et petit écran. Prérequis : npm install, puis node maj-preparer.mjs. */
-import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture, versionDe, v0EstAncien } from "./maj-lib.mjs";
+import { serveur, navigateur, pause, pageTel, lireCsp, attendreControle, etatCaches, capturer, VERS, cheminCapture, versionDe, v0EstAncien, nbFichiers } from "./maj-lib.mjs";
 const V0v = versionDe(0), V1v = versionDe(1), V2v = versionDe(2);
 const S = await serveur(); const nav = await navigateur(); let ko = 0;
 const t = (nom, ok, detail) => { if (!ok) ko++; console.log((ok ? "✅ " : "❌ ") + nom + (detail !== undefined ? "  → " + detail : "")); };
@@ -19,7 +19,7 @@ try {
   t("S10 PASSAGE : à l'ouverture suivante, la version 2026.10.12-b est prise (c'est le dernier passage SANS validation, annoncé)", (await version(p)) === V1v, await version(p));
   const fait = await attendre(() => p.evaluate(async (nom) => { const k = await caches.keys(); return k.includes(nom) && !k.includes("acsc-v6") && k.includes("acsc-meta"); }, "acsc-" + V1v), 30000);
   const c = await etatCaches(p);
-  t("S10 le NOUVEAU service worker s'installe, copie la version et SUPPRIME l'ancien cache « acsc-v6 »", !!fait && c.cles.join() === "acsc-" + V1v + ",acsc-meta" && c.actif === "acsc-" + V1v && c.fichiersDansActif === 48, JSON.stringify(c));
+  t("S10 le NOUVEAU service worker s'installe, copie la version et SUPPRIME l'ancien cache « acsc-v6 »", !!fait && c.cles.join() === "acsc-" + V1v + ",acsc-meta" && c.actif === "acsc-" + V1v && c.fichiersDansActif === nbFichiers(1), JSON.stringify(c));
   const sw = await p.evaluate(async () => { const r = await navigator.serviceWorker.getRegistration(); return { actif: !!r.active, attente: !!r.waiting, installation: !!r.installing, controle: !!navigator.serviceWorker.controller }; });
   t("S10 aucun service worker « en attente » : le nouveau est actif et contrôle la page", sw.actif && !sw.attente && !sw.installation && sw.controle, JSON.stringify(sw));
   S.mort = true; await p.reload({ waitUntil: "load" });
@@ -44,7 +44,7 @@ try {
   await pause(2500);
   const rep = await attendre(() => p.evaluate(async (nom) => { const k = await caches.keys(); return !!navigator.serviceWorker.controller && k.includes(nom) && k.includes("acsc-meta"); }, "acsc-" + V1v), 30000);
   const c2 = await etatCaches(p); const clients = await p.evaluate(() => Donnees.listerClients().map(x => x.nom));
-  t("S11 « Réparer l'installation » : les copies et le service worker sont effacés puis RÉINSTALLÉS proprement (48 fichiers)", !!rep && c2.cles.join() === "acsc-" + V1v + ",acsc-meta" && c2.fichiersDansActif === 48, JSON.stringify(c2));
+  t("S11 « Réparer l'installation » : les copies et le service worker sont effacés puis RÉINSTALLÉS proprement (tous les fichiers publiés)", !!rep && c2.cles.join() === "acsc-" + V1v + ",acsc-meta" && c2.fichiersDansActif === nbFichiers(1), JSON.stringify(c2));
   t("S11 … les DONNÉES de l'utilisateur sont intactes (le client créé avant la réparation est toujours là)", clients.join() === "Client de test", clients.join());
   await ctx.close();
 

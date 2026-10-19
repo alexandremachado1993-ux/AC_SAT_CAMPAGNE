@@ -54,7 +54,7 @@ module.exports = async function ({ page, t }) {
   t("navigation : le compteur est annoncé en toutes lettres aux lecteurs d'écran (« Nouveauté 1 sur N »)", f.querySelector(".nouv-compteur").getAttribute("aria-label") === "Nouveauté 1 sur " + L.length && f.querySelector(".nouv-compteur").getAttribute("role") === "status");
   clic(f.querySelector('[data-nouv-nav="1"]'));
   t("« Suivant › » montre la nouveauté suivante (3 photos, ses étapes)", f.querySelector(".nouv-titre").textContent === L[1].titre && f.querySelectorAll(".nouv-figure img").length === L[1].images.length && new RegExp("2/" + L.length).test(f.textContent) && f.querySelector('[data-nouv-nav="1"]').disabled === (L.length === 2));
-  t("bouton d'action vers la fonction (libellé de l'annonce affichée)", f.querySelector("[data-nouv-action]").textContent === L[1].action.libelle);
+  t("bouton d'action vers la fonction : présent avec le libellé de l'annonce affichée si elle en déclare un, absent sinon", L[1].action ? (!!f.querySelector("[data-nouv-action]") && f.querySelector("[data-nouv-action]").textContent === L[1].action.libelle) : !f.querySelector("[data-nouv-action]"));
   t("une seule annonce automatique par session", w.sessionStorage.getItem("acsc_nouveautes_session") === "1" && nonVue(w));
   clic(f.querySelector("[data-nouv-compris]"));
   t("« Compris » ferme la fenêtre et marque tout comme vu (la plus récente = " + L[0].id + ")", !feuille(w) && w.localStorage.getItem(CLE) === L[0].id && N.nonVues().length === 0 && w.Nouveautes.nbNonVues() === 0);

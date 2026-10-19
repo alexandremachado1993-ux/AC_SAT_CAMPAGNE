@@ -11,6 +11,8 @@ export const VERS = (n) => path.join(TRAVAIL, "V" + n);
 /* Numéro de version d'une version simulée (V0 ancienne, V1 installée, V2 suivante) : les scénarios ne contiennent aucun numéro écrit en dur. */
 /* V0 a-t-elle l'ANCIEN service worker (liste de fichiers dans sw.js, copie « acsc-v6 ») ? Les scénarios du passage ne s'appliquent qu'à une V0 de ce type (clone d'avant 2026.10.12-b). */
 export const v0EstAncien = () => { try { return /const PRECACHE/.test(fs.readFileSync(path.join(VERS(0), "sw.js"), "utf8")); } catch (e) { return false; } };
+/* Nombre de fichiers PUBLIÉS par la version n (version.json) : l'attendu ne doit jamais être écrit en dur (il changeait à chaque ajout de fichier, ex. les polices). */
+export const nbFichiers = (n) => JSON.parse(fs.readFileSync(path.join(VERS(n), "version.json"), "utf8")).fichiers.length;
 export const versionDe = (n) => { try { return fs.readFileSync(path.join(VERS(n), "version.txt"), "utf8").trim(); } catch (e) { return "(version " + n + " non préparée)"; } };
 export const cheminCapture = (nom) => { fs.mkdirSync(SORTIE, { recursive: true }); return path.join(SORTIE, nom); };
 /* En-têtes de sécurité du bloc « for = "/*" » de netlify.toml : le faux serveur rejoue exactement ceux de la production (CSP comprise). */
