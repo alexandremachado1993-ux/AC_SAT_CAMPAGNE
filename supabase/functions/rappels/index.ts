@@ -67,7 +67,12 @@ async function envoyer(admin: Client, abonnements: Client[], charge: Record<stri
     for (const a of abonnements) {
         try {
             await webpush.sendNotification({ endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } },
-                JSON.stringify(charge), { TTL: 6 * 3600, urgency: "high" });
+                JSON.stringify(charge), {
+                    TTL: 6 * 3600,
+                    // « high » : sans cela le message part en priorité NORMALE et Android (mode Doze, téléphone verrouillé) peut le retenir jusqu'au
+                    // déverrouillage : un rappel « dans 1 h » arriverait trop tard. Quelques messages par jour : aucun risque d'abus de la priorité.
+                    urgency: "high",
+                });
             envoyees++;
         } catch (e) {
             const code = (e as { statusCode?: number }).statusCode;
