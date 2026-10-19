@@ -8,7 +8,6 @@
    1199 px (cartes du tableau de bord d'accueil). Mobile d'abord : les règles de base valent pour le téléphone.
    ============================================================= */
 
-
 /* ---------- En-tête de page ---------- */
 
 .entete-page {
@@ -1979,11 +1978,8 @@ a.menu-avatar-version { display: flex; align-items: center; min-height: 44px; te
 /* ---------- Grands écrans : largeur de lecture ----------
    Chaque page déclare <body data-page="…">. La Tournée est une liste de lignes (heure, client, actions) : à 1 600 px l'œil
    parcourt 1 500 px entre l'heure et le client. Les autres pages (grilles, tableaux de bord) utilisent bien la largeur. */
+/* La limite s'applique aux ENFANTS (la liste) et pas à .app-contenu : le bandeau reste bord à bord avec les mêmes marges que sur toutes les autres pages (ne pas lui en donner de propres). */
 body[data-page="tournee"] .app-contenu > :not(.entete-page) { max-width: calc(1120px - var(--marge-g) - var(--marge-d)); margin-left: auto; margin-right: auto; }
-body[data-page="tournee"] .entete-page {      /* le bandeau va bord à bord ; son contenu reste aligné sur la colonne de lecture */
-    padding-left: max(var(--marge-g), calc(var(--marge-g) + (100% - 1120px + var(--marge-g) + var(--marge-d)) / 2));
-    padding-right: max(var(--marge-d), calc(var(--marge-d) + (100% - 1120px + var(--marge-g) + var(--marge-d)) / 2));
-}
 
 /* ---------- Souris et trackpad : cibles à partir de 32 px (24 px minimum WCAG 2.5.8) ----------
    Les boutons gagnent en hauteur ; les petits liens et pastilles gardent leur taille visuelle mais une zone cliquable
